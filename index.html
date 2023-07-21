@@ -20,7 +20,6 @@
 		</script>
 	</head>
 	<body class="is-preload">
-
 		<!-- Wrapper -->
 			<div id="wrapper">
 
@@ -33,7 +32,7 @@
 							<div class="inner">
 								<h1>XYX's Website</h1>
 								<p>A website under developing ...</p>
-								<p>一个正在开发的网站...</p>
+								<p>一个很普通的小站.</p>
 							</div>
 						</div>
 						<nav>
@@ -62,14 +61,14 @@
 								<h2 class="major">Intro</h2>
 								<span class="image main"><img src="images/pic01.jpg" alt="" /></span>
 								<p>This is an English intro, 如果你是中国用户,点击这个<a href="#intro_cn">中文版本</a></p>
-								<p>建设中...</p>
+								<p>building...</p>
 							</article>
 
 							<article id="intro_cn">
 								<h2 class="major">介绍</h2>
 								<span class="image main"><img src="images/pic01.jpg" alt="" /></span>
 								<p>这是中文介绍, if you're a English user, try this <a href="#intro_en">English version</a></p>
-								<p>building...</p>
+								<p>建设中...</p>
 							</article>
 
 
@@ -80,64 +79,27 @@
 								<span class="image main"><img src="images/pic02.jpg" alt="" /></span>
 								<p>随手编的一道题,可能有解,可以看看,<a href="#work_230720_chem">点击观看</a></p>
 								<!-- <p>一个网课用的计时器,<a href="https://lole114514.github.io/">点击打开</a></p> -->
-								<p>一个网课用的计时器,原作者为Hatcat,<a href="#timer">点击打开</a></p>
-								<p>偷偷在这里放一段代码(4344.cpp)</p>
-								<pre><code>
-#include &lt;cstdio&gt;
-#include &lt;cstring&gt;
-typedef double d;
-const int N = 1e3 + 5;
-long long n, m, k; d a[N], mi[N], _1[N];
-void times(d *aa, d *b, int op){
-    d tmp[N];
-    memset(tmp, 0, sizeof(tmp));
-    for (int i = 1; i &lt;= n; i++){
-        for (int j = 1; j &lt;= n; j++){
-            tmp[(i + j - 2) % n + 1] += aa[i] * b[j];
-        }
-    }
-    if(op == 1) memcpy(_1, tmp, sizeof(tmp));
-    if(op == 2) memcpy(a, tmp, sizeof(tmp));
-    if(op == 3) memcpy(mi, tmp, sizeof(tmp));
-}
-int main(){
-    scanf(&quot;%lld%lld%lld&quot;, &amp;n, &amp;m, &amp;k);
-    for (int i = 1; i &lt;= n; i++) scanf(&quot;%lf&quot;, a + i);
-    mi[1] = 1.0 - 1.0 / (d)m, mi[2] = 1.0 / (d)m, _1[1] = 1.0;
-    while(k){
-        if(k &amp; 1) times(mi, _1, 1);
-        times(mi, mi, 3);
-        k &gt;&gt;= 1;
-    }
-    times(a, _1, 2);
-    for (int i = 1; i &lt;= n; i++) printf(&quot;%.3lf\n&quot;, a[i]);
-    return 0;
-}
-								</code></pre>
+								<p>一个好看的计时器,来自于网络,因尺寸太小请直接<a href="work/time.html">点击打开,适合作为壁纸一类背景</a></p>
+								<p>一个网课用的计时器,原作者为Hatcat,由于消耗资源太多不支持在此页面预览,<a href="https://lole114514.github.io/">点击打开</a></p>
 								
 							</article>
 							<!-- chem_work -->
 							<article id="work_230720_chem">
 								<h2 class="major">化学</h2>
-								<a href="20230616_chem.html">页面仅预览,如遇尺寸问题请点击我</a>
-								<iframe src="20230616_chem.html" width="100%" height="1000" style="top:auto"><a href="20230616_chem.html">嵌入式页面,如加载失败请点击我</a></iframe>
-							</article>
-							<!-- timer -->
-							<article id="timer">
-								<h2 class="major">计时器</h2>
-								<a href="https://lole114514.github.io/">页面仅预览,如遇尺寸问题请点击我</a>
-								<iframe src="https://lole114514.github.io/" width="100%" height="1000" onload="adjustIframe();"><a href="https://lole114514.github.io/">嵌入式页面,如加载失败请点击我</a></iframe>
+								<a href="work/20230616_chem.html">页面仅预览,如遇尺寸问题请点击我</a>
+								<iframe src="work/20230616_chem.html" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="20230616_chem.html">嵌入式页面,如加载失败请点击我</a></iframe>
 							</article>
 
 						<!-- About -->
 							<article id="blog">
 								<h2 class="major">Blog</h2>
 								下方为Blog预览,<a href="https://xyxblog.1919810.com/">请点击进入博客以取得最好体验</a>
-								<iframe src="https://xyxblog.1919810.com/" width="100%" height="1000" style="top:auto"><a href="https://xyxblog.1919810.com/">嵌入式页面,如加载失败请点击我</a></iframe>
+								<iframe src="https://xyxblog.1919810.com/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://xyxblog.1919810.com/">嵌入式页面,如加载失败请点击我</a></iframe>
 							</article>
 
 						<!-- Contact -->
 							<article id="link">
+								
 								<p>等待放置...</p>
 							</article>
 

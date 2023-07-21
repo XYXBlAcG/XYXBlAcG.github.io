@@ -1599,6 +1599,48 @@ input, select, textarea {
 					background-color: rgba(255, 255, 255, 0.175);
 				}
 
+			/*增加一个实验性功能:回退一格*/
+
+			#main article .back {
+				display: block;
+				position: absolute;
+				top: 0;
+				right: 3rem;
+				width: 4rem;
+				height: 4rem;
+				cursor: pointer;
+				text-indent: 4rem;
+				overflow: hidden;
+				white-space: nowrap;
+			}
+
+				#main article .back:before {
+					-moz-transition: background-color 0.2s ease-in-out;
+					-webkit-transition: background-color 0.2s ease-in-out;
+					-ms-transition: background-color 0.2s ease-in-out;
+					transition: background-color 0.2s ease-in-out;
+					content: '';
+					display: block;
+					position: absolute;
+					top: 0.75rem;
+					left: 0.75rem;
+					width: 2.5rem;
+					height: 2.5rem;
+					border-radius: 100%;
+					background-position: center;
+					background-image: url("data:image/png;base64,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");
+					background-size: 20px 20px;
+					background-repeat: no-repeat;
+				}
+
+				#main article .back:hover:before {
+					background-color: rgba(255, 255, 255, 0.075);
+				}
+
+				#main article .back:active:before {
+					background-color: rgba(255, 255, 255, 0.175);
+				}
+
 		@media screen and (max-width: 736px) {
 
 			#main article {
@@ -1606,6 +1648,14 @@ input, select, textarea {
 			}
 
 				#main article .close:before {
+					top: 0.875rem;
+					left: 0.875rem;
+					width: 2.25rem;
+					height: 2.25rem;
+					background-size: 14px 14px;
+				}
+
+				#main article .back:before {
 					top: 0.875rem;
 					left: 0.875rem;
 					width: 2.25rem;
