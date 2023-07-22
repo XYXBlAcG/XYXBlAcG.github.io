@@ -11,13 +11,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-		<script>
-			function adjustIframe(){
-				var ifm= document.getElementById("timer");
-				ifm.height=document.documentElement.clientHeight;
-				ifm.width=document.documentElement.clientWidth;
-			}
-		</script>
 	</head>
 	<body class="is-preload">
 		<!-- Wrapper -->
@@ -79,27 +72,37 @@
 								<span class="image main"><img src="images/pic02.jpg" alt="" /></span>
 								<p>随手编的一道题,可能有解,可以看看,<a href="#work_230720_chem">点击观看</a></p>
 								<!-- <p>一个网课用的计时器,<a href="https://lole114514.github.io/">点击打开</a></p> -->
-								<p>一个好看的计时器,来自于网络,因尺寸太小请直接<a href="work/time.html">点击打开,适合作为壁纸一类背景</a></p>
-								<p>一个网课用的计时器,原作者为Hatcat,由于消耗资源太多不支持在此页面预览,<a href="https://lole114514.github.io/">点击打开</a></p>
+								<p>一个好看的计时器,来自于网络,因尺寸太小请直接<a href="work/time.html" target="_blank">点击打开,适合作为壁纸一类背景</a></p>
+								<p>一个网课用的计时器,原作者为Hatcat,由于消耗资源太多不支持在此页面预览,<a href="https://lole114514.github.io/" target="_blank">点击打开</a></p>
+								<p>我写过的所有c++代码,<a href="#cpp_work">点击来观看</a></p>
 								
 							</article>
 							<!-- chem_work -->
 							<article id="work_230720_chem">
 								<h2 class="major">化学</h2>
-								<a href="work/20230616_chem.html">页面仅预览,如遇尺寸问题请点击我</a>
+								<a href="work/20230616_chem.html" target="_blank">页面仅预览,如遇尺寸问题请点击我</a>
 								<iframe src="work/20230616_chem.html" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="20230616_chem.html">嵌入式页面,如加载失败请点击我</a></iframe>
+							</article>
+							<!-- cpp_work -->
+							<article id="cpp_work">
+								<h2 class="major">一些我写过的c++代码</h2>
+								<p>最后更新时间 : Sat Jul 22 22:02:39 UTC+8</p>
+								<!-- <p id="cppWorkTimeUpdate">最后更新时间加载失败. fail to load the latest updating time.</p> -->
+								<a href="https://github1s.com/XYXBlAcG/cppcode_backup/blob/HEAD/cpp%20copy/" target="_blank">点击使用vscode以全屏进行更好体验</a><br />
+								<a href="https://github.com/XYXBlAcG/cppcode_backup/" target="_blank">源仓库链接</a><br />
+								<iframe src="https://github1s.com/XYXBlAcG/cppcode_backup/blob/HEAD/cpp%20copy/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://github1s.com/XYXBlAcG/cppcode_backup/blob/HEAD/cpp%20copy/">嵌入式页面,如加载失败请点击我</a></iframe>
 							</article>
 
 						<!-- About -->
 							<article id="blog">
 								<h2 class="major">Blog</h2>
-								下方为Blog预览,<a href="https://xyxblog.1919810.com/">请点击进入博客以取得最好体验</a>
+								<p>下方为Blog预览,<a href="https://xyxblog.1919810.com/" target="_blank">请点击进入博客以取得最好体验</a></p>
 								<iframe src="https://xyxblog.1919810.com/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://xyxblog.1919810.com/">嵌入式页面,如加载失败请点击我</a></iframe>
 							</article>
 
 						<!-- Contact -->
 							<article id="link">
-								
+								<p><a href="support/index.html">支持一下苦逼站长吧</a></p>
 								<p>等待放置...</p>
 							</article>
 
@@ -350,6 +353,7 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 				<!-- Footer -->
 					<footer id="footer">
 						<p class="copyright"> Design: HTML5 UP. Made by XYX.</p>
+						<p class="copyright"> <a href="support/index.html">如果你有能力并且愿意, 欢迎来支持我. it's welcome to support me if you have the ability and would like to do so.</a></p>
 					</footer>
 
 			</div>
@@ -363,6 +367,6 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
-
+			<script src="assets/js/get_github_time.js"></script>
 	</body>
 </html>
