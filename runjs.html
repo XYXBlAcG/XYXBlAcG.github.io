@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>js runner</title>
+<script src="http://use.edgefonts.net/source-sans-pro:n2:default.js" type="text/javascript"></script>
+	<style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .button {
+            width: 70px;
+            height: 50px;
+            font-size: 25px;
+            margin: 2px;
+            cursor: pointer;
+            background: #20b5ff;
+            border: none;
+            color: white;
+			-webkit-appearance:none;
+        }
+
+        .textView {
+            width: 810px;
+            margin: 10px;
+            font-size: 25px;
+            padding: 5px;
+            border: none;
+        }
+
+        .main {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+        }
+
+        html {
+            /* background: linear-gradient(to right, #ff0052, #0072ff); */
+            background: #000;
+            height: 100%;
+        }
+    </style>
+    <script>
+        var saveHowManyNum = 2;
+
+        function insert(num) {
+            // TODO 插入
+            document.form.textView.value = document.form.textView.value + num;
+        }
+
+        function expins(exp) {
+            document.form.textView.value = exp + '(' + document.form.textView.value + ')'
+        }
+
+        function failinsert(num) {
+            let textInput   = document.form.textView.value;
+            let insert      = num;
+            document.form.textView.value = document.form.textView.value.substr(0, insert) + num + document.form.textView.value.substr(insert); 
+            
+        }
+
+        function equal() {
+            // TODO 计算结果，并且结果保留两位小数
+            let exp = document.form.textView.value;
+            if (exp) {
+                 let eval1 = eval(document.form.textView.value);
+                // eval() 执行括号内的语句 , 记录结果
+                let number = eval1.toString().indexOf(".");
+                if (number !== -1){
+                    // 如果是小数，保留两位小数
+                    eval1 = eval1.toString().substring(0, number + saveHowManyNum + 1);
+                    // 截取
+                    document.form.textView.value = eval1;
+                }else {
+                    // 如果不是小数，直接赋值
+                    document.form.textView.value = eval1;
+                }
+            }
+        }
+
+        function Mclean() {
+            // TODO 清理输入框的文字
+            document.form.textView.value = null;
+        }
+
+        function back() {
+            // TODO 删除文本框的一个字符
+            let exp = document.form.textView.value;
+            document.form.textView.value = exp.substring(0, exp.length - 1);
+            // 截取字符串
+        }
+
+        function sum(from, to, expression) {
+            // var ans = 0;
+            // for (var i = from; i <= to; i++){
+            //     ans += evil(expression);
+            //     // ans += expression;
+            // }
+            document.form.textView.value = '暂时出现问题,请使用手写for循环.';
+        }
+
+        function calfor(from, to, expression, vari, step){
+            var ans = 0;
+            for (var vari = from; vari <= to; vari += step){
+                ans += evil(expression);
+            }
+            return ans;
+        }
+
+        function help(arg){
+            alert(arg);
+        }
+
+        var mem = 0, tmp;
+        function saveToMem(x){
+            if(mem !== null) {
+                var dc = confirm('内存中还含有值 ' + mem + ', 如果想要继续按继续, 否则按取消')
+                if(dc == true){
+                    tmp = mem;
+                    mem = x;
+                    document.form.textView.value = 'mem 已从 ' + tmp + ' 改为 ' + mem + ' .';
+                }else{
+                    document.form.textView.value = 'mem 保持' + mem + ' .';
+                }
+            }
+        }
+
+        var bigmem = new Map();
+        function saveToBiglist(){
+            var howManyTime = prompt('请问你想创建多少个变量?', '请输入[1..2147483647]之间的值');
+            while (howManyTime < 1 || howManyTime > 2147483647){
+                alert('你刚才输入的创建个数非法,请重新输入.');
+                howManyTime = prompt('请问你想创建多少个变量?', '请输入[1..2147483647]之间的值');
+            }
+            for (var i = 1; i <= howManyTime; i++){
+                var createVar = prompt('请输入需要创建的变量名.');
+                var varValue = prompt('请为变量加上初始值.不输入默认为0.');
+                bigmem.set(createVar, varValue);
+            }
+            var output = '大内存里有的变量有: \n';
+            for (var [key, value] of bigmem) {
+                output += (key + ' = ' + value);
+                output += '\n';
+            }
+            document.form.textView.value = output;
+        }
+
+        function useBigMem(x){
+            document.form.textView.value = exp + '(bigmem.get(' + x + '))';
+        }
+
+        hs = []//用于存放函数名称的数组
+
+        function strToVar(str) {//这个函数是将字符串转换为变量
+            var json = (new Function("return " + str))();
+            return json;
+        }
+
+        Array.from(top.Object.keys(document.defaultView)).map(
+            function (x){//遍历
+                hs.push(x);
+                var sjhs = strToVar(x.toString())//字符串名称转换为实际函数的代码
+                //console.log(x)//控制台输出函数名称
+                console.log(sjhs)//控制台输出函数代码
+
+            }
+        );
+
+        function viewfunc(){
+            alert(hs);
+            document.form.textView.value = hs;
+        }
+
+    </script>
+</head>
+<body>
+
+  <!-- <section style="position: absolute;top: 50%;left: 50%;transform: translateX(-50%) translateY(-50%);background: linear-gradient(to right, #ff0052, #0072ff);height: 100%;"> -->
+
+<div class="main">
+    <form name="form">
+        <textarea class="textView" name="textView"></textarea>
+    </form>
+    <table>
+        <tr>
+            <td><input type="button" class="button" value="C" onclick="Mclean()"></td>
+            <td><input type="button" class="button" value="del" onclick="back()"></td>
+            <td><input type="button" class="button" value="/" onclick="insert('/')"></td>
+            <td><input type="button" class="button" value="x" onclick="insert('*')"></td>
+            <td><input type="button" class="button" value="sqrt" onclick="expins('Math.sqrt')"></td>
+            <td><input type="button" class="button" value="()" onclick="insert('()')"></td>
+            <td><input type="button" class="button" value="pow" onclick="expins('Math.pow')"></td>
+            <td><input type="button" class="button" value="abs" onclick="expins('Math.abs')"></td>
+            <td><input type="button" class="button" value="log10" onclick="expins('Math.log10')"></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="button" value="7" onclick="insert(7)"></td>
+            <td><input type="button" class="button" value="8" onclick="insert(8)"></td>
+            <td><input type="button" class="button" value="9" onclick="insert(9)"></td>
+            <td><input type="button" class="button" value="-" onclick="insert('-')"></td>
+            <td><input type="button" class="button" value="asin" onclick="expins('Math.asin')"></td>
+            <td><input type="button" class="button" value="acos" onclick="expins('Math.acos')"></td>
+            <td><input type="button" class="button" value="atan" onclick="expins('Math.atan')"></td>
+            <td><input type="button" class="button" value="sin" onclick="expins('Math.sin')"></td>
+            <td colspan="1"><input style="width: 107px" type="button" class="button" value="去除小数" onclick="expins('Math.trunc')"></td>
+            <td colspan="1"><input style="width: 280px" type="button" class="button" value="调用内存变量(不可用)" onclick="expins('useBigMem')"></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="button" value="4" onclick="insert(4)"></td>
+            <td><input type="button" class="button" value="5" onclick="insert(5)"></td>
+            <td><input type="button" class="button" value="6" onclick="insert(6)"></td>
+            <td><input type="button" class="button" value="+" onclick="insert('+')"></td>
+            <td><input type="button" class="button" value="cos" onclick="expins('Math.cos')"></td>
+            <td><input type="button" class="button" value="tan" onclick="expins('Math.tan')"></td>
+            <td><input type="button" class="button" value="pow" onclick="expins('Math.pow')"></td>
+            <td><input type="button" class="button" value="π" onclick="insert('Math.PI')"></td>
+            <td><input type="button" class="button" value="sum()" onclick="insert('sum(from, to, expression)')"></td>
+            <td colspan="1"><input style="width: 210px" type="button" class="button" value="创建多个变量" onclick="expins('saveToBiglist')"></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="button" value="1" onclick="insert(1)"></td>
+            <td><input type="button" class="button" value="2" onclick="insert(2)"></td>
+            <td><input type="button" class="button" value="3" onclick="insert(3)"></td>
+            <td rowspan="2"><input style="height: 107px" type="button" class="button" value="=" onclick="equal()"></td>
+            <td><input type="button" class="button" value="rand" onclick="insert('Math.random()')"></td>
+            <td><input type="button" class="button" value="floor" onclick="expins('Math.floor')"></td>
+            <td><input type="button" class="button" value="round" onclick="expins('Math.round')"></td>
+            <td><input type="button" class="button" value="max" onclick="expins('Math.max')"></td>
+            <td><input type="button" class="button" value="e" onclick="insert('Math.E')"></td>
+            <td colspan="1"><input style="width: 210px" type="button" class="button" value="保存答案到变量" onclick="expins('saveToMem')"></td>
+        </tr>
+        <tr>
+            <td colspan="2"><input style="width: 107px" type="button" class="button" value="0" onclick="insert(0)"></td>
+            <td><input type="button" class="button" value="." onclick="insert('.')"></td>
+            <td><input type="button" class="button" value="min" onclick="expins('Math.min')"></td>
+            <td><input type="button" class="button" value="ceil" onclick="expins('Math.ceil')"></td>
+            <td><input type="button" class="button" value="log" onclick="expins('Math.log')"></td>
+            <td><input type="button" class="button" value="log2" onclick="expins('Math.log2')"></td>
+            <td colspan="3"><input style="width: 161px" type="button" class="button" value="保留几位小数" onclick="insert('saveHowManyNum = ')"></td>
+
+        </tr>
+
+    </table>
+	<p id="demo"></p>
+	<p id="test"></p>
+</div>
+  <!-- </section> -->
+</body>
+</html>
