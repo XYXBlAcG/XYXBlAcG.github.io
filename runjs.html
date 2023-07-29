@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>js runner</title>
-<script src="http://use.edgefonts.net/source-sans-pro:n2:default.js" type="text/javascript"></script>
+<!-- <script src="http://use.edgefonts.net/source-sans-pro:n2:default.js" type="text/javascript"></script> -->
 	<style>
         * {
             margin: 0;
@@ -52,7 +52,11 @@
         }
 
         function expins(exp) {
-            document.form.textView.value = exp + '(' + document.form.textView.value + ')'
+            document.form.textView.value = exp + '(' + document.form.textView.value + ')';
+        }
+
+        function strexpins(exp) {
+            document.form.textView.value = 'parseInt(' + exp + '(' + document.form.textView.value + '))';
         }
 
         function failinsert(num) {
@@ -173,6 +177,36 @@
             alert(hs);
             document.form.textView.value = hs;
         }
+        
+        function debug(){
+            var resultXML = '<assessmentResult>'
+            +               '<itemResult>'
+            +                   '<outcomeVariable identifier="completionStatus">'
+            +                       '<value>' + completionStatus + '</value>'
+            +                   '</outcomeVariable>'
+            +                   '<outcomeVariable identifier="SCORE">'
+            +                       '<value>' + score + '</value>'
+            +                   '</outcomeVariable>'
+            +                   '<responseVariable identifier="duration">'
+            +                       '<candidateResponse>'
+            +                           '<value>' + duration + '</value>'
+            +                        '</candidateResponse>'
+            +                   '</responseVariable>'
+            +                   '<responseVariable identifier="numAttempts">'
+            +                       '<candidateResponse>'
+            +                           '<value>' + numAttempts + '</value>'
+            +                        '</candidateResponse>'
+            +                   '</responseVariable>'
+            +                   '<responseVariable identifier="' + responseObj.identifier + '" cardinality="' + responseObj.cardinality + '" baseType="' + responseObj.baseType + '">'
+            +                        '<correctResponse>' + correctResponse + '</correctResponse>'
+            +                       '<candidateResponse>' + candidateResponse + '</candidateResponse>'
+            +                   '</responseVariable>'
+            +               '</itemResult>'
+            +            '</assessmentResult>';
+        console.log(resultXML);//将数据打印
+        document.form.textView.value = resultXML;
+        return resultXML;//返回数据
+        }
 
     </script>
 </head>
@@ -206,7 +240,7 @@
             <td><input type="button" class="button" value="atan" onclick="expins('Math.atan')"></td>
             <td><input type="button" class="button" value="sin" onclick="expins('Math.sin')"></td>
             <td colspan="1"><input style="width: 107px" type="button" class="button" value="去除小数" onclick="expins('Math.trunc')"></td>
-            <td colspan="1"><input style="width: 280px" type="button" class="button" value="调用内存变量(不可用)" onclick="expins('useBigMem')"></td>
+            <td colspan="1"><input style="width: 280px" type="button" class="button" value="调用内存变量(不可用)" onclick="strexpins('bigmem.get')"></td>
         </tr>
         <tr>
             <td><input type="button" class="button" value="4" onclick="insert(4)"></td>
