@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX 渲染器</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h1>LaTeX 渲染器</h1>
+    <p>在下面的输入框中输入 LaTeX 代码，并点击 "渲染" 按钮查看效果：</p>
+    <textarea id="latexInput" rows="4" cols="50"></textarea><br>
+    <button onclick="renderLatex()">渲染</button><br>
+    <div id="output"></div>
+
+    <script>
+        function renderLatex() {
+            var latexCode = document.getElementById("latexInput").value;
+            var outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = ""; // 清空输出区域
+
+            // 创建新的 div 元素用于渲染 LaTeX 代码
+            var latexDiv = document.createElement("div");
+            latexDiv.textContent = latexCode;
+
+            // 渲染 LaTeX 代码
+            MathJax.texReset();
+            MathJax.typesetClear();
+            MathJax.typesetPromise([latexDiv]).catch(function (err) {
+                outputDiv.textContent = err.message;
+            });
+
+            // 将渲染后的结果添加到输出区域
+            outputDiv.appendChild(latexDiv);
+        }
+    </script>
+</body>
+</html>

@@ -4,12 +4,33 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
-    <script
-        type="module"
-        src="https://pyscript.net/releases/2023.11.2/core.js"
-    ></script>
+	<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
+    <script type="module" src="https://pyscript.net/releases/2023.11.2/core.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
     <title>Function Solver</title>
+    <script>
+        function renderLatex() {
+            var latexCode = document.getElementById("latexCode").innerText;
+            console.log(latexCode);
+            var outputDiv = document.getElementById("latexDiv");
+            outputDiv.innerHTML = ""; // 清空输出区域
+
+            // 创建新的 div 元素用于渲染 LaTeX 代码
+            var latexDiv = document.createElement("latexOut");
+            latexDiv.textContent = latexCode;
+
+            // 渲染 LaTeX 代码
+            MathJax.texReset();
+            MathJax.typesetClear();
+            MathJax.typesetPromise([latexDiv]).catch(function (err) {
+                outputDiv.textContent = err.message;
+            });
+
+            // 将渲染后的结果添加到输出区域
+            outputDiv.appendChild(latexDiv);
+        }
+    </script>
 </head>
 <body>
     <div id="wrapper">
@@ -19,7 +40,7 @@
     <div class="content">
         <div class="inner">
             <h1>Function Solver</h1>
-            <p>author: xyx</p>
+            <p>author: xyx with 100% backend code</p>
             <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机「可能」暂不支持.</p>
             <!-- <p><del><a href="function_solver_terminal.html">您或许会喜欢终端界面. 但是bug太多没法用.</a></del></p> -->
             <!-- <noscript>你的浏览器不支持JavaScript, 无法运行此实例. </noscript> -->
@@ -29,9 +50,11 @@
     <nav>
         <ul>
             <li><button py-click="runsrc">开始计算</button></li>
+            <!-- <li><button py-click="go_latex">转为Latex</button></li> -->
+            <li><button onclick="renderLatex()">显示Latex</button></li>
+            <li><button py-click="clean_content">清除内容</button></li>
             <li><button py-click="helper">我需要帮助</button></li>
             <li><button onClick="window.location.reload()">刷新页面</button></li>
-            <!-- <li><a href="#elements">Elements</a></li> -->
         </ul>
     </nav>
     </header>
@@ -42,6 +65,8 @@
     </py-config>
     <p>方程的解将显示在下面, 以[中括号]括起来, 以逗号分隔.</p>
     <div id="output"></div>
+    <div id="latexDiv"></div>
+    <div id="latexCode"></div>
     <script type="py" src="./function_solver.py"></script>
     </div>
 </body>
