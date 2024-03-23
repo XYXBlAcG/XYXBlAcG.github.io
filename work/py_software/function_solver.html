@@ -9,6 +9,7 @@
         type="module"
         src="https://pyscript.net/releases/2023.11.2/core.js"
     ></script>
+    <title>Function Solver</title>
 </head>
 <body>
     <div id="wrapper">
@@ -19,7 +20,7 @@
         <div class="inner">
             <h1>Function Solver</h1>
             <p>author: xyx</p>
-            <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染......</p>
+            <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机「可能」暂不支持.</p>
             <!-- <p><del><a href="function_solver_terminal.html">您或许会喜欢终端界面. 但是bug太多没法用.</a></del></p> -->
             <!-- <noscript>你的浏览器不支持JavaScript, 无法运行此实例. </noscript> -->
         </div>
@@ -39,7 +40,7 @@
             "sympy"
         ]
     </py-config>
-    <p>方程的解将显示在下面.</p>
+    <p>方程的解将显示在下面, 以[中括号]括起来, 以逗号分隔.</p>
     <div id="output"></div>
     <script type="py" src="./function_solver.py"></script>
     </div>
