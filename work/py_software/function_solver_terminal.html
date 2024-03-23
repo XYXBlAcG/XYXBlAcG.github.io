@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
+        <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+</head>
+<body>
+    <div id="wrapper">
+
+        <!-- Header -->
+            <header id="header">
+    <div class="content">
+        <div class="inner">
+            <h1>Function Solver</h1>
+            <p>author: xyx</p>
+            <p>如果终端不显示字符则证明脚本正在渲染, 请等待脚本渲染......</p>
+            <p><a href="function_solver.html">您或许会喜欢GUI界面. 点击这里.</a></p>
+            <!-- <noscript>你的浏览器不支持JavaScript, 无法运行此实例. </noscript> -->
+        </div>
+    </div>
+    </header>
+    <py-config>
+        packages = [
+            "sympy"
+        ]
+    </py-config>
+    <!-- <script type="py" src="./function_solver_terminal.py" terminal worker></script> -->
+
+    <script type="py" terminal worker>
+    name = input("What is your name? ")
+    print(f"Hello, {name}")
+    </script>
+
+    </div>
+</body>
