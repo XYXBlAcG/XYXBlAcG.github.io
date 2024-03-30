@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css"/> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/main.css" />
+	<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.3.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.3.1/core.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <title>Easy Chem Solver</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        function renderLatex() {
+            var latexCode = document.getElementById("latexCode").innerText;
+            console.log(latexCode);
+            var outputDiv = document.getElementById("latexDiv");
+            outputDiv.innerHTML = ""; 
+            var latexDiv = document.createElement("latexOut");
+            latexDiv.textContent = latexCode;
+            MathJax.texReset();
+            MathJax.typesetClear();
+            MathJax.typesetPromise([latexDiv]).catch(function (err) {
+                outputDiv.textContent = err.message;
+            });
+            outputDiv.appendChild(latexDiv);
+        }
+    </script>
+</head>
+<body>
+    <div id="wrapper">
+
+        <!-- Header -->
+    <header id="header">
+        <div class="content">
+            <div class="inner">
+                <h1>Easy Chem Solver</h1>
+                <p>author: xyx.</p>
+                <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机「可能」暂不支持.</p>
+                <a href="https://oeis.org/A000602"> (News) 忽略立体异构体的 C(n)H(2n+2) 的数量</a>
+            </div>
+        </div>
+
+        <select name="cal" id="cal-select">
+            <option value="">请选择一项...</option>
+            <option value="chem_eq" disabled>配平化学方程式</option>
+            <option value="chem_lq" disabled>配平离子方程式</option>
+            <option value="chem_zq" disabled>相互制约的方程式配平</option>
+            <option value="math" >数学</option>
+            <option value="develop" disabled>开发中...</option>
+        </select>
+    </header>
+
+
+    <section id="chem_eq" class="content hidden">
+        <header id="header">
+            <div id="textboxContainer">
+                
+                <textarea type="text" id="chem_e" placeholder="请输入需要配平的化学方程式 ... " rows="10" cols="80" class="textbox"></textarea>
+                <!-- <textarea type="text" id="chem_a" placeholder="请输入一个烷烃 (例如: CH3CH(C2H5)CH(CH3)2 ) ..." rows="10" cols="10" class="textbox"></textarea> -->
+            </div>
+            <nav>
+                <ul>
+                    <li><button py-click="runsrc_chem_e">配平</button></li>
+                    <!-- <li><button py-click="runsrc_chem_a" disabled>输出该烷烃名称</button></li> -->
+                    <li><button onclick="renderLatex()">显示Latex</button></li>
+                    <li><button py-click="clean_content">清除内容</button></li>
+                    <li><button onClick="window.location.reload()">刷新页面</button></li>
+                </ul>
+            </nav>
+        </header>
+    </section>
+
+    
+
+    <section id="math" class="content hidden">
+        <header id="header">
+            <nav>
+                <ul>
+                    <li><a href="./function_solver.html"><button>数学将在单独的页面里打开.</button></a></li>
+                </ul>
+            </nav>
+        </header>
+    </section>
+
+
+
+    <p><br />解将显示在下面, 以[中括号]括起来, 以逗号分隔.</p>
+        <div id="output"></div>
+        <div id="latexDiv"></div>
+        <div id="latexCode"></div>
+    
+    <script type="py" src="./chem_solver.py"></script>
+    <script>
+        const contentSelector = document.getElementById('cal-select');
+        const contents = document.querySelectorAll('.content');
+        contentSelector.addEventListener('change', function() {
+            contents.forEach(function(content) {
+            if (content.id === contentSelector.value) {
+                content.classList.remove('hidden');
+            } else {
+                content.classList.add('hidden');
+            }
+            });
+        });
+    </script>
+    <py-config>
+        packages = [
+            "sympy",
+            "whl_pack/pyodesys-0.14.2-py2.py3-none-any.whl", 
+            "whl_pack/sym-0.3.5-py2.py3-none-any.whl", 
+            "whl_pack/pyneqsys-0.5.7-py2.py3-none-any.whl", 
+            <!-- "whl_pack/tornado-6.2-py3-none-any.whl",  -->
+            "chempy"
+        ]
+    </py-config>
+
+    </div>
+</body>

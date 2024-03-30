@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add/Remove Textboxes</title>
+</head>
+<body>
+
+<!-- 包含文本框的容器 -->
+<div id="textboxContainer">
+  <!-- 初始的两个文本框 -->
+  <input type="text" class="textbox">
+  <input type="text" class="textbox">
+</div>
+
+<!-- 添加和删除按钮 -->
+<button id="addButton">Add Textbox</button>
+<button id="removeButton">Remove Textbox</button>
+
+<script>
+  // 获取按钮和文本框容器
+  const addButton = document.getElementById('addButton');
+  const removeButton = document.getElementById('removeButton');
+  const textboxContainer = document.getElementById('textboxContainer');
+
+  // 添加按钮点击事件监听器
+  addButton.addEventListener('click', function() {
+    // 创建一个新的文本框
+    const newTextbox = document.createElement('input');
+    newTextbox.type = 'text';
+    newTextbox.classList.add('textbox');
+    newTextbox.readOnly = false;
+
+    // 将新文本框添加到容器中
+    textboxContainer.appendChild(newTextbox);
+  });
+  removeButton.addEventListener('click', function() {
+    const textboxes = document.querySelectorAll('.textbox');
+    if (textboxes.length > 2) {
+      const lastTextbox = textboxes[textboxes.length - 1];
+      lastTextbox.parentNode.removeChild(lastTextbox);
+    } else {
+      alert('At least two textboxes should be present.');
+    }
+  });
+</script>
+
+</body>
+</html>

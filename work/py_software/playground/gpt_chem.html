@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Equation</title>
+</head>
+<body>
+    <h1>Balance Equation</h1>
+    <form id="equationForm">
+        <label for="equationInput">Enter Equation:</label><br>
+        <input type="text" id="equationInput" name="equationInput"><br>
+        <button type="button" onclick="balance()">Balance</button>
+    </form>
+
+    <h2>Result:</h2>
+    <div id="result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        function balance() {
+            var equation = document.getElementById('equationInput').value;
+
+            // 使用PyScript发送POST请求
+            axios.post('/balance', { equation: equation })
+                .then(function(response) {
+                    // 显示平衡结果
+                    var result = response.data;
+                    var resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = '<b>Reactants:</b> ' + JSON.stringify(result.reactants) + '<br>' +
+                                          '<b>Products:</b> ' + JSON.stringify(result.products);
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>

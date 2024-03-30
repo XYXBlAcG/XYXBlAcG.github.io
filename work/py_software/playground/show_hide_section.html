@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Show/Hide Content with Select</title>
+<style>
+  /* 初始将隐藏的内容隐藏 */
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- 选择框 -->
+<select id="contentSelector">
+  <option value="section1">Section 1</option>
+  <option value="section2">Section 2</option>
+  <option value="section3">Section 3</option>
+</select>
+
+<!-- 内容部分 -->
+<div id="section1" class="content hidden">
+  <h2>Section 1</h2>
+  <p>This is content for section 1.</p>
+</div>
+
+<div id="section2" class="content hidden">
+  <h2>Section 2</h2>
+  <p>This is content for section 2.</p>
+</div>
+
+<div id="section3" class="content hidden">
+  <h2>Section 3</h2>
+  <p>This is content for section 3.</p>
+</div>
+
+<script>
+  // 获取选择框和内容元素
+  const contentSelector = document.getElementById('contentSelector');
+  const contents = document.querySelectorAll('.content');
+
+  // 当选择框的值发生变化时触发的函数
+  contentSelector.addEventListener('change', function() {
+    // 遍历所有内容元素
+    contents.forEach(function(content) {
+      // 如果内容元素的 id 与选择框当前选中的值相同，则显示该元素，否则隐藏
+      if (content.id === contentSelector.value) {
+        content.classList.remove('hidden');
+      } else {
+        content.classList.add('hidden');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

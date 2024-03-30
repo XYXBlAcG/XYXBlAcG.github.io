@@ -32,7 +32,6 @@ def go_latex(content):
         if(i != len(content)):
             output_div.innerText += ' , '
     output_div.innerText += '$$'
-    # output_div.innerText = lat
 
 def runsrc(content):
     input_text = document.querySelector("#inputer")
@@ -45,17 +44,16 @@ def runsrc(content):
 def helper(content):
     output_div = document.querySelector("#output")
     output_div.innerText = \
-    "本程序暂只支持单个未知数的求解.\n"  + \
-    "未知数只能是x.\n" + \
     "不可省略乘号.\n" + \
-    "幂次请使用 '**' \n" + \
-    "请输入一个等式.\n" + \
+    "幂次请使用 '**'. \n" + \
+    "请输入等式.\n" + \
     "允许通过Pi, E来调用π和e的值. 其他数学函数可能可用.\n" + \
-    "过难的方程可能解不出来. 如 x * sin(x) = 1\n" + \
+    "函数内含未知数参数的方程无法解出. 如 x * sin(x) = 1 .\n" + \
     "Latex 可能有锅, 请谨慎使用.\n" + \
-    "name: function_solver\n" + \
+    "name: easy_math_solver\n" + \
     "author: XYX\n" + \
-    "version: v0.0.1 alpha\n"
+    "version: v0.0.2\n" + \
+    "lastest update: 2024/03/30"
     
 def clean_content(content):
     output_div = document.querySelector("#output")
@@ -66,8 +64,53 @@ def clean_content(content):
     output_div.innerText = " "
 
 def extract_expressions(input_str):
-    # 去除字符串两端的中括号，并按逗号分隔字符串，去除每个子字符串两端的空格
-    expressions = [expr.strip() for expr in input_str.strip("[]").split(',')]
-    
+    expressions = [expr.strip() for expr in input_str.split(',')]
     return expressions
 
+def mult_func_solve(variables, equations):
+    print("variables : ", variables)
+    print("equations : ", equations)
+
+    try:
+        symbols_list = sm.symbols(variables)
+        eqs = [sm.Eq(sm.sympify(equation.split('=')[0].strip()), sm.sympify(equation.split('=')[1].strip())) for equation in equations]
+        solutions = sm.solve(eqs)
+        if solutions:
+            return solutions
+        else:
+            return "该方程无解."
+    except Exception as e:
+        return "解方程时出现错误, 输入可能非法."
+
+def runsrc_mult(content):
+    input_var = document.querySelector("#unknown_num")
+    input_equ = document.querySelector("#mul_inputer")
+    output_div = document.querySelector("#output")
+    answer = mult_func_solve(input_var.value, input_equ.value.split(','))
+    output_div.innerText = answer
+    # print("answer = ", type(answer))
+    go_latex(list(answer.values()))
+
+def runsrc_mat(content):
+    pass
+
+def der_diff(content):
+    x = sm.symbols('x')
+    print(content)
+    f = sm.sympify(content)
+    return sm.diff(f, x)
+
+def runsrc_der(content):
+    input_a = document.querySelector("#func_inputer")
+    output_div = document.querySelector("#output")
+    answer = der_diff(input_a.value)
+    output_div.innerText = answer
+    print(type(answer))
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + sm.latex(answer) + '$$'
+
+def runsrc_chem_e(content):
+    pass
+
+def runsrc_chem_a(content):
+    pass
