@@ -1,2 +1,2 @@
-var obj = JSON.parse(fetch('https://api.github.com/repos/XYXBlAcG/cppcode_backup'));
-document.getElementById("cppWorkTimeUpdate").innerHTML = "<p>最后更新时间为 : " + (obj.updated_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) + "</p>";
+// var obj = JSON.parse(fetch('https://api.github.com/repos/XYXBlAcG/cppcode_backup'));
+// document.getElementById("cppWorkTimeUpdate").innerHTML = "<p>最后更新时间为 : " + (obj.updated_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) + "</p>";

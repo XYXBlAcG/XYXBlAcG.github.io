@@ -31,7 +31,7 @@
         }
     </script>
 </head>
-<body>
+<body  class="is-preload">
     <div id="wrapper">
 
         <!-- Header -->
@@ -50,7 +50,7 @@
             <option value="">请选择一项...</option>
             <option value="func_sol">解单未知数方程</option>
             <option value="mult_func_sol">解联立方程</option>
-            <option value="chem" disabled>化学 (开发难度极高) </option>
+            <option value="chem">化学 (external link) </option>
             <option value="der" >求导</option>
             <option value="matrix">解矩阵 (beta)</option>
             <!-- <option value="tri" disabled>三角学 (效率低下, 短期无计划) </option> -->
@@ -71,8 +71,9 @@
                 <li><button onClick="window.location.reload()">刷新页面</button></li>
             </ul>
         </nav>
-    </header>
         
+    </header>
+        <p><br />解将显示在下面, 以[中括号]括起来, 以逗号分隔.</p>
     </section>
 
     <section id="mult_func_sol" class="content hidden">
@@ -91,6 +92,7 @@
                 </ul>
             </nav>
         </header>
+        <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
     </section>
     
 
@@ -117,11 +119,16 @@
         <header id="header">
             <nav>
                 <ul>
-                    <li><a href="./chem_solver.html"><button>化学将在单独的页面里打开.</button></a></li>
+                    <li><a href="#chem_w">化学将展示一个外部的页面.</a></li>
+                    <li><a href="" style="pointer-events:none">下载化学工具箱 (disabled) </a></li>
                 </ul>
             </nav>
         </header>
     </section>
+
+    
+
+    
 
     <section id="der" class="content hidden">
         <header id="header">
@@ -142,12 +149,25 @@
 
 
 
-    <p><br />解将显示在下面, 以[中括号]括起来, 以逗号分隔.</p>
+    
         <div id="output"></div>
         <div id="latexDiv"></div>
         <div id="latexCode"></div>
 
+
+        <div id="main">
+            <article id="chem_w">
+                <h2 class="major">化学方程式</h2>
+                <a href="https://chemequations.com/zh/" target="_blank">页面仅预览,如遇尺寸问题请点击我</a>
+                <iframe src="https://chemequations.com/zh/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://chemequations.com/zh/">嵌入式页面,如加载失败请点击我</a></iframe>
+            </article>
+        </div>
+
     </div>
+
+
+        
+
     
     <script type="py" src="./function_solver.py"></script>
     <script>
@@ -163,6 +183,12 @@
             });
         });
     </script>
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="/assets/js/browser.min.js"></script>
+    <script src="/assets/js/breakpoints.min.js"></script>
+    <script src="/assets/js/util.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <script src="/assets/js/get_github_time.js"></script>
     <py-config>
         packages = [
             "sympy"

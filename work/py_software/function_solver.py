@@ -50,10 +50,12 @@ def helper(content):
     "允许通过pi, e来调用π和e的值. 其他数学函数可能可用.\n" + \
     "函数内含未知数参数的方程无法解出. 如 x * sin(x) = 1 .\n" + \
     "Latex 可能有锅, 请谨慎使用.\n" + \
+    "请注意观察下面的报错信息.\n" + \
     "name: easy_math_solver\n" + \
     "author: XYX\n" + \
-    "version: v0.0.3\n" + \
-    "lastest update: 2024/04/04\n" + \
+    "version: v0.0.4\n" + \
+    "lastest update: 2024/04/13\n" + \
+    "\n v0.0.4 更好的界面, 尝试加入化学功能.\n" + \
     "\n v0.0.3 添加解矩阵功能.\n" + \
     "\n v0.0.2 添加求导功能.\n" + \
     "\n v0.0.1 初代版本.\n"
@@ -92,7 +94,10 @@ def runsrc_mult(content):
     answer = mult_func_solve(input_var.value, input_equ.value.split(','))
     output_div.innerText = answer
     # print("answer = ", type(answer))
-    go_latex(list(answer.values()))
+    if(type(answer) == list):
+        go_latex(answer)
+    else:
+        go_latex(list(answer.values()))
 
 def define_mat():
     # matrix_names = input("请输入你想定义的矩阵的名称（以空格分隔）：").split()
