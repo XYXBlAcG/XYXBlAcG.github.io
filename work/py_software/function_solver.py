@@ -1,17 +1,18 @@
-import sympy as sm
+# import sympy as sm
+from sympy import *
 from pyscript import document, display
 #from sympy import symbols, solve, Eq
-from math import *
+# from math import *
 
 
 def solve_equation(equation_str):
-    x = sm.symbols('x')
+    x = symbols('x')
     try:
         equation_split = equation_str.split('=')
         left_side = eval(equation_split[0])
         right_side = eval(equation_split[1])
-        equation = sm.Eq(left_side, right_side)
-        solutions = sm.solve(equation, x)
+        equation = Eq(left_side, right_side)
+        solutions = solve(equation, x)
         if solutions:
             return solutions
         else:
@@ -20,13 +21,14 @@ def solve_equation(equation_str):
         return "输入的方程不正确或者解超出计算量."
 
 def go_latex(content):
+    print("类型为: ", type(content))
     output_div = document.querySelector("#latexCode")
     output_div.innerText += '$$'
     i = 0
     for expr in content:
         i += 1
         print(expr)
-        lexpr = sm.latex(expr)
+        lexpr = latex(expr)
         print(lexpr)
         output_div.innerText += lexpr
         if(i != len(content)):
@@ -49,16 +51,19 @@ def helper(content):
     "请输入等式.\n" + \
     "允许通过pi, e来调用π和e的值. 其他数学函数可能可用.\n" + \
     "函数内含未知数参数的方程无法解出. 如 x * sin(x) = 1 .\n" + \
+    "但是现在有了高级解方程功能, 已经解决部分上述问题.\n" + \
     "Latex 可能有锅, 请谨慎使用.\n" + \
-    "请注意观察下面的报错信息.\n" + \
-    "name: easy_math_solver\n" + \
-    "author: XYX\n" + \
-    "version: v0.0.4\n" + \
-    "lastest update: 2024/04/13\n" + \
-    "\n v0.0.4 更好的界面, 尝试加入化学功能.\n" + \
-    "\n v0.0.3 添加解矩阵功能.\n" + \
-    "\n v0.0.2 添加求导功能.\n" + \
-    "\n v0.0.1 初代版本.\n"
+    "如果方程结果没有正常显示, 请注意观察下面的报错信息.\n" + \
+    "name: Easy_Math_Solver\n" + \
+    "数学是有趣的学科!" + \
+    "author: XYX with love\n" + \
+    "version: v0.1.0\n" + \
+    "lastest update: 2024/04/19\n" + \
+    "\n v0.1.0 加入超级多有趣的功能, 例如高级解方程功能, 化简展开功能. 24/04/19\n" + \
+    "\n v0.0.4 更好的界面, 尝试加入化学功能. 24/04/13\n" + \
+    "\n v0.0.3 添加解矩阵功能. 24/04/04\n" + \
+    "\n v0.0.2 添加求导功能. 24/03\n" + \
+    "\n v0.0.1 初代版本. 24/03\n"
     
 def clean_content(content):
     output_div = document.querySelector("#output")
@@ -77,9 +82,9 @@ def mult_func_solve(variables, equations):
     print("equations : ", equations)
 
     try:
-        symbols_list = sm.symbols(variables)
-        eqs = [sm.Eq(sm.sympify(equation.split('=')[0].strip()), sm.sympify(equation.split('=')[1].strip())) for equation in equations]
-        solutions = sm.solve(eqs)
+        symbols_list = symbols(variables)
+        eqs = [Eq(sympify(equation.split('=')[0].strip()), sympify(equation.split('=')[1].strip())) for equation in equations]
+        solutions = solve(eqs)
         if solutions:
             return solutions
         else:
@@ -107,30 +112,30 @@ def define_mat():
     matrices = []
     for name, input_data in zip(matrix_names, matrix_inputs):
         matrix_values = [[float(num) for num in row.split(',')] for row in input_data.split(';')]
-        matrices.append((name, sm.Matrix(matrix_values)))
+        matrices.append((name, Matrix(matrix_values)))
     return matrices
 
 def runsrc_mat(content):
     output_div = document.querySelector("#output")
     matrices = define_mat()
-    symbols_list = sm.symbols(' '.join([mat[0] for mat in matrices]))
-    symbols_dict = {**{'Matrix': sm.Matrix}, **{mat[0]: mat[1] for mat in matrices}}
+    symbols_list = symbols(' '.join([mat[0] for mat in matrices]))
+    symbols_dict = {**{'Matrix': Matrix}, **{mat[0]: mat[1] for mat in matrices}}
     # expr_input = input(f"请输入一个式子，使用 a * b 之类的格式：")
     lhs = document.querySelector("#mat_cal").value
     lhs_matrix = eval(lhs, globals(), symbols_dict)
     print("得到的矩阵为: ", lhs_matrix)  # 添加打印语句
     output_div.innerText = lhs_matrix
-    result_latex = sm.latex(lhs_matrix)
+    result_latex = latex(lhs_matrix)
     print("LaTeX 格式：")
     print(result_latex)
     output_div = document.querySelector("#latexCode")
     output_div.innerText += '$$' + result_latex + '$$'
 
 def der_diff(content):
-    x = sm.symbols('x')
+    x = symbols('x')
     print(content)
-    f = sm.sympify(content)
-    return sm.diff(f, x)
+    f = sympify(content)
+    return diff(f, x)
 
 def runsrc_der(content):
     input_a = document.querySelector("#func_inputer")
@@ -139,7 +144,129 @@ def runsrc_der(content):
     output_div.innerText = answer
     print(type(answer))
     output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + sm.latex(answer) + '$$'
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def solve_simplify(variables, equations):
+    try:
+        symbols_list = symbols(variables)
+        expression = sympify(equations)
+        return simplify(expression)
+    except Exception as e:
+        return "化简时出现错误, 输入可能非法."
+
+def runsrc_simplify(content):
+    input_var = document.querySelector("#unknown_simple")
+    input_equ = document.querySelector("#simple_inputer")
+    output_div = document.querySelector("#output")
+    answer = solve_simplify(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def solve_factor(variables, equations):
+    try:
+        symbols_list = symbols(variables)
+        expression = sympify(equations)
+        return factor(expression)
+    except Exception as e:
+        return "化简时出现错误, 输入可能非法."
+
+def runsrc_factor(content):
+    input_var = document.querySelector("#unknown_simple")
+    input_equ = document.querySelector("#simple_inputer")
+    output_div = document.querySelector("#output")
+    answer = solve_factor(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def solve_expand(variables, equations):
+    try:
+        symbols_list = symbols(variables)
+        expression = sympify(equations)
+        return expand(expression)
+    except Exception as e:
+        return "展开时出现错误, 输入可能非法."
+
+def runsrc_expand(content):
+    input_var = document.querySelector("#unknown_simple")
+    input_equ = document.querySelector("#simple_inputer")
+    output_div = document.querySelector("#output")
+    answer = solve_expand(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def solve_trigsimp(variables, equations):
+    try:
+        symbols_list = symbols(variables)
+        expression = sympify(equations)
+        return trigsimp(expression)
+    except Exception as e:
+        return "化简时出现错误, 输入可能非法."
+
+def runsrc_trigsimp(content):
+    input_var = document.querySelector("#unknown_simple")
+    input_equ = document.querySelector("#simple_inputer")
+    output_div = document.querySelector("#output")
+    answer = solve_trigsimp(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def solve_expand_trig(variables, equations):
+    try:
+        symbols_list = symbols(variables)
+        expression = sympify(equations)
+        return expand_trig(expression)
+    except Exception as e:
+        return "展开时出现错误, 输入可能非法."
+
+def runsrc_expand_trig(content):
+    input_var = document.querySelector("#unknown_simple")
+    input_equ = document.querySelector("#simple_inputer")
+    output_div = document.querySelector("#output")
+    answer = solve_expand_trig(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def high_solver(variables, equations, domains):
+    # try:
+    # domains = domains.split()
+    symbols_list = []
+    # if(len(domains) == 0):
+    symbols_list = symbols(variables)
+    # else:
+    #     a = 0
+    #     for i in variables:
+    #         symbols_list.append(symbols(i, domain=domains[a]))
+    #         a += 1
+    R = Reals
+    C = Complexes
+    Z = Integers
+    N = Naturals
+    N0 = Naturals0
+    Q = Rationals
+    domains = sympify(domains)
+    print("domain = ", domains)
+    return solveset(equations, symbols_list, domains)
+    # except Exception as e:
+    #     return "解方程时出现错误, 输入可能非法."
+
+def runsrc_high(content):
+    input_var = document.querySelector("#unknown_high")
+    input_domain = document.querySelector("#domain_high")
+    input_equ = document.querySelector("#high_inputer")
+    output_div = document.querySelector("#output")
+    answer = high_solver(input_var.value, input_equ.value, input_domain.value)
+    output_div.innerText = answer
+    # print("answer = ", type(answer))
+    if(type(answer) == list):
+        go_latex(answer)
+    else:
+        output_div = document.querySelector("#latexCode")
+        output_div.innerText += '$$' + latex(answer) + '$$'
 
 def runsrc_chem_e(content):
     pass

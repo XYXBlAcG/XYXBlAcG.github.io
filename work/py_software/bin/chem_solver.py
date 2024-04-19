@@ -35,7 +35,7 @@ def format_equation(reactants, products, reactant_coeff, product_coeff):
 
     reactant_side = " + ".join(reactant_strings)
     product_side = " + ".join(product_strings)
-    return reactant_side + " = " + product_side
+    return reactant_side + " -> " + product_side
 
 def balance_equation(equation):
     reactants, products = equation.split('=')

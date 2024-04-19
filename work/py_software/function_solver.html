@@ -32,6 +32,7 @@
     </script>
 </head>
 <body  class="is-preload">
+    
     <div id="wrapper">
 
         <!-- Header -->
@@ -39,9 +40,18 @@
         <div class="content">
             <div class="inner">
                 <h1>Easy Math Solver</h1>
-                <p>author: xyx.</p>
+                <p>author: xyx. 用爱制作. 代码完全开源.</p>
+                <p class="copyright"> 本应用程序已稳定运行了
+                    <strong><script language= "JavaScript" type= "text/javascript" >
+                    var urodz = new Date ( "3/23/2024" );
+                    var now = new Date ();
+                    var ile = now.getTime() - urodz.getTime();
+                    var dni = Math. floor (ile / (1000 * 60 * 60 * 24));
+                    document.write(+dni)
+                    </script><noscript><b><p style="color:red;text-align:center;">您的浏览器不支持JavaScript, 点击下载最新的<a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p></b></noscript>
+                    </strong>天
+                </p>
                 <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机「可能」暂不支持.</p>
-                <!-- <p><del><a href="function_solver_terminal.html">您或许会喜欢终端界面. 但是bug太多没法用.</a></del></p> -->
                 <!-- <noscript>你的浏览器不支持JavaScript, 无法运行此实例. </noscript> -->
             </div>
         </div>
@@ -49,14 +59,16 @@
         <select name="cal" id="cal-select">
             <option value="">请选择一项...</option>
             <option value="func_sol">解单未知数方程</option>
-            <option value="mult_func_sol">解联立方程</option>
+            <option value="func_high">解方程 高级版本</option>
+            <option value="mult_func_sol">解多未知数方程</option>
             <option value="chem">化学 (external link) </option>
             <option value="der" >求导</option>
             <option value="matrix">解矩阵 (beta)</option>
-            <!-- <option value="tri" disabled>三角学 (效率低下, 短期无计划) </option> -->
+            <option value="simple_sol">化简 (超级实用的说!) </option>
             <option value="develop" disabled>开发中...</option>
         </select>
     </header>
+    
     
 
     <section id="func_sol" class="content hidden">
@@ -66,6 +78,7 @@
             <ul>
                 <li><button py-click="runsrc">开始计算</button></li>
                 <li><button onclick="renderLatex()">显示Latex</button></li>
+                <!-- <li><button onclick="renderLatex()">显示 <img src="./img/LaTeX.svg" style="justify-content: center; "></button></li> -->
                 <li><button py-click="clean_content">清除内容</button></li>
                 <li><button py-click="helper">我需要帮助</button></li>
                 <li><button onClick="window.location.reload()">刷新页面</button></li>
@@ -120,7 +133,8 @@
             <nav>
                 <ul>
                     <li><a href="#chem_w">化学将展示一个外部的页面.</a></li>
-                    <li><a href="" style="pointer-events:none">下载化学工具箱 (disabled) </a></li>
+                    <li><a href="#chem_tool">预览化学工具箱的源代码</a></li>
+                    <li><a href="" style="pointer-events:none"><del>下载化学工具箱 (disabled) </del></a></li>
                 </ul>
             </nav>
         </header>
@@ -145,9 +159,58 @@
         </header>
     </section>
     
+
+    <section id="simple_sol" class="content hidden">
+        <header id="header">
+            <div id="textboxContainer">
+                <input type="text" id="unknown_simple" placeholder="请输入算式里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                <textarea type="text" id="simple_inputer" placeholder="请输入一个式子..." rows="10" cols="10" class="textbox"></textarea>
+            </div>
+            <nav>
+                <ul>
+                    <li><button py-click="runsrc_simplify">万能化简 (slow)</button></li>
+                    <li><button py-click="runsrc_factor">多项式/有理函数化简</button></li>
+                    <li><button py-click="runsrc_expand">展开多项式</button></li>
+                </ul>
+                <ul>
+                    <li><button py-click="runsrc_trigsimp">三角函数化简</button></li>
+                    <li><button py-click="runsrc_expand_trig">三角函数展开</button></li>
+                </ul>
+                <ul>
+                    <li><button onclick="renderLatex()">显示Latex</button></li>
+                    <li><button py-click="clean_content">清除内容</button></li>
+                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button onClick="window.location.reload()">刷新页面</button></li>
+                </ul>
+            </nav>
+        </header>
+        <p><br />解将显示在下面.</p>
+    </section>
+
+    <section id="func_high" class="content hidden">
+        <header id="header">
+            <div id="textboxContainer">
+                <p><a href="#domain_name">可能你不知道什么是「域」, 那么请点击这里.</a></p>
+                <input type="text" id="unknown_high" placeholder="请输入式子里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                <input type="text" id="domain_high" placeholder="请输入域... " size="80" class="textbox">
+                <textarea type="text" id="high_inputer" placeholder="请输入式子..." rows="10" cols="10" class="textbox"></textarea>
+            </div>
+            <nav>
+                <ul>
+                    <!-- <li><a href="#domain_name">「域」是什么</a></li> -->
+                    <li><button py-click="runsrc_high">开始计算</button></li>
+                    <li><button onclick="renderLatex()">显示Latex</button></li>
+                    <li><button py-click="clean_content">清除内容</button></li>
+                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button onClick="window.location.reload()">刷新页面</button></li>
+                </ul>
+            </nav>
+        </header>
+        <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
+    </section>
     
-
-
+    
+    
 
     
         <div id="output"></div>
@@ -159,8 +222,33 @@
             <article id="chem_w">
                 <h2 class="major">化学方程式</h2>
                 <a href="https://chemequations.com/zh/" target="_blank">页面仅预览,如遇尺寸问题请点击我</a>
+                <br />
                 <iframe src="https://chemequations.com/zh/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://chemequations.com/zh/">嵌入式页面,如加载失败请点击我</a></iframe>
             </article>
+            
+            <article id="chem_tool">
+                <h2 class="major">化学工具箱</h2>
+                <br />
+                <p><a href="./bin/chem_solver.py" download>点击下载化学工具箱的源代码</a></p>
+                <br />
+                <img src="./img/chem_solver.png" style="width: 100%; height: 100%; object-fit: cover;">
+            </article>
+
+            <article id="domain_name">
+                <h2 class="major">域</h2>
+                <br />
+                <p>域指的是变量的取值.</p>
+                <p>暂时只支持实数集 'Reals' , 复数集 'Complexes' , 整数集 'Integers', 正整数集 'Naturals', 自然数集 'Naturals0', 有理数集 'Rationals' .</p>
+                <!-- <p>我想设置一个整数变量, 就应该输入 'Z' . </p>
+                <p>我想设置一个有理数变量, 就应该输入 'Q' . </p>
+                <p>我想设置一个实数变量, 就应该输入 'R' . </p>
+                <p>我想限制变量取值范围为[0,1]之间, 就应该输入 'S.Interval(0, 1)' . </p>
+                <p>我想让变量只能是偶数, 那就输入 'Q.even' .</p>
+                <p>正无穷? 就用 'oo' 来表示吧, 是不是很可爱 qwq</p>
+                <p>你学废了吗? qwq</p> -->
+            </article>
+            
+
         </div>
 
     </div>
