@@ -40,7 +40,7 @@
         <div class="content">
             <div class="inner">
                 <h1>Easy Math Solver</h1>
-                <p>author: xyx. 用爱制作. 代码完全开源.</p>
+                <p>author: xyx. 用爱制作.</p>
                 <p class="copyright"> 本应用程序已稳定运行了
                     <strong><script language= "JavaScript" type= "text/javascript" >
                     var urodz = new Date ( "3/23/2024" );
@@ -51,7 +51,8 @@
                     </script><noscript><b><p style="color:red;text-align:center;">您的浏览器不支持JavaScript, 点击下载最新的<a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p></b></noscript>
                     </strong>天
                 </p>
-                <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机「可能」暂不支持.</p>
+                <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机 / 平板「极大概率」不支持.</p>
+                <p>确保你使用的是最新的 <a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p>
                 <!-- <noscript>你的浏览器不支持JavaScript, 无法运行此实例. </noscript> -->
             </div>
         </div>
@@ -189,13 +190,14 @@
 
     <section id="func_high" class="content hidden">
         <header id="header">
-            <div id="textboxContainer">
-                <p><a href="#domain_name">可能你不知道什么是「域」, 那么请点击这里.</a></p>
-                <input type="text" id="unknown_high" placeholder="请输入式子里出现的未知数, 以空格分隔... " size="80" class="textbox">
-                <input type="text" id="domain_high" placeholder="请输入域... " size="80" class="textbox">
-                <textarea type="text" id="high_inputer" placeholder="请输入式子..." rows="10" cols="10" class="textbox"></textarea>
-            </div>
             <nav>
+                <div id="textboxContainer">
+                    <p><br />你只需要输入左边的式子, 等式的右边为 0, 简化了工作流程.</p>
+                    <p><a href="#domain_name">可能你不知道什么是「域」, 那么请点击这里.</a></p>
+                    <input type="text" id="unknown_high" placeholder="请输入式子里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                    <input type="text" id="domain_high" placeholder="请输入域 (为一个形如 'Reals' 的单词) ... " size="80" class="textbox">
+                    <textarea type="text" id="high_inputer" placeholder="请输入式子..." rows="10" cols="10" class="textbox"></textarea>
+                </div>
                 <ul>
                     <!-- <li><a href="#domain_name">「域」是什么</a></li> -->
                     <li><button py-click="runsrc_high">开始计算</button></li>
@@ -204,9 +206,9 @@
                     <li><button py-click="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
+                <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
             </nav>
         </header>
-        <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
     </section>
     
     
