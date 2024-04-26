@@ -40,7 +40,7 @@
         <div class="content">
             <div class="inner">
                 <h1>Easy Math Solver</h1>
-                <p>author: xyx. 用爱制作.</p>
+                <p>author: xyx.</p>
                 <p class="copyright"> 本应用程序已稳定运行了
                     <strong><script language= "JavaScript" type= "text/javascript" >
                     var urodz = new Date ( "3/23/2024" );
@@ -60,12 +60,12 @@
         <select name="cal" id="cal-select">
             <option value="">请选择一项...</option>
             <option value="func_sol">解单未知数方程</option>
-            <option value="func_high">解方程 高级版本</option>
+            <option value="func_high">解方程_2</option>
             <option value="mult_func_sol">解多未知数方程</option>
-            <option value="chem">化学 (external link) </option>
+            <option value="chem">化学</option>
             <option value="der" >求导</option>
             <option value="matrix">解矩阵 (beta)</option>
-            <option value="simple_sol">化简 (超级实用的说!) </option>
+            <option value="simple_sol">化简</option>
             <option value="develop" disabled>开发中...</option>
         </select>
     </header>
@@ -169,11 +169,9 @@
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_simplify">万能化简 (slow)</button></li>
+                    <li><button py-click="runsrc_simplify">化简</button></li>
                     <li><button py-click="runsrc_factor">多项式/有理函数化简</button></li>
                     <li><button py-click="runsrc_expand">展开多项式</button></li>
-                </ul>
-                <ul>
                     <li><button py-click="runsrc_trigsimp">三角函数化简</button></li>
                     <li><button py-click="runsrc_expand_trig">三角函数展开</button></li>
                 </ul>
