@@ -57,7 +57,7 @@ def helper(content):
     "author: XYX\n" + \
     "version: v0.1.0\n" + \
     "lastest update: 2024/04/19\n" + \
-    "\n v0.1.0 加入超级多有趣的功能, 例如高级解方程功能, 化简展开功能. 24/04/19\n" + \
+    "\n v0.1.0 加入高级解方程功能, 化简展开功能. 24/04/19\n" + \
     "\n v0.0.4 更好的界面, 尝试加入化学功能. 24/04/13\n" + \
     "\n v0.0.3 添加解矩阵功能. 24/04/04\n" + \
     "\n v0.0.2 添加求导功能. 24/03\n" + \
@@ -88,6 +88,7 @@ def mult_func_solve(variables, equations):
         else:
             return "该方程无解."
     except Exception as e:
+        print(e)
         return "解方程时出现错误, 输入可能非法."
 
 def runsrc_mult(content):
@@ -271,3 +272,10 @@ def runsrc_chem_e(content):
 
 def runsrc_chem_a(content):
     pass
+
+def chkSafe(content):
+    return false
+
+def dangerous_fuction(content):
+    if chkSafe(content):
+        eval(content)

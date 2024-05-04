@@ -1,6 +1,12 @@
 from pepy import *
 
-a = Physics(1, [0, 0], [0, 0])
+player = showModule(600, 600)
+
+
+a = Physics(1, [0, 0], [0, 0], (0, 0, 0),  5.0)
 while True:
-    Physics.render()
-    Physics.draw()
+    a.force([1, 0])
+    Physics.render(100)
+    Physics.draw(player)
+    a.printInfo()
+    
