@@ -48,16 +48,15 @@ def helper(content):
     output_div.innerText = \
     "不可省略乘号.\n" + \
     "幂次请使用 '**'. \n" + \
-    "请输入等式.\n" + \
-    "允许通过pi, e来调用π和e的值. 其他数学函数可能可用.\n" + \
+    "允许通过 pi, E 来调用 π 和 e 的值. 其他数学函数可能可用, 形如 gamma 函数.\n" + \
     "函数内含未知数参数的方程无法解出. 如 x * sin(x) = 1 .\n" + \
-    "Latex 可能有锅, 请谨慎使用.\n" + \
     "如果方程结果没有正常显示, 请注意观察下面的报错信息.\n" + \
     "name: Easy_Math_Solver\n" + \
     "author: XYX\n" + \
-    "version: v0.1.0\n" + \
-    "lastest update: 2024/04/19\n" + \
-    "\n v0.1.0 加入高级解方程功能, 化简展开功能. 24/04/19\n" + \
+    "version: v0.1.1\n" + \
+    "lastest update: 2024/05/24\n" + \
+    "\n v0.1.1 加入积分功能, 加入一言. 24/05/24" + \
+    "\n v0.1.0 加入化简展开功能. 24/04/19\n" + \
     "\n v0.0.4 更好的界面, 尝试加入化学功能. 24/04/13\n" + \
     "\n v0.0.3 添加解矩阵功能. 24/04/04\n" + \
     "\n v0.0.2 添加求导功能. 24/03\n" + \
@@ -273,9 +272,30 @@ def runsrc_chem_e(content):
 def runsrc_chem_a(content):
     pass
 
-def chkSafe(content):
-    return false
+def inte_ud(var, equ, domain):
+    symbols_list = symbols(var)
+    lft, rgt = domain.split(',')
+    return integrate(sympify(equ), (symbols_list, sympify(lft), sympify(rgt)))
 
-def dangerous_fuction(content):
-    if chkSafe(content):
-        eval(content)
+def runsrc_inte_ud(content):
+    input_var = document.querySelector("#unknown_inte")
+    input_domain = document.querySelector("#ud_inte")
+    input_equ = document.querySelector("#inte_inputer")
+    output_div = document.querySelector("#output")
+    answer = inte_ud(input_var.value, input_equ.value, input_domain.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def inte_(var, equ):
+    symbols_list = symbols(var)
+    return integrate(sympify(equ), (symbols_list))
+
+def runsrc_inte(content):
+    input_var = document.querySelector("#unknown_inte")
+    input_equ = document.querySelector("#inte_inputer")
+    output_div = document.querySelector("#output")
+    answer = inte_(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'

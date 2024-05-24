@@ -30,6 +30,24 @@
             outputDiv.appendChild(latexDiv);
         }
     </script>
+    <!-- hitokoto -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        const apiUrl = "https://v1.hitokoto.cn/?c=a";
+        const container = document.getElementById("hitokoto-container");
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                container.textContent = data.hitokoto + '     ————「' + data.from + '」';
+            })
+            .catch(error => {
+                console.error("Error fetching the Hitokoto:", error);
+                container.textContent = "Failed to load the Hitokoto.";
+            });
+    });
+
+    </script>
 </head>
 <body  class="is-preload">
     
@@ -41,6 +59,7 @@
             <div class="inner">
                 <h1>Easy Math Solver</h1>
                 <p>author: xyx.</p>
+                <p id="hitokoto-container">Loading Hitokoto...</p>
                 <p class="copyright"> 本应用程序已稳定运行了
                     <strong><script language= "JavaScript" type= "text/javascript" >
                     var urodz = new Date ( "3/23/2024" );
@@ -52,20 +71,20 @@
                     </strong>天
                 </p>
                 <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机 / 平板「极大概率」不支持.</p>
-                <p>确保你使用的是最新的 <a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p>
-                <!-- <noscript>你的浏览器不支持JavaScript, 无法运行此实例. </noscript> -->
+                <!-- <p>确保你使用的是最新的 <a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p> -->
             </div>
         </div>
 
         <select name="cal" id="cal-select">
             <option value="">请选择一项...</option>
             <option value="func_sol">解单未知数方程</option>
-            <option value="func_high">解方程_2</option>
+            <!-- <option value="func_high">解方程_2</option> -->
             <option value="mult_func_sol">解多未知数方程</option>
             <option value="chem">化学</option>
             <option value="der" >求导</option>
             <option value="matrix">算矩阵</option>
             <option value="simple_sol">化简</option>
+            <option value="integrals">积分</option>
             <option value="develop" disabled>开发中...</option>
         </select>
     </header>
@@ -159,6 +178,30 @@
             </nav>
         </header>
     </section>
+
+    <section id="integrals" class="content hidden">
+        <header id="header">
+            <div id="textboxContainer">
+
+                <p><br />自然对数的底请用 'E', 正无穷请使用 'oo' 来代替哦qwq</p>
+                <input type="text" id="unknown_inte" placeholder="请输入未知数, 以空格分隔... " size="80" class="textbox">
+                <input type="text" id="ud_inte" placeholder="请输入下界和上界, 以逗号分隔, 形如 '-oo, oo'... " size="80" class="textbox">
+                
+                <textarea type="text" id="inte_inputer" placeholder="请输入一个函数..." rows="10" cols="10" class="textbox"></textarea>
+            </div>
+            <nav>
+                <ul>
+                    <li><button py-click="runsrc_inte_ud">定积分</button></li>
+                    <li><button py-click="runsrc_inte">不定积分</button></li>
+                    <li><button onclick="renderLatex()">显示Latex</button></li>
+                    <li><button py-click="clean_content">清除内容</button></li>
+                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button onClick="window.location.reload()">刷新页面</button></li>
+                </ul>
+            </nav>
+        </header>
+        <p><br />解将显示在下面.</p>
+    </section>
     
 
     <section id="simple_sol" class="content hidden">
@@ -230,6 +273,7 @@
                 <h2 class="major">化学工具箱</h2>
                 <br />
                 <p><a href="./bin/chem_solver.py" download>点击下载化学工具箱的源代码</a></p>
+                <p>requirements: sympy, pyscript, chempy</p>
                 <br />
                 <img src="./img/chem_solver.png" style="width: 100%; height: 100%; object-fit: cover;">
             </article>

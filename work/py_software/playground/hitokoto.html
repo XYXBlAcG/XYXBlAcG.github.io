@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitokoto API Example</title>
+</head>
+<body>
+    <h1>Hitokoto API Example</h1>
+    <div id="hitokoto-container">Loading...</div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        const apiUrl = "https://v1.hitokoto.cn/?c=a";
+        const container = document.getElementById("hitokoto-container");
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                container.textContent = data.hitokoto + '     ————「' + data.from + '」';
+            })
+            .catch(error => {
+                console.error("Error fetching the Hitokoto:", error);
+                container.textContent = "Failed to load the Hitokoto.";
+            });
+    });
+
+    </script>
+</body>
+</html>

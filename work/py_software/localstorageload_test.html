@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Load JS from localStorage</title>
+</head>
+<body>
+    <h1>Hello World</h1>
+    <script>
+        // Function to load and execute JavaScript code from localStorage
+        function loadScriptFromLocalStorage() {
+            // Get the script code from localStorage
+            const scriptCode = localStorage.getItem('myScript');
+            if (scriptCode) {
+                // Create a new script element
+                const scriptElement = document.createElement('script');
+                // Set the script element's text content to the code from localStorage
+                scriptElement.textContent = scriptCode;
+                // Append the script element to the document's head or body
+                document.body.appendChild(scriptElement);
+            } else {
+                console.log('No script found in localStorage.');
+            }
+        }
+
+        // Call the function to load the script
+        loadScriptFromLocalStorage();
+    </script>
+</body>
+</html>
