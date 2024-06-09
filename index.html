@@ -114,7 +114,10 @@
 								<a onclick="ClickMe()">点击我!</a>
 								<script>
 									function ClickMe(){
-										alert("我是tcs!!!");
+										alert("我将调用random.org中的算法生成随机数, 并决定显示一个人的名字.")
+										var names = ['tcs', 'zjl', 'xxy', 'fst']
+										var rnd = Math.floor(Math.random() * 4);
+										alert("我是" + names[rnd] + "!!!");
 									}
 								</script>
 								<!-- <p><a href="support/index.html">如果你有能力并且愿意, 欢迎来支持我. <br />it's welcome to support me if you have the ability and would like to do so.</a></p> -->
