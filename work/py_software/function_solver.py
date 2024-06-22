@@ -53,9 +53,10 @@ def helper(content):
     "如果方程结果没有正常显示, 请注意观察下面的报错信息.\n" + \
     "name: Easy_Math_Solver\n" + \
     "author: XYX\n" + \
-    "version: v0.1.1\n" + \
-    "lastest update: 2024/05/24\n" + \
-    "\n v0.1.1 加入积分功能, 加入一言. 24/05/24" + \
+    "version: v0.1.2\n" + \
+    "lastest update: 2024/06/23\n" + \
+    "\n v0.1.2 加入求和功能. 24/06/23\n" + \
+    "\n v0.1.1 加入积分功能, 加入一言. 24/05/24\n" + \
     "\n v0.1.0 加入化简展开功能. 24/04/19\n" + \
     "\n v0.0.4 更好的界面, 尝试加入化学功能. 24/04/13\n" + \
     "\n v0.0.3 添加解矩阵功能. 24/04/04\n" + \
@@ -296,6 +297,22 @@ def runsrc_inte(content):
     input_equ = document.querySelector("#inte_inputer")
     output_div = document.querySelector("#output")
     answer = inte_(input_var.value, input_equ.value)
+    output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def sum_(equ, var, vars):
+    tovar = tuple(var.split(','))
+    symbols_list = symbols(vars)
+    return summation(sympify(equ), tovar)
+
+
+def runsrc_sum(content):
+    input_var = document.querySelector("#sum_sub")
+    input_vars = document.querySelector("#sum_var")
+    input_equ = document.querySelector("#sum_inputer")
+    output_div = document.querySelector("#output")
+    answer = sum_(input_equ.value, input_var.value, input_vars.value)
     output_div.innerText = answer
     output_div = document.querySelector("#latexCode")
     output_div.innerText += '$$' + latex(answer) + '$$'

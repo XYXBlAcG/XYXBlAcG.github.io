@@ -85,6 +85,7 @@
             <option value="matrix">算矩阵</option>
             <option value="simple_sol">化简</option>
             <option value="integrals">积分</option>
+            <option value="summation">求和</option>
             <option value="develop" disabled>开发中...</option>
         </select>
     </header>
@@ -126,6 +127,26 @@
             </nav>
         </header>
         <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
+    </section>
+
+    <section id="summation" class="content hidden">
+        <header id="header">
+            <div id="textboxContainer">
+                <input type="text" id="sum_var" placeholder="请输入下面出现的所有未知数, 用空格分隔... " size="80" class="textbox">
+                <input type="text" id="sum_sub" placeholder="请输入求和符号下的未知数, 下界和上界, 用逗号分隔... " size="80" class="textbox">
+                <textarea type="text" id="sum_inputer" placeholder="请输入求和符号后的式子..." rows="10" cols="10" class="textbox"></textarea>
+            </div>
+            <nav>
+                <ul>
+                    <li><button py-click="runsrc_sum">开始计算</button></li>
+                    <li><button onclick="renderLatex()">显示Latex</button></li>
+                    <li><button py-click="clean_content">清除内容</button></li>
+                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button onClick="window.location.reload()">刷新页面</button></li>
+                </ul>
+            </nav>
+        </header>
+        <p><br />解将显示在下面.</p>
     </section>
     
 
