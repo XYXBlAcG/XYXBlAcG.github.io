@@ -28,6 +28,10 @@ class Physics:
 
     objectList = []
 
+    def printerror(self, e):
+        print("出现错误. 请看下面的日志.")
+        print("--- start ---\n", e, "\n --- end ---")
+
     def __init__(self, mass, velocity, location, color = (0, 0, 0), shape = 5.0):
         ''' 
         创建一个物体.
@@ -52,8 +56,7 @@ class Physics:
                 self.shape = shape
             Physics.objectList.append(self)
         except Exception as e:
-            print("创建物体出现错误. 请看下面的日志.")
-            print("--- start ---\n", e, "\n --- end ---")
+            self.printerror(e)
 
     def printInfo(self, lang = 'en'):
         '''
@@ -114,6 +117,9 @@ class Physics:
             elif (((i.location[0] - self.location[0]) ** 2 + (i.location[1] - self.location[1]) ** 2) ** 0.5) - self.r - i.r <= 0:
                 self.resilience(self.r + i.r, k / 2, i)
 
+    '''
+    给所有物体施加重力.
+    '''
     @classmethod
     def gravity(cls, g):
         for a in objectList:
@@ -124,6 +130,9 @@ class Physics:
                 G = g * a.mass * b.mass / (r ** 2)
                 a.force(G, b.location)
     
+    '''
+    动量的计算.
+    '''
     @classmethod
     def momentum(cls):
         mom = [0, 0]
