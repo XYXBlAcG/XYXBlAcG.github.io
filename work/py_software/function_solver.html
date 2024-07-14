@@ -5,15 +5,12 @@
     <!-- <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css"/> -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/main.css" />
 	<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
-    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.6.2/core.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/xterm.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <title>Easy Math Solver</title>
-    <style>
-        .hidden {
-            display: none;
-        }
-    </style>
     <script>
         function renderLatex() {
             var latexCode = document.getElementById("latexCode").innerText;
@@ -47,11 +44,55 @@
             });
     });
 
+    function openLink(url) {
+            window.location.href = url;
+        }
     </script>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .top-right-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .top-right-buttons button {
+            cursor: pointer;
+        }
+        .latex_container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .textbox2, #latex_preview {
+            width: 50%;
+            height: 300px;
+            margin: 0 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+        }
+        .textbox2 {
+            resize: none;
+        }
+    </style>
 </head>
 <body  class="is-preload">
     
+    
+
     <div id="wrapper">
+
+        <div class="top-right-buttons">
+            <button id="return-button" onclick="openLink('../../../index.html')">主站点</button>
+            <button id="settings-button" onclick="openLink('#settings')" disabled>设置</button>
+            <button id="developer-mode-button" onclick="openLink('#developer')">开发者</button>
+        </div>
 
         <!-- Header -->
     <header id="header">
@@ -86,6 +127,7 @@
             <option value="simple_sol">化简</option>
             <option value="integrals">积分</option>
             <option value="summation">求和</option>
+            <option value="latex_test">Latex输入测试 (beta) </option>
             <option value="develop" disabled>开发中...</option>
         </select>
     </header>
@@ -94,7 +136,7 @@
 
     <section id="func_sol" class="content hidden">
         <header id="header">
-        <input type="text" id="inputer" placeholder="请输入一个方程 (例: (x + 2) * (x - 1) = 0)..." size="60">
+        <input type="text" id="inputer" placeholder="请输入一个以 x 为未知数的方程 (例: (x + 2) * (x - 1) = 0)..." size="60">
         <nav>
             <ul>
                 <li><button py-click="runsrc">开始计算</button></li>
@@ -250,6 +292,30 @@
         <p><br />解将显示在下面.</p>
     </section>
 
+    <section id="latex_test" class="content hidden">
+        <header id="header">
+            <div id="textboxContainer">
+                <input type="text" id="latex_test_num" placeholder="请输入方程里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                <br /><p>拥有很多bug, 请谨慎使用.</p> 
+                <div class="latex_container">
+                    <textarea type="text" id="latex_test_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." class="textbox2"></textarea>
+                    <div id="latex_preview"></div>
+                </div>
+                
+            </div>
+            <nav>
+                <ul>
+                    <li><button py-click="runsrc_latex_test">开始计算</button></li>
+                    <li><button onclick="renderLatex()">显示Latex</button></li>
+                    <li><button py-click="clean_content">清除内容</button></li>
+                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button onClick="window.location.reload()">刷新页面</button></li>
+                </ul>
+            </nav>
+        </header>
+        <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
+    </section>
+
     <section id="func_high" class="content hidden">
         <header id="header">
             <nav>
@@ -273,10 +339,6 @@
         </header>
     </section>
     
-    
-    
-
-    
         <div id="output"></div>
         <div id="latexDiv"></div>
         <div id="latexCode"></div>
@@ -297,6 +359,37 @@
                 <p>requirements: sympy, pyscript, chempy</p>
                 <br />
                 <img src="./img/chem_solver.png" style="width: 100%; height: 100%; object-fit: cover;">
+            </article>
+
+            <article id="settings">
+                <h2 class="major">设置</h2>
+                <h3 class="major">实验性功能</h2>
+                <div class="field half">
+                    <input type="radio" id="use_python_syntax" name="use_syntax" checked>
+                    <label for="use_python_syntax">使用 python 语法</label>
+                </div> <br />
+                <div class="field half">
+                    <input type="radio" id="use_Latex_syntax" name="use_syntax">
+                    <label for="use_Latex_syntax">使用 Latex 语法 (针对方程式) </label>
+                </div>
+                <br />
+                <div class="field half">
+                    <input type="checkbox" id="remember_select" name="remember_select" checked>
+                    <label for="remember_select">在浏览器中记住我的选择. </label>
+                </div>
+            </article>
+
+            <article id="developer">
+                <h2 class="major">开发者</h2>
+                <p>你可以在下方执行任意 python3 代码. 这可能很危险. 请在浏览器控制台查看结果.</p>
+                <div id="py-console">
+                    <textarea type="text" id="console_inputer" placeholder="请输入..." rows="10" cols="10" class="textbox"></textarea>
+                    <button py-click="runsrc_console">执行</button>
+                    <div id="console_output"></div>
+                </div>
+                
+                    
+
             </article>
 
             <article id="domain_name">
@@ -335,6 +428,13 @@
             }
             });
         });
+
+        document.getElementById('latex_test_inputer').addEventListener('input', function() {
+            const input = document.getElementById('latex_test_inputer').value;
+            const output = document.getElementById('latex_preview');
+            output.innerHTML = '$$ ' + input + ' $$';
+            MathJax.typeset();
+        });
     </script>
     <script src="/assets/js/jquery.min.js"></script>
     <script src="/assets/js/browser.min.js"></script>
@@ -344,7 +444,9 @@
     <script src="/assets/js/get_github_time.js"></script>
     <py-config>
         packages = [
-            "sympy"
+            "sympy",
+            "./whl_pack/antlr4_python3_runtime-4.7.2-py3-none-any.whl",
+            "./whl_pack/latex2sympy2-1.9.1-py3-none-any.whl"
         ]
     </py-config>
 

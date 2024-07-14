@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Real-time Renderer</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 80%;
+            margin-top: 20px;
+        }
+        textarea, #output {
+            width: 50%;
+            height: 300px;
+            margin: 0 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+        }
+        textarea {
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <label>
+            <input type="radio" name="display" value="show" checked> Show Output
+        </label>
+        <label>
+            <input type="radio" name="display" value="hide"> Hide Output
+        </label>
+    </div>
+    <div class="container">
+        <textarea id="input" placeholder="Type your LaTeX code here..."></textarea>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        document.getElementById('input').addEventListener('input', function() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            output.innerHTML = input;
+            MathJax.typeset();
+        });
+
+        document.querySelectorAll('input[name="display"]').forEach((elem) => {
+            elem.addEventListener('change', function(event) {
+                const output = document.getElementById('output');
+                if (event.target.value === 'show') {
+                    output.style.display = 'block';
+                } else {
+                    output.style.display = 'none';
+                }
+            });
+        });
+
+        // Set initial display state based on default checked radio button
+        document.querySelector('input[name="display"]:checked').dispatchEvent(new Event('change'));
+    </script>
+</body>
+</html>

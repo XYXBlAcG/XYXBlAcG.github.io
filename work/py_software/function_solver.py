@@ -1,8 +1,11 @@
 # import sympy as sm
 from sympy import *
 from pyscript import document, display
+from latex2sympy2 import latex2sympy, latex2latex
 #from sympy import symbols, solve, Eq
 # from math import *
+
+
 
 
 def solve_equation(equation_str):
@@ -42,6 +45,13 @@ def runsrc(content):
     output_div.innerText = answer
     go_latex(answer)
 
+def modifier(input_str):
+    input_text = document.querySelector(input_str)
+    is_on = document.querySelector('input[name="show_latexer"]')
+    if is_on.checked:
+        input_text.value = latex2sympy(input_text.value)
+    return input_text.value
+
 
 def helper(content):
     output_div = document.querySelector("#output")
@@ -75,14 +85,29 @@ def extract_expressions(input_str):
     expressions = [expr.strip() for expr in input_str.split(',')]
     return expressions
 
-def mult_func_solve(variables, equations):
+def mult_func_solve(variables, equations, beta = 0):
     print("variables : ", variables)
     print("equations : ", equations)
+    
 
     try:
         symbols_list = symbols(variables)
-        eqs = [Eq(sympify(equation.split('=')[0].strip()), sympify(equation.split('=')[1].strip())) for equation in equations]
-        solutions = solve(eqs)
+        if (beta == 1):
+            eqs = []
+            for i in range(len(equations)):
+                equations[i] = latex2sympy(equations[i])
+                print(equations[i])
+                print(type(equations[i]))
+                if(type(equations[i]) == list):
+                    for equation in equations[i]:
+                        eqs.append(equation)
+                else:
+                    eqs.append(equations[i])
+            # eqs = [Eq(equation.split('=')[0].strip(), equation.split('=')[1].strip()) for equation in equations]
+            solutions = solve(eqs)
+        else:
+            eqs = [Eq(sympify(equation.split('=')[0].strip()), sympify(equation.split('=')[1].strip())) for equation in equations]
+            solutions = solve(eqs)
         if solutions:
             return solutions
         else:
@@ -314,5 +339,20 @@ def runsrc_sum(content):
     output_div = document.querySelector("#output")
     answer = sum_(input_equ.value, input_var.value, input_vars.value)
     output_div.innerText = answer
+    output_div = document.querySelector("#latexCode")
+    output_div.innerText += '$$' + latex(answer) + '$$'
+
+def runsrc_console(content):
+    input_text = document.querySelector("#console_inputer")
+    output_div = document.querySelector("#console_output")
+    output_div.innerText = exec(input_text.value)
+
+def runsrc_latex_test(content):
+    input_var = document.querySelector("#latex_test_num")
+    input_equ = document.querySelector("#latex_test_inputer")
+    output_div = document.querySelector("#output")
+    answer = mult_func_solve(input_var.value, input_equ.value.split(','), 1)
+    output_div.innerText = answer
+    # print("answer = ", type(answer))
     output_div = document.querySelector("#latexCode")
     output_div.innerText += '$$' + latex(answer) + '$$'
