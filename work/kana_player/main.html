@@ -125,6 +125,7 @@
     <div class="controls">
         <button id="startBtn">开始游戏</button>
         <button id="pauseBtn" disabled>暂停</button>
+        <button id="returnBtn">回到首页</button>
         <div style="margin-top: 10px;">
             <label for="cardPairs">选择卡牌对数 (2 - 24):</label>
             <input type="number" id="cardPairs" min="2" max="24" value="8">
@@ -375,6 +376,11 @@
             alert(`恭喜完成！用时：${timer}秒，得分：${score}`);
         }
 
+        function returnHome() {
+            window.location.href = '../../index.html';
+        }
+
+        returnBtn.addEventListener('click', returnHome);
         startBtn.addEventListener('click', startGame);
         pauseBtn.addEventListener('click', pauseGame);
     </script>
