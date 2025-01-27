@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iFrame Content</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .color-option {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Choose a Background Color</h2>
+<div class="color-option">
+    <label for="colorSelect">Select Color: </label>
+    <select id="colorSelect">
+        <option value="white">White</option>
+        <option value="lightblue">Light Blue</option>
+        <option value="lightgreen">Light Green</option>
+        <option value="lightyellow">Light Yellow</option>
+    </select>
+</div>
+
+<script>
+    const colorSelect = document.getElementById('colorSelect');
+
+    colorSelect.addEventListener('change', () => {
+        const color = colorSelect.value;
+        window.parent.postMessage({ type: 'colorChange', color: color }, '*');
+    });
+</script>
+
+</body>
+</html>

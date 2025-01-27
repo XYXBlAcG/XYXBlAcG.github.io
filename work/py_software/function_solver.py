@@ -147,7 +147,7 @@ def runsrc_mat(content):
     # expr_input = input(f"请输入一个式子，使用 a * b 之类的格式：")
     lhs = document.querySelector("#mat_cal").value
     lhs_matrix = eval(lhs, globals(), symbols_dict)
-    print("得到的矩阵为: ", lhs_matrix)  # 添加打印语句
+    print("得到的矩阵为: ", lhs_matrix)
     output_div.innerText = lhs_matrix
     result_latex = latex(lhs_matrix)
     print("LaTeX 格式：")

@@ -29,6 +29,9 @@ class Physics:
     objectList = []
 
     def printerror(self, e):
+        '''
+        打印报错信息.
+        '''
         print("出现错误. 请看下面的日志.")
         print("--- start ---\n", e, "\n --- end ---")
 
@@ -183,6 +186,8 @@ class Physics:
             def on_draw():
                 window.clear()
                 objecter.draw()
+                
+                
         
         
 

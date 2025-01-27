@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css"/> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/main.css" />
+	<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.6.2/core.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/xterm.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h2 id="major">Latex to SymPy转换工具</h2>
+
+    <p>输入Latex公式, 点击“转换”按钮, 即可得到SymPy代码. SymPy代码将会显示在页面下方。</p>
+    <input type="text" id="latex_input" placeholder="输入Latex公式">
+    <button py-click="convert">转换</button>
+    <br /><br />
+    <div id="output"></div>
+
+    <script type="py" src="./latex2py.py"></script>
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="/assets/js/browser.min.js"></script>
+    <script src="/assets/js/breakpoints.min.js"></script>
+    <script src="/assets/js/util.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <script src="/assets/js/get_github_time.js"></script>
+    <py-config>
+        packages = [
+            "sympy",
+            "./whl_pack/antlr4_python3_runtime-4.7.2-py3-none-any.whl",
+            "./whl_pack/latex2sympy2-1.9.1-py3-none-any.whl"
+        ]
+    </py-config>
+</body>

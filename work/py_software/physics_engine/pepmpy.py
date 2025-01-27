@@ -19,3 +19,4 @@ def shapeObj(obj, size, k):
     shape = pm.Circle(obj, size)
     shape.elasticity = k
     return shape
+

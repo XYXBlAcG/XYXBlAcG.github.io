@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>假名翻翻乐</title>
+    <style>
+        .title {
+            font-size: 2.5em;
+            color: #4a90e2;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .game-container {
+            position: relative;
+            margin: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .info {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .card {
+            width: 100px;
+            height: 150px;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            border-radius: 10px;
+        }
+        .card-front {
+            background-color: #4a90e2;
+            color: white;
+        }
+        .card-back {
+            background-color: #fff;
+            color: #333;
+            transform: rotateY(180deg);
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            background-color: #90EE90;
+            cursor: default;
+            transition: background-color 0.5s;
+        }
+        .card.matched .card-back {
+            background-color: #90EE90;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2em;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #357abd;
+        }
+        @keyframes star {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .star {
+            position: absolute;
+            pointer-events: none;
+            color: gold;
+            font-size: 2em;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">日文假名翻翻乐</h1>
+    <div class="controls">
+        <button id="startBtn">开始游戏</button>
+        <button id="pauseBtn" disabled>暂停</button>
+        <div style="margin-top: 10px;">
+            <label for="cardPairs">选择卡牌对数 (2 - 24):</label>
+            <input type="number" id="cardPairs" min="2" max="24" value="8">
+        </div>
+    </div>
+    <div class="info">
+        <span>时间: <span id="timer">0</span>秒</span>
+        <span style="margin-left: 20px;">得分: <span id="score">0</span></span>
+    </div>
+    <div class="game-container">
+        <div class="cards" id="gameBoard"></div>
+        <div class="overlay" id="overlay">已暂停</div>
+    </div>
+
+    <script>
+        const kanaSet = [
+            {hiragana: 'あ', katakana: 'ア', romaji: 'a'},
+            {hiragana: 'い', katakana: 'イ', romaji: 'i'},
+            {hiragana: 'う', katakana: 'ウ', romaji: 'u'},
+            {hiragana: 'え', katakana: 'エ', romaji: 'e'},
+            {hiragana: 'お', katakana: 'オ', romaji: 'o'},
+            {hiragana: 'か', katakana: 'カ', romaji: 'ka'},
+            {hiragana: 'き', katakana: 'キ', romaji: 'ki'},
+            {hiragana: 'く', katakana: 'ク', romaji: 'ku'},
+            {hiragana: 'け', katakana: 'ケ', romaji: 'ke'},
+            {hiragana: 'こ', katakana: 'コ', romaji: 'ko'},
+            {hiragana: 'さ', katakana: 'サ', romaji: 'sa'},
+            {hiragana: 'し', katakana: 'シ', romaji: 'shi'},
+            {hiragana: 'す', katakana: 'ス', romaji: 'su'},
+            {hiragana: 'せ', katakana: 'セ', romaji: 'se'},
+            {hiragana: 'そ', katakana: 'ソ', romaji: 'so'},
+            {hiragana: 'た', katakana: 'タ', romaji: 'ta'},
+            {hiragana: 'ち', katakana: 'チ', romaji: 'chi'},
+            {hiragana: 'つ', katakana: 'ツ', romaji: 'tsu'},
+            {hiragana: 'て', katakana: 'テ', romaji: 'te'},
+            {hiragana: 'と', katakana: 'ト', romaji: 'to'},
+            {hiragana: 'な', katakana: 'ナ', romaji: 'na'},
+            {hiragana: 'に', katakana: 'ニ', romaji: 'ni'},
+            {hiragana: 'ぬ', katakana: 'ヌ', romaji: 'nu'},
+            {hiragana: 'ね', katakana: 'ネ', romaji: 'ne'},
+            {hiragana: 'の', katakana: 'ノ', romaji: 'no'},
+            {hiragana: 'は', katakana: 'ハ', romaji: 'ha'},
+            {hiragana: 'ひ', katakana: 'ヒ', romaji: 'hi'},
+            {hiragana: 'ふ', katakana: 'フ', romaji: 'fu'},
+            {hiragana: 'へ', katakana: 'ヘ', romaji: 'he'},
+            {hiragana: 'ほ', katakana: 'ホ', romaji: 'ho'},
+            {hiragana: 'ま', katakana: 'マ', romaji: 'ma'},
+            {hiragana: 'み', katakana: 'ミ', romaji: 'mi'},
+            {hiragana: 'む', katakana: 'ム', romaji: 'mu'},
+            {hiragana: 'め', katakana: 'メ', romaji: 'me'},
+            {hiragana: 'も', katakana: 'モ', romaji: 'mo'},
+            {hiragana: 'や', katakana: 'ヤ', romaji: 'ya'},
+            {hiragana: 'ゆ', katakana: 'ユ', romaji: 'yu'},
+            {hiragana: 'よ', katakana: 'ヨ', romaji: 'yo'},
+            {hiragana: 'ら', katakana: 'ラ', romaji: 'ra'},
+            {hiragana: 'り', katakana: 'リ', romaji: 'ri'},
+            {hiragana: 'る', katakana: 'ル', romaji: 'ru'},
+            {hiragana: 'れ', katakana: 'レ', romaji: 're'},
+            {hiragana: 'ろ', katakana: 'ロ', romaji: 'ro'},
+            {hiragana: 'わ', katakana: 'ワ', romaji: 'wa'},
+            {hiragana: 'を', katakana: 'ヲ', romaji: 'wo'},
+            {hiragana: 'ん', katakana: 'ン', romaji: 'n'},
+        ];
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let timer = 0;
+        let timerInterval;
+        let isPlaying = false;
+        let score = 0;
+
+        const gameBoard = document.getElementById('gameBoard');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const timerDisplay = document.getElementById('timer');
+        const scoreDisplay = document.getElementById('score');
+        const overlay = document.getElementById('overlay');
+
+        function initializeGame() {
+            const cardPairsInput = document.getElementById('cardPairs');
+            const numberOfPairs = parseInt(cardPairsInput.value);
+            
+            // 验证输入的对数是否有效
+            if (isNaN(numberOfPairs) || numberOfPairs < 2 || numberOfPairs > 24) {
+                alert('请输入 2 - 24 之间的数字！');
+                return;
+            }
+
+            cards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            timer = 0;
+            score = 0;
+            gameBoard.innerHTML = '';
+            timerDisplay.textContent = '0';
+            scoreDisplay.textContent = '0';
+
+            // 随机选择指定数量的假名对
+            const shuffledKana = [...kanaSet].sort(() => Math.random() - 0.5);
+            const selectedKana = shuffledKana.slice(0, numberOfPairs);
+
+            // 创建牌组
+            const gameCards = [];
+            selectedKana.forEach(kana => {
+                gameCards.push({ char: kana.hiragana, romaji: kana.romaji });
+                gameCards.push({ char: kana.katakana, romaji: kana.romaji });
+            });
+
+            // 洗牌
+            for (let i = gameCards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [gameCards[i], gameCards[j]] = [gameCards[j], gameCards[i]];
+            }
+
+            // 根据卡牌数量调整网格布局
+            const columns = Math.ceil(Math.sqrt(gameCards.length));
+            gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+
+            // 创建卡片元素
+            gameCards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.dataset.index = index;
+                cardElement.dataset.romaji = card.romaji;
+
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-face card-front';
+
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-face card-back';
+                cardBack.textContent = card.char;
+
+                cardElement.appendChild(cardFront);
+                cardElement.appendChild(cardBack);
+                cardElement.addEventListener('click', flipCard);
+
+                cards.push({
+                    element: cardElement,
+                    char: card.char,
+                    romaji: card.romaji
+                });
+                gameBoard.appendChild(cardElement);
+            });
+        }
+
+        function flipCard() {
+            if (!isPlaying || this.classList.contains('flipped') || 
+                this.classList.contains('matched') || flippedCards.length >= 2) {
+                return;
+            }
+
+            this.classList.add('flipped');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                setTimeout(checkMatch, 1000);
+            }
+        }
+
+        function createStar(element) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.textContent = '⭐';
+            
+            const rect = element.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            star.style.left = x + 'px';
+            star.style.top = y + 'px';
+            star.style.animation = 'star 0.8s ease-out forwards';
+            
+            document.body.appendChild(star);
+            
+            setTimeout(() => {
+                document.body.removeChild(star);
+            }, 800);
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const match = card1.dataset.romaji === card2.dataset.romaji;
+
+            if (match) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                createStar(card1);
+                createStar(card2);
+                
+                matchedPairs++;
+                score += 10;
+                scoreDisplay.textContent = score;
+
+                const cardPairsInput = document.getElementById('cardPairs');
+                if (matchedPairs === parseInt(cardPairsInput.value)) {
+                    endGame();
+                }
+            } else {
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+            }
+
+            flippedCards = [];
+        }
+
+        function startGame() {
+            if (startBtn.textContent === '重新开始') {
+                window.location.reload();
+                return;
+            }
+            const cardPairsInput = document.getElementById('cardPairs');
+            cardPairsInput.disabled = true; // 禁用卡牌数量输入
+            
+            isPlaying = true;
+            startBtn.textContent = '重新开始';
+            pauseBtn.disabled = false;
+            overlay.style.display = 'none';
+            initializeGame();
+            startTimer();
+        }
+
+        function pauseGame() {
+            if (isPlaying) {
+                isPlaying = false;
+                pauseBtn.textContent = '继续';
+                clearInterval(timerInterval);
+                overlay.style.display = 'flex';
+            } else {
+                isPlaying = true;
+                pauseBtn.textContent = '暂停';
+                startTimer();
+                overlay.style.display = 'none';
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer++;
+                timerDisplay.textContent = timer;
+            }, 1000);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            pauseBtn.disabled = true;
+            alert(`恭喜完成！用时：${timer}秒，得分：${score}`);
+        }
+
+        startBtn.addEventListener('click', startGame);
+        pauseBtn.addEventListener('click', pauseGame);
+    </script>
+</body>
+</html>
