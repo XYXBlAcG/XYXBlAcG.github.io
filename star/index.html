@@ -1,25 +1,210 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>星</title>
-    </head>
-    <body>
-        <del><h1 style="font-family: serif;">都没有人访问。我就不放文件了吧。</h1></del>
-        <p style="font-family: serif;">css 我都不想写了，点击下面下载</p>
-        <!-- <a href="./pdf/二项式定理.pdf" download="二项式定理.pdf">二项式定理.pdf</a><br /> -->
-        <a href="./pdf/排列组合.pdf" download="排列组合.pdf">排列组合.pdf</a><br />
-        <!-- <a href="./pdf/等比等差数列.pdf" download="等比等差数列.pdf">等比等差数列.pdf</a><br /> -->
-        <a href="./pdf/等比等差数列_附录.pdf" download="等比等差数列_附录.pdf">等比等差数列_附录.pdf</a><br />
-        <!-- <a href="./pdf/组合数求和.pdf" download="组合数求和.pdf">组合数求和.pdf</a><br /> -->
-        <a href="./pdf/蒙日圆.pdf" download="蒙日圆.pdf">蒙日圆.pdf</a><br />
-        <a href="./pdf/数学每日一题.pdf" download="数学每日一题.pdf">数学每日一题.pdf</a><br />
-        <a href="./pdf/斐波那契数列.pdf" download="斐波那契数列.pdf">斐波那契数列.pdf</a><br />
-        <a href="./pdf/组合数.pdf" download="组合数.pdf">组合数.pdf</a><br />
-        <a href="./pdf/数学拓展.pdf" download="数学拓展.pdf">数学拓展.pdf</a><br />
-        <a href="./pdf/大学英语六级高频词组.pdf" download="大学英语六级高频词组.pdf">大学英语六级高频词组.pdf</a><br />
-        <a href="./pdf/大学英语六级高频词汇.pdf" download="大学英语六级高频词汇.pdf">大学英语六级高频词汇.pdf</a><br />
-
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* 标题样式 */
+        h1 {
+            font-size: 2.2rem;
+            text-align: center;
+            margin: 2rem 0 1.5rem;
+            color: #2c3e50;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        del h1 {
+            color: #95a5a6;
+            text-decoration: line-through;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* 描述文本样式 */
+        p {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        /* 文件下载链接容器 */
+        .file-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 1.5rem;
+        }
+        
+        /* 单个文件链接样式 */
+        .file-link {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            text-decoration: none;
+            color: #2c3e50;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border-left: 4px solid #3498db;
+        }
+        
+        .file-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #f1f9ff;
+        }
+        
+        /* PDF图标 */
+        .file-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 6px;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        /* 文件名称 */
+        .file-name {
+            font-weight: 500;
+            flex-grow: 1;
+        }
+        
+        /* 下载提示 */
+        .download-hint {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            del h1 {
+                font-size: 1.5rem;
+            }
+            
+            .file-link {
+                padding: 14px 16px;
+            }
+            
+            .file-icon {
+                width: 36px;
+                height: 36px;
+                margin-right: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>XYX's PDF file storage</h1>
+    <p>CSS 我都不想写了，点击下面下载.</p>
+    
+    <div class="file-links">
+        <!-- <a href="./pdf/二项式定理.pdf" download="二项式定理.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">二项式定理.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a> -->
+        
+        <a href="./pdf/排列组合.pdf" download="排列组合.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">排列组合.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <!-- <a href="./pdf/等比等差数列.pdf" download="等比等差数列.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">等比等差数列.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a> -->
+        
+        <a href="./pdf/等比等差数列_附录.pdf" download="等比等差数列_附录.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">等比等差数列_附录.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <!-- <a href="./pdf/组合数求和.pdf" download="组合数求和.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">组合数求和.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a> -->
+        
+        <a href="./pdf/蒙日圆.pdf" download="蒙日圆.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">蒙日圆.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <a href="./pdf/数学每日一题.pdf" download="数学每日一题.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">数学每日一题.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <a href="./pdf/斐波那契数列.pdf" download="斐波那契数列.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">斐波那契数列.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <a href="./pdf/组合数.pdf" download="组合数.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">组合数.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <a href="./pdf/数学拓展.pdf" download="数学拓展.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">数学拓展.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <a href="./pdf/大学英语六级高频词组.pdf" download="大学英语六级高频词组.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">大学英语六级高频词组.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+        
+        <a href="./pdf/大学英语六级高频词汇.pdf" download="大学英语六级高频词汇.pdf" class="file-link">
+            <span class="file-icon">PDF</span>
+            <span class="file-name">大学英语六级高频词汇.pdf</span>
+            <span class="download-hint">点击下载</span>
+        </a>
+    </div>
+</body>
 </html>
