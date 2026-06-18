@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>WordMemo · 智能背单词桌面软件</title>
+  <!-- 现代风格落地页，介绍背单词软件并提供下载与源码链接 -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(145deg, #f7f9fc 0%, #e9f0f8 100%);
+      font-family: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      color: #1e2b3c;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: #ffffffdd;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+      border-radius: 2.5rem;
+      padding: 3rem 2.5rem;
+      border: 1px solid rgba(255,255,255,0.6);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-icon {
+      font-size: 3.5rem;
+      margin-bottom: 0.25rem;
+      filter: drop-shadow(0 8px 12px rgba(0,100,200,0.3));
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0f2b5c, #2c5aa0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: #46688a;
+      margin-top: 0.5rem;
+      font-weight: 400;
+    }
+
+    .mockup {
+      background: linear-gradient(120deg, #c7ddf5, #dce7f5);
+      border-radius: 1.8rem;
+      padding: 2.5rem 1.5rem;
+      margin: 2rem 0 2.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      box-shadow: inset 0 2px 12px rgba(0,0,0,0.03);
+      border: 1px solid rgba(100, 130, 180, 0.25);
+    }
+
+    .mockup-window {
+      background: #ffffff;
+      border-radius: 1.2rem;
+      padding: 1.2rem 1rem;
+      width: 200px;
+      box-shadow: 0 20px 30px -12px rgba(0,40,70,0.25);
+      text-align: center;
+    }
+
+    .mockup-window .card-title {
+      font-weight: 600;
+      color: #152c45;
+      margin-bottom: 0.5rem;
+    }
+
+    .mockup-word {
+      background: #ebf3ff;
+      border-radius: 0.8rem;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      font-weight: 600;
+      color: #0b2b50;
+    }
+
+    .mockup-badge {
+      background: #d4e3fc;
+      color: #103a66;
+      font-size: 0.8rem;
+      border-radius: 1.5rem;
+      padding: 0.25rem 0.9rem;
+      display: inline-block;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.8rem;
+      margin: 2.8rem 0 2.2rem;
+    }
+
+    .feature-card {
+      background: #ffffff;
+      border-radius: 1.5rem;
+      padding: 1.8rem 1.4rem;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.04);
+      transition: transform 0.2s ease, box-shadow 0.2s;
+      border: 1px solid #edf2f9;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 18px 30px rgba(20, 60, 120, 0.12);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 650;
+      color: #0a1e38;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      color: #3e566e;
+      font-size: 0.95rem;
+    }
+
+    .download-section {
+      background: #f4f8ff;
+      border-radius: 2rem;
+      padding: 2.2rem 2rem;
+      margin-top: 1rem;
+      text-align: center;
+      border: 1px solid #d9e6fa;
+    }
+
+    .download-section h2 {
+      font-size: 1.8rem;
+      font-weight: 650;
+      color: #0c294d;
+      margin-bottom: 0.75rem;
+    }
+
+    .platform-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      margin: 1.8rem 0 1.2rem;
+    }
+
+    .btn {
+      background: white;
+      border: none;
+      padding: 0.9rem 2rem;
+      border-radius: 3rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #163a62;
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(0, 70, 150, 0.12);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid #cfdef5;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #e6f0ff;
+      border-color: #8aa9d6;
+      box-shadow: 0 12px 22px rgba(0, 80, 180, 0.18);
+      transform: scale(1.02);
+      color: #062445;
+    }
+
+    .btn-primary {
+      background: #0b2d5a;
+      color: white;
+      border: 1px solid #0b2d5a;
+      box-shadow: 0 8px 18px rgba(8, 60, 140, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #13407a;
+      border-color: #13407a;
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #2c5282;
+      color: #1a3b64;
+    }
+
+    .source-link {
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      color: #395571;
+    }
+
+    .source-link a {
+      color: #0c3e73;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px dashed #2b5b92;
+    }
+
+    .source-link a:hover {
+      color: #051e3a;
+      border-bottom: 1px solid #0b2b4f;
+    }
+
+    footer {
+      margin-top: 2.8rem;
+      text-align: center;
+      color: #6d7e94;
+      font-size: 0.9rem;
+      border-top: 1px solid #dce4f0;
+      padding-top: 1.8rem;
+    }
+
+    @media (max-width: 650px) {
+      .container {
+        padding: 2rem 1.5rem;
+      }
+      h1 {
+        font-size: 2.4rem;
+      }
+      .platform-buttons {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-icon">📘✨</div>
+      <h1>WordMemo</h1>
+      <p class="subtitle">基于间隔重复的智能背单词桌面软件 · 离线可用 · 完全本地化</p>
+    </header>
+
+    <!-- 模拟软件界面的简易卡片，用于展示风格 -->
+    <div class="mockup">
+      <div class="mockup-window">
+        <div class="card-title">📚 今日复习</div>
+        <div class="mockup-word">apple</div>
+        <div class="mockup-badge">困难</div>
+        <div class="mockup-word" style="margin-top:0.8rem;">serendipity</div>
+        <div class="mockup-badge">良好</div>
+        <div style="margin-top:1rem; font-size:0.8rem; color:#305d8c;">⏱ 下次复习：2天后</div>
+      </div>
+      <div class="mockup-window">
+        <div class="card-title">📅 打卡日历</div>
+        <div style="display:flex; gap:0.4rem; justify-content:center; margin:0.8rem 0;">
+          <span>✅</span><span>✅</span><span>✅</span><span>⬜</span><span>✅</span>
+        </div>
+        <div style="font-weight:600; color:#1a3b61;">连续打卡 12 天</div>
+        <div style="font-size:0.85rem; color:#4b6589;">总打卡 47 天</div>
+      </div>
+      <div class="mockup-window">
+        <div class="card-title">📂 自定义词书</div>
+        <div style="background:#f0f4fc; border-radius:0.6rem; padding:0.5rem; margin:0.5rem 0;">
+          <span style="font-weight:600;">English.json</span><br>
+          <span style="font-size:0.8rem;">2500 词 · 已导入</span>
+        </div>
+        <div style="background:#f0f4fc; border-radius:0.6rem; padding:0.5rem;">
+          <span style="font-weight:600;">日本語.json</span><br>
+          <span style="font-size:0.8rem;">1200 词 · 学习中</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 核心功能特点 -->
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📥</div>
+        <h3>JSON 词书导入</h3>
+        <p>自由导入自定义词书，支持多语言、音标、例句等完整字段，轻松切换学习内容。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>SM-2 间隔重复</h3>
+        <p>采用成熟的 Anki 式算法，根据你的记忆评级自动安排最佳复习时间。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗓️</div>
+        <h3>日历打卡统计</h3>
+        <p>完成每日复习自动打卡，月度热力图清晰展示连续天数和总进度。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💾</div>
+        <h3>纯本地存储</h3>
+        <p>所有学习记录、进度、词书均保存在本地 SQLite，无需网络，隐私无忧。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖥️</div>
+        <h3>跨平台桌面端</h3>
+        <p>支持 Windows、macOS 和 Linux，原生体验，界面简洁专注。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔊</div>
+        <h3>发音与例句</h3>
+        <p>内置单词发音按钮，翻转卡片展示释义、音标和例句翻译。</p>
+      </div>
+    </div>
+
+    <!-- 下载区域与源码链接 -->
+    <div class="download-section">
+      <h2>📦 获取 WordMemo</h2>
+      <p style="color:#335577; margin-bottom:0.5rem;">完全免费 · 无广告 · 离线使用</p>
+      <div class="platform-buttons">
+        <!-- 下载链接使用占位地址，后续替换为真实 release 链接 -->
+        <a href="#" class="btn" target="_blank" rel="noopener">
+          <span>🪟</span> Windows 版
+        </a>
+        <a href="#" class="btn" target="_blank" rel="noopener">
+          <span>🍏</span> macOS 版
+        </a>
+        <a href="#" class="btn" target="_blank" rel="noopener">
+          <span>🐧</span> Linux 版
+        </a>
+      </div>
+      <div style="margin:1.2rem 0 0.8rem;">
+        <a href="#" class="btn btn-outline" target="_blank" rel="noopener">
+          ⭐ 查看源代码 (GitHub)
+        </a>
+      </div>
+      <div class="source-link">
+        <span>或直接访问仓库：</span>
+        <a href="#" target="_blank" rel="noopener">https://github.com/XYXBlAcG/WordMemo</a>
+      </div>
+      <p style="font-size:0.8rem; color:#567796; margin-top:1rem;">* 暂未开放</p>
+    </div>
+
+    <footer>
+      <p>WordMemo · 你的本地化智能背单词伙伴</p>
+      <p style="margin-top:0.3rem;">使用 Python + PyQt 构建，数据完全由你掌控</p>
+      <a href="/index.html">回到首页</a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zip2PDF - 批量压缩包图片合并工具</title>
+    <!-- 引入 JSZip 和 pdf-lib -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .app-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            width: 820px;
+            max-width: 100%;
+            padding: 24px 28px 32px;
+            transition: 0.2s;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid #e9edf4;
+            padding-bottom: 14px;
+        }
+        h1 small {
+            font-size: 14px;
+            font-weight: 400;
+            color: #64748b;
+            margin-left: 8px;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .toolbar button {
+            padding: 6px 16px;
+            background: #f1f5f9;
+            border: 1px solid #d1d9e6;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #1e293b;
+        }
+        .toolbar button:hover {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+        }
+        .toolbar button.primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: white;
+        }
+        .toolbar button.primary:hover {
+            background: #1d4ed8;
+        }
+        .toolbar button.danger {
+            color: #b91c1c;
+        }
+        .toolbar button.danger:hover {
+            background: #fee2e2;
+            border-color: #f87171;
+        }
+        .file-list {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            min-height: 120px;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            background: #fafcff;
+        }
+        .file-list table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .file-list th {
+            background: #f1f5f9;
+            text-align: left;
+            padding: 8px 12px;
+            font-weight: 500;
+            color: #334155;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            border-bottom: 1px solid #d1d9e6;
+        }
+        .file-list td {
+            padding: 6px 12px;
+            border-bottom: 1px solid #edf2f7;
+            color: #1e293b;
+        }
+        .file-list tr:hover td {
+            background: #f8fafc;
+        }
+        .file-list .empty-msg {
+            padding: 32px 16px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 15px;
+        }
+        .settings {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 18px;
+            background: #f8fafc;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .settings label {
+            font-weight: 500;
+            color: #1e293b;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .settings .output-group {
+            display: flex;
+            flex: 2;
+            min-width: 200px;
+            align-items: center;
+            gap: 8px;
+        }
+        .settings .output-group input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #d1d9e6;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            min-width: 100px;
+        }
+        .settings .output-group input:disabled {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .settings .output-group button {
+            padding: 6px 14px;
+            background: #e2e8f0;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .settings .output-group button:hover {
+            background: #cbd5e1;
+        }
+        .settings .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: default;
+        }
+        .settings .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .settings .checkbox-group span {
+            font-size: 14px;
+            color: #475569;
+        }
+        .settings .hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-left: 4px;
+        }
+        .control-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .control-bar button {
+            padding: 8px 28px;
+            border-radius: 6px;
+            border: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .control-bar .start-btn {
+            background: #2563eb;
+            color: white;
+        }
+        .control-bar .start-btn:hover {
+            background: #1d4ed8;
+        }
+        .control-bar .start-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .control-bar .exit-btn {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        .control-bar .exit-btn:hover {
+            background: #cbd5e1;
+        }
+        .progress-area {
+            margin-bottom: 12px;
+        }
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #2563eb;
+            transition: width 0.2s ease;
+            border-radius: 12px;
+        }
+        .progress-label {
+            font-size: 13px;
+            color: #334155;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .log-area {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 10px 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+        .log-area .log-info { color: #60a5fa; }
+        .log-area .log-success { color: #34d399; }
+        .log-area .log-error { color: #f87171; }
+        .log-area .log-warn { color: #fbbf24; }
+        .footer {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: right;
+            border-top: 1px solid #edf2f7;
+            padding-top: 12px;
+        }
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 11px;
+            padding: 0 8px;
+            border-radius: 12px;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container" id="app">
+    <h1>
+        📦 Zip2PDF
+        <small>批量压缩包图片合并工具</small>
+        <span class="badge" id="apiBadge">Web 版</span>
+    </h1>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <button id="addBtn">➕ 添加文件</button>
+        <button id="removeBtn">➖ 移除选中</button>
+        <button id="clearBtn" class="danger">🗑️ 清空列表</button>
+        <span style="flex:1;"></span>
+        <span style="font-size:13px;color:#64748b;" id="fileCount">共 0 个压缩包</span>
+    </div>
+
+    <!-- 文件列表 -->
+    <div class="file-list" id="fileList">
+        <table>
+            <thead><tr><th style="width:30px;">#</th><th>文件名</th><th style="width:90px;">大小</th><th style="width:80px;">状态</th></tr></thead>
+            <tbody id="fileTableBody">
+                <tr><td colspan="4" class="empty-msg">暂无压缩包，请点击“添加文件”</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 设置区 -->
+    <div class="settings">
+        <div class="output-group">
+            <label for="outputDirInput">📁 输出目录</label>
+            <input type="text" id="outputDirInput" placeholder="点击「浏览」选择文件夹" disabled>
+            <button id="browseBtn">浏览…</button>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="keepCheck" checked disabled>
+            <span>保留原始压缩包 <span class="hint">(Web 版不支持删除)</span></span>
+        </div>
+    </div>
+
+    <!-- 控制区 -->
+    <div class="control-bar">
+        <button class="start-btn" id="startBtn">▶ 开始合并</button>
+        <button class="exit-btn" id="exitBtn">✕ 退出</button>
+    </div>
+
+    <!-- 进度 -->
+    <div class="progress-area">
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-label">
+            <span id="progressText">就绪</span>
+            <span id="progressPercent">0%</span>
+        </div>
+    </div>
+
+    <!-- 日志 -->
+    <div class="log-area" id="logArea">> 欢迎使用 Zip2PDF Web 版\n> 请添加压缩包并选择输出目录（若支持）</div>
+
+    <div class="footer">
+        ⚡ 使用 File System Access API（Chrome 86+）可写入指定目录 · 不支持则自动下载
+        <br>记忆功能：重启后自动填入上次选择的目录名称（需重新授权）
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ---------- DOM 引用 ----------
+        const fileTableBody = document.getElementById('fileTableBody');
+        const fileCount = document.getElementById('fileCount');
+        const addBtn = document.getElementById('addBtn');
+        const removeBtn = document.getElementById('removeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const startBtn = document.getElementById('startBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        const browseBtn = document.getElementById('browseBtn');
+        const outputDirInput = document.getElementById('outputDirInput');
+        const keepCheck = document.getElementById('keepCheck');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressPercent = document.getElementById('progressPercent');
+        const logArea = document.getElementById('logArea');
+        const apiBadge = document.getElementById('apiBadge');
+
+        // ---------- 状态 ----------
+        let zipFiles = [];                // 存储 File 对象
+        let selectedIndex = -1;           // 当前选中行（用于移除）
+        let dirHandle = null;             // 用户选择的目录句柄
+        let isProcessing = false;
+        let isSupportFileSystem = false;
+
+        // 检查 File System Access API
+        if ('showDirectoryPicker' in window) {
+            isSupportFileSystem = true;
+            apiBadge.textContent = 'Web (支持目录写入)';
+        } else {
+            apiBadge.textContent = 'Web (仅下载)';
+            browseBtn.disabled = true;
+            outputDirInput.placeholder = '浏览器不支持选择文件夹，将使用下载';
+        }
+
+        // ---------- 记忆上次目录 ----------
+        const STORAGE_KEY = 'zip2pdf_last_dir';
+        function loadLastDir() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                outputDirInput.value = saved;
+            }
+        }
+        function saveLastDir(name) {
+            if (name) {
+                localStorage.setItem(STORAGE_KEY, name);
+                outputDirInput.value = name;
+            }
+        }
+        loadLastDir();
+
+        // ---------- 日志 ----------
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const prefix = `[${time}]`;
+            let className = 'log-info';
+            if (type === 'success') className = 'log-success';
+            else if (type === 'error') className = 'log-error';
+            else if (type === 'warn') className = 'log-warn';
+            const line = `<div class="${className}">${prefix} ${message}</div>`;
+            logArea.innerHTML += line;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLog() {
+            logArea.innerHTML = '';
+        }
+
+        // ---------- 更新文件列表 UI ----------
+        function renderFileList() {
+            if (zipFiles.length === 0) {
+                fileTableBody.innerHTML = `<tr><td colspan="4" class="empty-msg">暂无压缩包，请点击“添加文件”</td></tr>`;
+                fileCount.textContent = '共 0 个压缩包';
+                return;
+            }
+            let html = '';
+            zipFiles.forEach((file, idx) => {
+                const size = (file.size / 1024).toFixed(1) + ' KB';
+                const status = '待处理';
+                const selectedClass = (idx === selectedIndex) ? ' style="background:#e0f2fe;"' : '';
+                html += `<tr${selectedClass} data-index="${idx}">
+                    <td>${idx+1}</td>
+                    <td>${file.name}</td>
+                    <td>${size}</td>
+                    <td>${status}</td>
+                </tr>`;
+            });
+            fileTableBody.innerHTML = html;
+            fileCount.textContent = `共 ${zipFiles.length} 个压缩包`;
+            // 点击行选中
+            document.querySelectorAll('#fileTableBody tr[data-index]').forEach(tr => {
+                tr.addEventListener('click', function(e) {
+                    const idx = parseInt(this.dataset.index);
+                    if (!isNaN(idx)) {
+                        selectedIndex = idx;
+                        renderFileList();
+                    }
+                });
+            });
+        }
+
+        // ---------- 添加文件 ----------
+        function addFiles() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.zip';
+            input.multiple = true;
+            input.onchange = function(e) {
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+                // 过滤非 .zip
+                const valid = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
+                if (valid.length === 0) {
+                    log('未选择任何 .zip 文件', 'warn');
+                    return;
+                }
+                zipFiles.push(...valid);
+                renderFileList();
+                log(`已添加 ${valid.length} 个压缩包`, 'info');
+                // 重置选中
+                selectedIndex = -1;
+            };
+            input.click();
+        }
+
+        // ---------- 移除选中 ----------
+        function removeSelected() {
+            if (selectedIndex === -1 || selectedIndex >= zipFiles.length) {
+                log('请先在列表中选择一个压缩包', 'warn');
+                return;
+            }
+            const removed = zipFiles.splice(selectedIndex, 1)[0];
+            selectedIndex = -1;
+            renderFileList();
+            log(`已移除: ${removed.name}`, 'info');
+        }
+
+        // ---------- 清空列表 ----------
+        function clearList() {
+            if (zipFiles.length === 0) return;
+            zipFiles = [];
+            selectedIndex = -1;
+            renderFileList();
+            log('已清空所有压缩包', 'info');
+        }
+
+        // ---------- 浏览输出目录 ----------
+        async function browseDirectory() {
+            if (!isSupportFileSystem) {
+                log('您的浏览器不支持选择文件夹，将使用默认下载', 'warn');
+                return;
+            }
+            try {
+                const handle = await window.showDirectoryPicker();
+                dirHandle = handle;
+                // 显示文件夹名称 (handle.name)
+                const dirName = handle.name;
+                saveLastDir(dirName);
+                log(`已选择输出目录: ${dirName}`, 'success');
+                // 启用开始按钮
+                startBtn.disabled = false;
+            } catch (err) {
+                if (err.name !== 'AbortError' && err.name !== 'SecurityError') {
+                    log(`选择目录失败: ${err.message}`, 'error');
+                } else {
+                    log('取消选择目录', 'warn');
+                }
+            }
+        }
+
+        // ---------- 自然排序 ----------
+        function naturalCompare(a, b) {
+            const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+            return collator.compare(a, b);
+        }
+
+        // ---------- 处理单个 ZIP ----------
+        async function processZip(file, dirHandle) {
+            const fileName = file.name.replace(/\.zip$/i, '');
+            log(`开始处理: ${file.name}`, 'info');
+            try {
+                const zip = await JSZip.loadAsync(file);
+                // 收集图片文件
+                const imageFiles = [];
+                zip.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir) {
+                        const name = zipEntry.name;
+                        const ext = name.split('.').pop().toLowerCase();
+                        if (['jpg','jpeg','png','bmp','gif','webp','tiff','tif'].includes(ext)) {
+                            imageFiles.push({ name, entry: zipEntry });
+                        }
+                    }
+                });
+                if (imageFiles.length === 0) {
+                    log(`⚠️ ${file.name} 中未找到任何图片文件，跳过`, 'warn');
+                    return null;
+                }
+                // 按文件名自然排序
+                imageFiles.sort((a, b) => naturalCompare(a.name, b.name));
+
+                // 创建 PDF
+                const { PDFDocument } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+
+                // 处理每张图片
+                let processed = 0;
+                for (const item of imageFiles) {
+                    try {
+                        const blob = await item.entry.async('blob');
+                        const img = new Image();
+                        const url = URL.createObjectURL(blob);
+                        img.src = url;
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = () => reject(new Error('图片加载失败'));
+                        });
+                        // 绘制到 canvas 并转为 JPEG
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const jpegBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+                        if (!jpegBlob) throw new Error('转换 JPEG 失败');
+                        const arrayBuffer = await jpegBlob.arrayBuffer();
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        const jpegImage = await pdfDoc.embedJpg(uint8Array);
+                        const page = pdfDoc.addPage([jpegImage.width, jpegImage.height]);
+                        page.drawImage(jpegImage, { x: 0, y: 0, width: jpegImage.width, height: jpegImage.height });
+                        URL.revokeObjectURL(url);
+                        processed++;
+                    } catch (err) {
+                        log(`图片 "${item.name}" 处理失败: ${err.message}，已跳过`, 'error');
+                    }
+                }
+                if (processed === 0) {
+                    log(`⚠️ ${file.name} 所有图片处理失败，无法生成 PDF`, 'error');
+                    return null;
+                }
+                const pdfBytes = await pdfDoc.save();
+                // 保存
+                const pdfName = fileName + '.pdf';
+                if (dirHandle && isSupportFileSystem) {
+                    try {
+                        const fileHandle = await dirHandle.getFileHandle(pdfName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(pdfBytes);
+                        await writable.close();
+                        log(`✅ 已生成并保存: ${pdfName}`, 'success');
+                    } catch (err) {
+                        log(`保存到目录失败: ${err.message}，将改为下载`, 'error');
+                        downloadPDF(pdfBytes, pdfName);
+                    }
+                } else {
+                    downloadPDF(pdfBytes, pdfName);
+                    log(`⬇️ 已下载: ${pdfName}`, 'success');
+                }
+                return pdfBytes;
+            } catch (err) {
+                log(`处理 ${file.name} 时发生严重错误: ${err.message}`, 'error');
+                return null;
+            }
+        }
+
+        // ---------- 下载 PDF ----------
+        function downloadPDF(pdfBytes, filename) {
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ---------- 开始合并 ----------
+        async function startMerge() {
+            if (isProcessing) return;
+            if (zipFiles.length === 0) {
+                log('请先添加至少一个压缩包', 'warn');
+                return;
+            }
+            // 如果支持目录写入但未选择目录，提示
+            if (isSupportFileSystem && !dirHandle) {
+                log('请先点击“浏览”选择一个输出目录', 'warn');
+                return;
+            }
+            // 如果不支持目录，则直接下载
+            if (!isSupportFileSystem) {
+                log('当前浏览器不支持写入指定目录，将自动下载每个 PDF', 'info');
+            }
+
+            isProcessing = true;
+            startBtn.disabled = true;
+            addBtn.disabled = true;
+            removeBtn.disabled = true;
+            clearBtn.disabled = true;
+            browseBtn.disabled = true;
+
+            // 重置进度
+            progressFill.style.width = '0%';
+            progressText.textContent = '开始处理...';
+            progressPercent.textContent = '0%';
+
+            const total = zipFiles.length;
+            let completed = 0;
+            let successCount = 0;
+
+            try {
+                // 逐个处理
+                for (let i = 0; i < total; i++) {
+                    const file = zipFiles[i];
+                    progressText.textContent = `处理中: ${file.name}`;
+                    const result = await processZip(file, dirHandle);
+                    if (result) successCount++;
+                    completed++;
+                    const pct = Math.round((completed / total) * 100);
+                    progressFill.style.width = pct + '%';
+                    progressPercent.textContent = pct + '%';
+                    // 更新列表状态（简单处理：直接刷新）
+                    renderFileList();
+                    // 更新状态列（我们重新渲染时状态都是“待处理”，这里不动态更新，可以忽略）
+                }
+                progressText.textContent = `✅ 全部完成！成功 ${successCount}/${total}`;
+                log(`🎉 处理完成，成功生成 ${successCount} 个 PDF`, 'success');
+            } catch (err) {
+                log(`合并过程中发生异常: ${err.message}`, 'error');
+                progressText.textContent = '❌ 处理出错';
+            } finally {
+                isProcessing = false;
+                startBtn.disabled = false;
+                addBtn.disabled = false;
+                removeBtn.disabled = false;
+                clearBtn.disabled = false;
+                browseBtn.disabled = !isSupportFileSystem;
+                // 重置进度条（保留最终状态）
+            }
+        }
+
+        // ---------- 退出 ----------
+        function exitApp() {
+            if (isProcessing) {
+                if (!confirm('正在处理中，确定退出吗？')) return;
+            }
+            // 模拟退出：清空列表和日志，重置界面
+            zipFiles = [];
+            selectedIndex = -1;
+            dirHandle = null;
+            renderFileList();
+            clearLog();
+            progressFill.style.width = '0%';
+            progressText.textContent = '就绪';
+            progressPercent.textContent = '0%';
+            outputDirInput.value = '';
+            localStorage.removeItem(STORAGE_KEY);
+            log('程序已退出（清空状态）', 'info');
+        }
+
+        // ---------- 事件绑定 ----------
+        addBtn.addEventListener('click', addFiles);
+        removeBtn.addEventListener('click', removeSelected);
+        clearBtn.addEventListener('click', clearList);
+        browseBtn.addEventListener('click', browseDirectory);
+        startBtn.addEventListener('click', startMerge);
+        exitBtn.addEventListener('click', exitApp);
+
+        // 拖拽支持
+        const appContainer = document.querySelector('.app-container');
+        appContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            appContainer.style.border = '2px dashed #2563eb';
+        });
+        appContainer.addEventListener('dragleave', () => {
+            appContainer.style.border = 'none';
+        });
+        appContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            appContainer.style.border = 'none';
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 0) return;
+            const valid = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
+            if (valid.length === 0) {
+                log('拖拽的文件中没有 .zip 压缩包', 'warn');
+                return;
+            }
+            zipFiles.push(...valid);
+            renderFileList();
+            log(`拖拽添加 ${valid.length} 个压缩包`, 'info');
+        });
+
+        // 初始化
+        renderFileList();
+        // 如果支持 File System，启用浏览按钮
+        if (isSupportFileSystem) {
+            browseBtn.disabled = false;
+        } else {
+            browseBtn.disabled = true;
+            outputDirInput.placeholder = '浏览器不支持，将使用下载';
+        }
+        // 如果已有记忆目录，提示
+        if (outputDirInput.value) {
+            log(`上次输出目录: ${outputDirInput.value}，如需使用请重新点击“浏览”授权`, 'info');
+        }
+
+        // 阻止浏览器默认拖拽打开链接
+        document.addEventListener('dragover', e => e.preventDefault());
+        document.addEventListener('drop', e => e.preventDefault());
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件整理工具</title>
+    <!-- 引入 Font Awesome 图标库（可选，用于精美图标） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg: #fafbfc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #eef2ff;
+            --accent: #0ea5e9;
+            --accent-light: #e0f2fe;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(0, 0, 0, 0.03);
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ========== 导航栏 ========== */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .navbar.scrolled {
+            border-bottom-color: var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text);
+            text-decoration: none;
+        }
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+            list-style: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover {
+            background: var(--surface);
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 1rem;
+            border-radius: 12px;
+        }
+        .btn-icon {
+            font-size: 1.1rem;
+        }
+
+        /* ========== 英雄区域 ========== */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            letter-spacing: 0.5px;
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #1e293b 0%, #3b3f5c 80%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 32px;
+        }
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero-mockup {
+            margin-top: 48px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #fff;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero-mockup img {
+            width: 100%;
+            display: block;
+            /* 模拟截图，使用一个占位图或者CSS绘制界面示意 */
+        }
+        .mockup-placeholder {
+            background: #f8fafc;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            color: #94a3b8;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            min-height: 200px;
+            align-items: center;
+            justify-content: center;
+        }
+        .mockup-placeholder i {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+        }
+
+        /* ========== 特性部分 ========== */
+        .section {
+            padding: 80px 0;
+        }
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s;
+            border: 1px solid var(--border);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: #cbd5e1;
+        }
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .feature-card h3 {
+            font-size: 1.2rem;
+            font-weight: 650;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .color-accent .feature-icon {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+        .color-success .feature-icon {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .color-warning .feature-icon {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        /* 时间粒度展示 */
+        .time-granularity-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .badge {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* ========== CTA 部分 ========== */
+        .cta-section {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 24px;
+            padding: 60px 48px;
+            text-align: center;
+            color: white;
+            margin: 40px 0;
+            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.25);
+        }
+        .cta-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .cta-section p {
+            opacity: 0.9;
+            margin-bottom: 32px;
+            font-size: 1.1rem;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-white {
+            background: white;
+            color: #4f46e5;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn-white:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+        }
+        .btn-ghost-light {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(4px);
+        }
+        .btn-ghost-light:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        /* ========== 页脚 ========== */
+        .footer {
+            border-top: 1px solid var(--border);
+            padding: 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            color: var(--primary);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.4rem;
+            }
+            .navbar {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .nav-links {
+                gap: 20px;
+            }
+            .cta-section {
+                padding: 40px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航 -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="logo">
+            <div class="logo-icon"><i class="fas fa-folder-open"></i></div>
+            FileSorter
+        </a>
+        <ul class="nav-links">
+            <li><a href="#features">功能</a></li>
+            <li><a href="#how-it-works">原理</a></li>
+            <li><a href="#download">下载</a></li>
+            <li><a href="#source">源码</a></li>
+        </ul>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge">🚀 全新上线 · 开源免费</div>
+            <h1>让文件自动归位<br>告别混乱的文件夹</h1>
+            <p>一个命令即可按扩展名和时间智能整理文件。支持年/月/周/天粒度，自定义时间段，移动或复制，冲突智能处理。支持网页处理和Python脚本 操作。</p>
+            <div class="hero-actions">
+                <a href="#download" class="btn btn-primary btn-lg"><i class="fas fa-download btn-icon"></i> 立即下载</a>
+                <a href="#source" class="btn btn-outline btn-lg"><i class="fab fa-github btn-icon"></i> 查看源码</a>
+            </div>
+            <!-- 模拟截图区域 -->
+            <div class="hero-mockup">
+                <div class="mockup-placeholder">
+                    <i class="fas fa-image"></i>
+                    <span>软件界面截图预览 (网页版 & GUI)</span>
+                    <span style="font-size:0.7rem;">$ filesorter ~/Downloads --granularity month --mode move</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 核心功能 -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>强大而灵活的分类引擎</h2>
+                <p>从混乱到井然有序，只需几秒钟</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-file-signature"></i></div>
+                    <h3>按扩展名一级分类</h3>
+                    <p>自动识别 .txt、.jpg、.pdf 等所有扩展名，创建对应文件夹，无扩展名文件归入“其他”。支持递归扫描子文件夹。</p>
+                </div>
+                <div class="feature-card color-accent">
+                    <div class="feature-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <h3>灵活的时间二级分类</h3>
+                    <p>根据文件修改时间细分到年、月、周、天，或使用自定义时间段（如“2024上半年”）。未匹配文件可灵活处理。</p>
+                    <div class="time-granularity-badges">
+                        <span class="badge">2024</span>
+                        <span class="badge">2024-06</span>
+                        <span class="badge">2024-W25</span>
+                        <span class="badge">自定义区间</span>
+                    </div>
+                </div>
+                <div class="feature-card color-success">
+                    <div class="feature-icon"><i class="fas fa-copy"></i></div>
+                    <h3>移动或复制，由你掌控</h3>
+                    <p>支持移动原文件或复制副本。冲突策略可选跳过、覆盖或自动重命名（添加 _1, _2 后缀），安全不丢数据。</p>
+                </div>
+                <div class="feature-card color-warning">
+                    <div class="feature-icon"><i class="fas fa-terminal"></i></div>
+                    <h3>GUI & 网页界面</h3>
+                    <p>支持拖拽、预览分类结果、进度条和操作日志，一键执行。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-history"></i></div>
+                    <h3>安全预览与撤销</h3>
+                    <p>执行前生成完整预览清单，确认后执行。所有操作记录日志，支持一键撤销恢复原路径。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-code-branch"></i></div>
+                    <h3>开源 & 可定制</h3>
+                    <p>基于 Python 开发，代码结构清晰，易于二次开发。欢迎提交 PR 或提出新需求。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 工作原理简述 -->
+    <section class="section" id="how-it-works" style="background: #fff; border-radius: 24px; margin: 0 24px;">
+        <div class="container" style="padding: 60px 0;">
+            <div class="section-header">
+                <h2>简单三步，整理完成</h2>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; text-align: center;">
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 12px;">1️⃣</div>
+                    <h3>选择源文件夹</h3>
+                    <p style="color: var(--text-muted);">通过命令行或图形界面指定要整理的目录。</p>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 12px;">2️⃣</div>
+                    <h3>配置分类规则</h3>
+                    <p style="color: var(--text-muted);">选择时间粒度（年/月/周/天/自定义），设置操作模式和冲突处理。</p>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 12px;">3️⃣</div>
+                    <h3>预览并执行</h3>
+                    <p style="color: var(--text-muted);">查看分类结果预览，确认后一键整理，日志记录每一步操作。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA 下载/源码区域 -->
+    <section class="container" id="download">
+        <div class="cta-section">
+            <h2>准备好整理您的文件了吗？</h2>
+            <p>完全免费，开源无广告。支持 Windows、macOS、Linux。</p>
+            <div class="cta-buttons">
+                <a href="./index.html" class="btn btn-white btn-lg"><i class="fas fa-download"></i> 使用网页版</a>
+                <a href="#" class="btn btn-ghost-light btn-lg" onclick="alert('源码仓库即将公开，欢迎 Star！')"><i class="fab fa-github"></i>从 GitHub 下载 GUI 版本</a>
+            </div>
+            <p style="margin-top: 24px; font-size: 0.85rem; opacity: 0.8;">版本 v1.0.0 · 适用于 Python 3.8+ · MIT 许可证</p>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer container">
+        <div>采用 MIT 开源协议。</div>
+        <div><a href="/index.html">回到首页</a></div>
+        <!-- <div>
+            <a href="#">文档</a> · <a href="#">问题反馈</a> · <a href="#">贡献指南</a>
+        </div> -->
+    </footer>
+
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 10) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecallWords · 智能背单词</title>
+    <style>
+        :root {
+            --bg: #f5f2eb;
+            --surface: #ffffff;
+            --surface-alt: #faf8f5;
+            --text: #2c2416;
+            --text-secondary: #6b5e4a;
+            --text-muted: #9b8e7a;
+            --border: #e5ded4;
+            --accent: #c0853d;
+            --accent-light: #f0e0c8;
+            --accent-dark: #8b5e2f;
+            --green: #5a8a6a;
+            --green-light: #e0efe4;
+            --red: #c4554d;
+            --red-light: #fce8e6;
+            --blue: #4a7aa6;
+            --blue-light: #e1ecf5;
+            --orange: #d4853f;
+            --orange-light: #fdf0e4;
+            --radius-sm: 8px;
+            --radius: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.05);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 860px;
+            min-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 16px;
+            background: var(--surface-alt);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .navbar .brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-dark);
+            margin-right: 12px;
+            white-space: nowrap;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .navbar .brand .icon { font-size: 1.4rem; }
+        .nav-tab {
+            padding: 10px 18px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: var(--font);
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-tab:hover { background: rgba(0,0,0,0.03); color: var(--text); }
+        .nav-tab.active {
+            background: var(--accent-light);
+            color: var(--accent-dark);
+            font-weight: 600;
+            box-shadow: inset 0 0 0 1px rgba(192,133,61,0.25);
+        }
+        .nav-tab .badge {
+            background: var(--accent);
+            color: #fff;
+            border-radius: 20px;
+            padding: 2px 9px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 24px 28px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .page { display: none; flex: 1; flex-direction: column; gap: 20px; animation: fadeSlideIn 0.3s ease; }
+        .page.active { display: flex; }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .learn-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .learn-header .info { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.9rem; }
+        .learn-header .info strong { color: var(--text); font-weight: 600; }
+        .wordbook-selector { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); }
+        .wordbook-selector select {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            font-family: var(--font);
+            font-size: 0.85rem;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            min-width: 140px;
+            transition: var(--transition);
+        }
+        .wordbook-selector select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+        .card-container {
+            perspective: 1200px;
+            width: 100%;
+            max-width: 520px;
+            min-height: 340px;
+            margin: auto;
+            cursor: pointer;
+            user-select: none;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            min-height: 340px;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-inner.flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            min-height: 340px;
+            backface-visibility: hidden;
+            border-radius: var(--radius-lg);
+            padding: 36px 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            transition: box-shadow 0.3s;
+        }
+        .card-face:hover { box-shadow: var(--shadow-lg); }
+        .card-front { z-index: 2; background: linear-gradient(160deg, #fefdfb 0%, #faf7f1 100%); }
+        .card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(160deg, #fdfcf9 0%, #f8f5ee 100%);
+            border-color: #e0d8c8;
+            justify-content: flex-start;
+            gap: 14px;
+            text-align: left;
+            align-items: stretch;
+        }
+        .card-front .word-spelling { font-size: 2.6rem; font-weight: 700; letter-spacing: 1px; color: #3d2b10; margin-bottom: 6px; word-break: break-word; }
+        .card-front .word-phonetic { font-size: 1rem; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.5px; }
+        .card-front .tap-hint { margin-top: 20px; font-size: 0.8rem; color: var(--text-muted); opacity: 0.7; display: flex; align-items: center; gap: 6px; }
+        .card-back .back-word { font-size: 1.6rem; font-weight: 700; color: #3d2b10; letter-spacing: 0.5px; }
+        .card-back .back-phonetic { font-size: 0.95rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .card-back .back-pos { display: inline-block; background: var(--accent-light); color: var(--accent-dark); padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; align-self: flex-start; }
+        .card-back .back-meanings { font-size: 1.1rem; color: var(--text); font-weight: 500; line-height: 1.6; }
+        .card-back .back-example { font-size: 0.9rem; color: var(--text-secondary); font-style: italic; padding: 10px 14px; background: var(--surface-alt); border-radius: var(--radius-sm); border-left: 3px solid var(--accent); line-height: 1.5; }
+        .card-back .back-example-translation { font-size: 0.85rem; color: var(--text-muted); }
+        .btn-speak {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .btn-speak:hover { background: var(--accent-light); border-color: var(--accent); }
+        .btn-speak:active { transform: scale(0.93); }
+
+        .rating-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+        .rating-btn {
+            padding: 11px 20px;
+            border-radius: 25px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            font-family: var(--font);
+            letter-spacing: 0.3px;
+            min-width: 72px;
+            text-align: center;
+        }
+        .rating-btn.again { background: var(--red-light); color: #a83a34; border-color: #e8c4c0; }
+        .rating-btn.again:hover { background: #fadcd8; border-color: #c4554d; }
+        .rating-btn.hard { background: #fef5ea; color: #9e6b2f; border-color: #ecd9b8; }
+        .rating-btn.hard:hover { background: #fce8d0; border-color: #d4853f; }
+        .rating-btn.good { background: #e6f2ea; color: #3d6b4a; border-color: #b8d5c0; }
+        .rating-btn.good:hover { background: #d0e8d8; border-color: #5a8a6a; }
+        .rating-btn.easy { background: #dcecf8; color: #2d5a80; border-color: #b0cfe5; }
+        .rating-btn.easy:hover { background: #c8dff2; border-color: #4a7aa6; }
+        .rating-btn:active { transform: scale(0.95); }
+
+        .learn-complete { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .learn-complete .icon-big { font-size: 4rem; display: block; margin-bottom: 16px; }
+        .learn-complete h3 { font-size: 1.4rem; color: var(--text); margin-bottom: 8px; }
+
+        .section-title { font-size: 1.2rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .wordbook-list { display: flex; flex-direction: column; gap: 10px; }
+        .wordbook-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px; background: var(--surface-alt); border-radius: var(--radius);
+            border: 1.5px solid var(--border); transition: var(--transition); flex-wrap: wrap; gap: 10px;
+        }
+        .wordbook-item:hover { border-color: #d0c8b8; }
+        .wordbook-item.active-book { border-color: var(--accent); background: #fdf9f2; box-shadow: 0 0 0 3px var(--accent-light); }
+        .wordbook-item .wb-info { flex: 1; min-width: 150px; }
+        .wordbook-item .wb-name { font-weight: 600; color: var(--text); }
+        .wordbook-item .wb-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+        .wordbook-item .wb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+            cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: var(--transition);
+            font-family: var(--font); background: var(--surface); color: var(--text);
+            white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn:hover { background: #f5f2ec; border-color: #c0b8a8; }
+        .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+        .btn-accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+        .btn-danger { background: #fff; color: var(--red); border-color: #e8c4c0; }
+        .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+        .btn-sm { padding: 5px 12px; font-size: 0.78rem; border-radius: 16px; }
+        .import-zone {
+            border: 2px dashed #d5cdbc; border-radius: var(--radius-lg); padding: 32px;
+            text-align: center; cursor: pointer; transition: var(--transition); background: var(--surface-alt);
+        }
+        .import-zone:hover { border-color: var(--accent); background: #fdf9f2; }
+        .import-zone input[type="file"] { display: none; }
+        .import-zone .icon { font-size: 2.4rem; display: block; margin-bottom: 8px; }
+        .url-import-area { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+        .url-import-area input[type="text"] {
+            flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+            font-family: var(--font); font-size: 0.85rem; background: var(--surface); color: var(--text); min-width: 200px;
+        }
+        .url-import-area input[type="text"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+        .calendar-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px; }
+        .calendar-nav button {
+            background: var(--surface); border: 1.5px solid var(--border); border-radius: 50%;
+            width: 38px; height: 38px; cursor: pointer; font-size: 1rem; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .calendar-nav button:hover { background: var(--accent-light); border-color: var(--accent); }
+        .calendar-nav .month-label { font-weight: 700; font-size: 1.1rem; min-width: 120px; text-align: center; color: var(--text); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+        .calendar-grid .day-header { font-weight: 600; font-size: 0.78rem; color: var(--text-muted); padding: 8px 0; }
+        .calendar-grid .day-cell {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; font-weight: 500; font-size: 0.9rem; transition: var(--transition); min-width: 36px;
+        }
+        .day-cell.today { font-weight: 700; box-shadow: inset 0 0 0 2.5px var(--accent); color: var(--accent-dark); }
+        .day-cell.checked-in { background: #d4edda; color: #2d5a3a; font-weight: 600; }
+        .day-cell.checked-in.today { background: #b8dfc4; box-shadow: inset 0 0 0 2.5px #3d7a4f; color: #1e4428; }
+        .day-cell.other-month { color: #d5cfc4; pointer-events: none; }
+        .day-cell:not(.other-month):hover { background: #f0ebe0; }
+        .day-cell.checked-in:not(.other-month):hover { background: #c0e0c8; }
+        .streak-info { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+        .streak-card {
+            background: var(--surface-alt); border-radius: var(--radius); padding: 16px 22px;
+            text-align: center; border: 1.5px solid var(--border); min-width: 100px;
+        }
+        .streak-card .number { font-size: 2rem; font-weight: 700; color: var(--accent-dark); }
+        .streak-card .label { font-size: 0.8rem; color: var(--text-muted); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+        .stat-card {
+            background: var(--surface-alt); border-radius: var(--radius); padding: 20px;
+            text-align: center; border: 1.5px solid var(--border);
+        }
+        .stat-card .stat-number { font-size: 2.2rem; font-weight: 700; color: var(--accent-dark); }
+        .stat-card .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #2c2416; color: #fff; padding: 12px 24px; border-radius: 25px;
+            font-weight: 500; font-size: 0.9rem; z-index: 1000; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease; box-shadow: var(--shadow-lg); font-family: var(--font);
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+
+        .settings-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; }
+        .settings-row label { font-weight: 500; color: var(--text); min-width: 120px; }
+        .settings-row input[type="number"] {
+            width: 80px; padding: 8px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+            font-family: var(--font); font-size: 0.9rem; text-align: center;
+        }
+        .settings-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
+
+        @media (max-width: 600px) {
+            .main-content { padding: 16px 12px; }
+            .card-face { padding: 24px 18px; min-height: 280px; }
+            .card-front .word-spelling { font-size: 2rem; }
+            .rating-btn { padding: 9px 14px; font-size: 0.8rem; min-width: 56px; }
+            .navbar { padding: 4px 6px; gap: 2px; }
+            .nav-tab { padding: 8px 11px; font-size: 0.78rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <nav class="navbar">
+            <span class="brand"><span class="icon">📘</span>RecallWords</span>
+            <button class="nav-tab active" data-page="learn">📚 学习 <span class="badge" id="dueBadge" style="display:none;">0</span></button>
+            <button class="nav-tab" data-page="books">📂 词书管理</button>
+            <button class="nav-tab" data-page="calendar">📅 日历</button>
+            <button class="nav-tab" data-page="stats">📊 统计</button>
+        </nav>
+
+        <div class="main-content">
+            <!-- 学习页面 -->
+            <div class="page active" id="page-learn">
+                <div class="learn-header">
+                    <div class="wordbook-selector">
+                        <span>当前词书：</span>
+                        <select id="activeBookSelect">
+                            <option value="">-- 请先导入词书 --</option>
+                        </select>
+                    </div>
+                    <div class="info">
+                        今日到期：<strong id="dueCount">0</strong> 个
+                    </div>
+                </div>
+                <div id="learnContent">
+                    <div class="card-container" id="cardContainer" style="display:none;">
+                        <div class="card-inner" id="cardInner">
+                            <div class="card-face card-front">
+                                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;">
+                                    <span class="word-spelling" id="frontWord">—</span>
+                                    <button class="btn-speak" id="btnSpeakFront" title="听发音">🔊</button>
+                                </div>
+                                <span class="word-phonetic" id="frontPhonetic"></span>
+                                <span class="tap-hint">👆 点击卡片翻转查看释义</span>
+                            </div>
+                            <div class="card-face card-back">
+                                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                    <span class="back-word" id="backWord">—</span>
+                                    <button class="btn-speak" id="btnSpeakBack" title="听发音">🔊</button>
+                                </div>
+                                <span class="back-phonetic" id="backPhonetic"></span>
+                                <span class="back-pos" id="backPos"></span>
+                                <div class="back-meanings" id="backMeanings"></div>
+                                <div class="back-example" id="backExample"></div>
+                                <span class="back-example-translation" id="backExampleTrans"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rating-buttons" id="ratingButtons" style="display:none;">
+                        <button class="rating-btn again" data-rating="0">🔄 重来</button>
+                        <button class="rating-btn hard" data-rating="2">😐 困难</button>
+                        <button class="rating-btn good" data-rating="3">👍 良好</button>
+                        <button class="rating-btn easy" data-rating="5">✨ 简单</button>
+                    </div>
+                    <div class="learn-complete" id="learnComplete" style="display:none;">
+                        <span class="icon-big">🎉</span>
+                        <h3>今日学习任务已完成！</h3>
+                        <p>所有到期单词都已复习完毕，明天继续加油！</p>
+                    </div>
+                    <div class="learn-complete" id="learnNoBook" style="display:none;">
+                        <span class="icon-big">📂</span>
+                        <h3>还没有词书</h3>
+                        <p>请先在「词书管理」页面导入 JSON 词书，或选择已有的词书开始学习。</p>
+                    </div>
+                    <div class="learn-complete" id="learnEmptyBook" style="display:none;">
+                        <span class="icon-big">📭</span>
+                        <h3>词书为空</h3>
+                        <p>当前词书中没有单词，请导入包含单词的词书。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 词书管理页面 -->
+            <div class="page" id="page-books">
+                <div class="section-title">📂 词书管理</div>
+                <div class="import-zone" id="importZone">
+                    <span class="icon">📥</span>
+                    <strong>点击此处导入 JSON 词书</strong>
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">支持 .json 格式，可导入多个词书</p>
+                    <input type="file" id="fileInput" accept=".json" multiple>
+                </div>
+                <div class="url-import-area">
+                    <input type="text" id="urlInput" placeholder="输入词书 JSON 文件的 URL">
+                    <button class="btn btn-accent" id="btnUrlImport">🌐 从 URL 导入</button>
+                </div>
+                <div class="wordbook-list" id="wordbookList">
+                    <p style="color:var(--text-muted);text-align:center;">暂无词书，请导入</p>
+                </div>
+                <div style="margin-top:8px;font-size:0.78rem;color:var(--text-muted);">
+                    <details>
+                        <summary style="cursor:pointer;">📋 JSON 词书格式说明</summary>
+                        <pre style="background:#faf8f5;padding:12px;border-radius:8px;overflow-x:auto;margin-top:6px;font-size:0.75rem;">{
+                            "language": "English",
+                            "words": [
+                            {
+                            "spelling": "apple",
+                            "meanings": ["苹果"],
+                            "phonetic": "/ˈæpəl/",
+                            "partOfSpeech": "noun",
+                            "example": "I ate an apple.",
+                            "exampleTranslation": "我吃了一个苹果。"
+                            }
+                            ]
+                        }</pre>
+                    </details>
+                </div>
+                <div class="section-title" style="margin-top:8px;">⚙️ 学习设置</div>
+                <div class="settings-row">
+                    <label for="dailyGoal">每日最低学习量：</label>
+                    <input type="number" id="dailyGoal" min="0" value="0">
+                    <span style="font-size:0.8rem;color:var(--text-muted);">个（0=完成所有到期任务即打卡）</span>
+                </div>
+                <div class="settings-row">
+                    <label for="dailyNewWords">每日新单词上限：</label>
+                    <input type="number" id="dailyNewWords" min="0" value="10">
+                    <span style="font-size:0.8rem;color:var(--text-muted);">个（0=不限制）</span>
+                </div>
+                <button class="btn btn-accent" id="btnSaveSettings">💾 保存设置</button>
+                <button class="btn btn-danger" id="btnResetData" style="margin-left:10px;">⚠️ 重置所有数据</button>
+            </div>
+
+            <!-- 日历页面 -->
+            <div class="page" id="page-calendar">
+                <div class="section-title">📅 打卡日历</div>
+                <div class="calendar-nav">
+                    <button id="btnPrevMonth">◀</button>
+                    <span class="month-label" id="monthLabel">2024年1月</span>
+                    <button id="btnNextMonth">▶</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+                <div class="streak-info">
+                    <div class="streak-card">
+                        <div class="number" id="streakDays">0</div>
+                        <div class="label">连续打卡天数</div>
+                    </div>
+                    <div class="streak-card">
+                        <div class="number" id="totalCheckIns">0</div>
+                        <div class="label">总打卡天数</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计页面 -->
+            <div class="page" id="page-stats">
+                <div class="section-title">📊 学习统计</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTotalWords">0</div>
+                        <div class="stat-label">词库单词总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statLearned">0</div>
+                        <div class="stat-label">已学习单词</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statMastered">0</div>
+                        <div class="stat-label">已掌握 (EF≥2.8)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTotalReviews">0</div>
+                        <div class="stat-label">总复习次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTodayReviews">0</div>
+                        <div class="stat-label">今日已复习</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statAvgEF">2.50</div>
+                        <div class="stat-label">平均 EF 值</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            const STORAGE_KEY = 'recallwords_data';
+
+            function getDefaultData() {
+                return {
+                    wordBooks: [],
+                    learningData: {},
+                    activeWordBookId: null,
+                    checkIns: {},
+                    settings: { dailyGoal: 0, dailyNewWords: 10 },
+                    todayReviewCount: 0,
+                    lastReviewDate: null,
+                };
+            }
+
+            function loadData() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        const def = getDefaultData();
+                        for (const key of Object.keys(def)) {
+                            if (!(key in data)) data[key] = def[key];
+                        }
+                        if (!data.settings || typeof data.settings !== 'object') data.settings = def.settings;
+                        if (!('dailyGoal' in data.settings)) data.settings.dailyGoal = 0;
+                        if (!('dailyNewWords' in data.settings)) data.settings.dailyNewWords = 10;
+                        return data;
+                    }
+                } catch (e) { console.warn('数据加载失败', e); }
+                return getDefaultData();
+            }
+
+            function saveData(data) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+                catch (e) { showToast('⚠️ 存储空间不足'); }
+            }
+
+            let appData = loadData();
+            function persistData() { saveData(appData); }
+
+            function todayStr() {
+                const d = new Date();
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+            function dateStr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+            function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
+            function generateId() { return 'wb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+            let toastTimer;
+            function showToast(msg) {
+                const el = document.getElementById('toast');
+                el.textContent = msg;
+                el.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+            }
+
+            // SM-2 算法，保存 lastQuality 用于延迟判断
+            function sm2Calculate(currentData, quality) {
+                let { n, ef, interval } = currentData;
+                if (typeof n !== 'number' || n < 0) n = 0;
+                if (typeof ef !== 'number' || ef < 1.3) ef = 2.5;
+                if (typeof interval !== 'number' || interval < 0) interval = 0;
+
+                const newEf = Math.max(1.3, ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+                let newInterval, newN;
+                if (quality < 3) {
+                    newN = 0;
+                    newInterval = 0;
+                } else {
+                    newN = n + 1;
+                    if (newN === 1) newInterval = 1;
+                    else if (newN === 2) newInterval = 6;
+                    else newInterval = Math.round(interval * newEf);
+                }
+
+                const today = new Date();
+                return {
+                    n: newN,
+                    ef: Math.round(newEf * 100) / 100,
+                    interval: newInterval,
+                    nextReviewDate: dateStr(addDays(today, newInterval)),
+                    lastReviewDate: todayStr(),
+                    reviewCount: (currentData.reviewCount || 0) + 1,
+                    lastQuality: quality,
+                    lastReviewTimestamp: Date.now(),
+                };
+            }
+
+            // 获取到期单词，并将“重来”与“困难”的单词排到队尾
+            function getDueWords(bookId) {
+                const today = todayStr();
+                const dueWords = [];
+                const book = appData.wordBooks.find(b => b.id === bookId);
+                if (!book) return dueWords;
+                for (const word of book.words) {
+                    const key = `${bookId}::${word.spelling}`;
+                    const ld = appData.learningData[key];
+                    if (!ld) continue;
+                    if (ld.nextReviewDate <= today) {
+                        dueWords.push({ word, learningData: ld, key });
+                    }
+                }
+                // 正常优先级 (lastQuality 不是 0 或 2)
+                const normal = dueWords.filter(w => w.learningData.lastQuality !== 0 && w.learningData.lastQuality !== 2);
+                // 低优先级 (重来或困难，排到队尾)
+                const low = dueWords.filter(w => w.learningData.lastQuality === 0 || w.learningData.lastQuality === 2);
+                normal.sort((a, b) => {
+                    if (a.learningData.nextReviewDate < b.learningData.nextReviewDate) return -1;
+                    if (a.learningData.nextReviewDate > b.learningData.nextReviewDate) return 1;
+                    return 0;
+                });
+                low.sort((a, b) => {
+                    if (a.learningData.nextReviewDate < b.learningData.nextReviewDate) return -1;
+                    if (a.learningData.nextReviewDate > b.learningData.nextReviewDate) return 1;
+                    return 0;
+                });
+                return [...normal, ...low];
+            }
+
+            function getNewWordsAvailable(bookId) {
+                const book = appData.wordBooks.find(b => b.id === bookId);
+                if (!book) return [];
+                const newWords = [];
+                for (const word of book.words) {
+                    const key = `${bookId}::${word.spelling}`;
+                    if (!appData.learningData[key]) newWords.push({ word, key });
+                }
+                return newWords;
+            }
+
+            function countDueWords(bookId) { return getDueWords(bookId).length; }
+
+            let currentLearnWord = null;
+            let currentLearnKey = null;
+            let isCardFlipped = false;
+
+            function selectNextWord() {
+                const bookId = appData.activeWordBookId;
+                if (!bookId) return null;
+
+                const dueWords = getDueWords(bookId);
+                if (dueWords.length > 0) return { ...dueWords[0], type: 'review' };
+
+                const newWords = getNewWordsAvailable(bookId);
+                const dailyLimit = appData.settings.dailyNewWords || 10;
+                if (newWords.length > 0 && dailyLimit > 0) {
+                    const today = todayStr();
+                    let newWordsToday = 0;
+                    const trulyNew = newWords.filter(nw => !appData.learningData[nw.key]);
+                    for (const w of newWords) {
+                        const ld = appData.learningData[w.key];
+                        if (ld && ld.lastReviewDate === today && (ld.n || 0) <= 1) newWordsToday++;
+                    }
+                    if (newWordsToday < dailyLimit && trulyNew.length > 0) {
+                        return { word: trulyNew[0].word, key: trulyNew[0].key, learningData: null, type: 'new' };
+                    }
+                }
+                return null;
+            }
+
+            function updateLearnUI() {
+                const bookId = appData.activeWordBookId;
+                const cardContainer = document.getElementById('cardContainer');
+                const ratingButtons = document.getElementById('ratingButtons');
+                const learnComplete = document.getElementById('learnComplete');
+                const learnNoBook = document.getElementById('learnNoBook');
+                const learnEmptyBook = document.getElementById('learnEmptyBook');
+                const cardInner = document.getElementById('cardInner');
+
+                cardContainer.style.display = 'none';
+                ratingButtons.style.display = 'none';
+                learnComplete.style.display = 'none';
+                learnNoBook.style.display = 'none';
+                learnEmptyBook.style.display = 'none';
+                isCardFlipped = false;
+                cardInner.classList.remove('flipped');
+                currentLearnWord = null;
+                currentLearnKey = null;
+
+                if (!bookId) {
+                    learnNoBook.style.display = 'flex';
+                    document.getElementById('dueCount').textContent = '0';
+                    document.getElementById('dueBadge').style.display = 'none';
+                    return;
+                }
+                const book = appData.wordBooks.find(b => b.id === bookId);
+                if (!book || book.words.length === 0) {
+                    learnEmptyBook.style.display = 'flex';
+                    document.getElementById('dueCount').textContent = '0';
+                    document.getElementById('dueBadge').style.display = 'none';
+                    return;
+                }
+
+                const next = selectNextWord();
+                if (!next) {
+                    learnComplete.style.display = 'flex';
+                    document.getElementById('dueCount').textContent = '0';
+                    document.getElementById('dueBadge').style.display = 'none';
+                    checkAndMarkCheckIn();
+                    return;
+                }
+
+                currentLearnWord = next;
+                currentLearnKey = next.key;
+                document.getElementById('frontWord').textContent = next.word.spelling;
+                document.getElementById('frontPhonetic').textContent = next.word.phonetic || '';
+                document.getElementById('backWord').textContent = next.word.spelling;
+                document.getElementById('backPhonetic').textContent = next.word.phonetic || '';
+                document.getElementById('backPos').textContent = next.word.partOfSpeech || '';
+                document.getElementById('backMeanings').textContent = (next.word.meanings || []).join('；');
+                document.getElementById('backExample').textContent = next.word.example || '';
+                document.getElementById('backExampleTrans').textContent = next.word.exampleTranslation || '';
+
+                cardContainer.style.display = 'block';
+                ratingButtons.style.display = 'flex';
+                document.getElementById('dueCount').textContent = countDueWords(bookId);
+                updateDueBadge();
+            }
+
+            function flipCard() {
+                if (!currentLearnWord) return;
+                const cardInner = document.getElementById('cardInner');
+                isCardFlipped = !isCardFlipped;
+                cardInner.classList.toggle('flipped', isCardFlipped);
+            }
+
+            function submitRating(quality) {
+                if (!currentLearnWord || !currentLearnKey) return;
+
+                const existingData = appData.learningData[currentLearnKey] || {
+                    n: 0, ef: 2.5, interval: 0, nextReviewDate: todayStr(),
+                    lastReviewDate: null, reviewCount: 0,
+                };
+
+                const updated = sm2Calculate(existingData, quality);
+                appData.learningData[currentLearnKey] = updated;
+
+                const today = todayStr();
+                if (appData.lastReviewDate !== today) {
+                    appData.lastReviewDate = today;
+                    appData.todayReviewCount = 0;
+                }
+                appData.todayReviewCount++;
+                persistData();
+                checkAndMarkCheckIn();
+
+                const feedbackMap = { 
+                    0: '🔄 重新学习 (稍后出现)', 
+                    2: '😐 困难 (稍后出现)', 
+                    3: '👍 良好！', 
+                    5: '✨ 太简单了！' 
+                };
+                showToast(feedbackMap[quality] || '已记录');
+
+                setTimeout(() => {
+                    updateLearnUI();
+                    updateAllStats();
+                }, 300);
+            }
+
+            function checkAndMarkCheckIn() {
+                const today = todayStr();
+                if (appData.checkIns[today]) return;
+                const bookId = appData.activeWordBookId;
+                if (!bookId) return;
+                const dailyGoal = appData.settings.dailyGoal || 0;
+                let completed = false;
+                if (dailyGoal > 0) {
+                    if (appData.todayReviewCount >= dailyGoal) completed = true;
+                } else {
+                    if (countDueWords(bookId) === 0 && appData.todayReviewCount > 0) completed = true;
+                }
+                if (completed) {
+                    appData.checkIns[today] = true;
+                    persistData();
+                    showToast('✅ 今日打卡成功！');
+                    updateCalendarView();
+                    updateAllStats();
+                }
+            }
+
+            function updateDueBadge() {
+                const bookId = appData.activeWordBookId;
+                const badge = document.getElementById('dueBadge');
+                if (!bookId) { badge.style.display = 'none'; return; }
+                const count = countDueWords(bookId);
+                if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+                else badge.style.display = 'none';
+            }
+
+            function speakWord(spelling, language) {
+                if (!window.speechSynthesis) { showToast('⚠️ 浏览器不支持发音'); return; }
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(spelling);
+                const langMap = { english: 'en-US', japanese: 'ja-JP', chinese: 'zh-CN', 中文: 'zh-CN' };
+                utterance.lang = langMap[(language || '').toLowerCase()] || 'en-US';
+                utterance.rate = 0.85;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function renderWordbookList() {
+                const listEl = document.getElementById('wordbookList');
+                const selectEl = document.getElementById('activeBookSelect');
+                if (appData.wordBooks.length === 0) {
+                    listEl.innerHTML = '<p style="color:var(--text-muted);text-align:center;">暂无词书，请导入 JSON 文件</p>';
+                    selectEl.innerHTML = '<option value="">-- 请先导入词书 --</option>';
+                    return;
+                }
+                listEl.innerHTML = appData.wordBooks.map(b => {
+                    const isActive = b.id === appData.activeWordBookId;
+                    const learnedCount = b.words.filter(w => {
+                        const key = `${b.id}::${w.spelling}`;
+                        return appData.learningData[key] && appData.learningData[key].reviewCount > 0;
+                    }).length;
+                    return `<div class="wordbook-item ${isActive ? 'active-book' : ''}">
+                        <div class="wb-info">
+                            <div class="wb-name">📘 ${escapeHtml(b.name)} (${escapeHtml(b.language)})</div>
+                            <div class="wb-meta">${b.words.length} 个单词 · 已学 ${learnedCount} 个</div>
+                        </div>
+                        <div class="wb-actions">
+                            ${isActive ? '<span style="color:var(--accent-dark);font-weight:600;font-size:0.85rem;">✅ 当前使用</span>' : `<button class="btn btn-sm btn-accent" data-action="activate" data-id="${b.id}">设为活跃</button>`}
+                            <button class="btn btn-sm btn-danger" data-action="delete" data-id="${b.id}">删除</button>
+                        </div>
+                    </div>`;
+                }).join('');
+                selectEl.innerHTML = appData.wordBooks.map(b => {
+                    const selected = b.id === appData.activeWordBookId ? ' selected' : '';
+                    return `<option value="${b.id}"${selected}>${escapeHtml(b.name)} (${escapeHtml(b.language)})</option>`;
+                }).join('');
+            }
+
+            function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
+            function importWordBook(jsonStr, fileName) {
+                let parsed;
+                try { parsed = JSON.parse(jsonStr); } catch (e) { showToast('❌ JSON 解析失败'); return false; }
+                if (!parsed.language || !Array.isArray(parsed.words)) { showToast('❌ 格式不正确'); return false; }
+                if (parsed.words.length === 0) { showToast('⚠️ 词书为空'); return false; }
+                for (const w of parsed.words) {
+                    if (!w.spelling) { showToast('❌ 缺少 spelling 字段'); return false; }
+                }
+                const newBook = {
+                    id: generateId(),
+                    name: fileName || '未命名词书',
+                    language: parsed.language,
+                    words: parsed.words.map(w => ({
+                        spelling: w.spelling,
+                        meanings: w.meanings || [],
+                        phonetic: w.phonetic || '',
+                        partOfSpeech: w.partOfSpeech || '',
+                        example: w.example || '',
+                        exampleTranslation: w.exampleTranslation || '',
+                    })),
+                    importedAt: new Date().toISOString(),
+                };
+                appData.wordBooks.push(newBook);
+                if (!appData.activeWordBookId) appData.activeWordBookId = newBook.id;
+                persistData();
+                renderWordbookList();
+                updateLearnUI();
+                updateAllStats();
+                showToast(`✅ 导入「${escapeHtml(newBook.name)}」(${newBook.words.length} 词)`);
+                return true;
+            }
+
+            function activateWordBook(bookId) {
+                appData.activeWordBookId = bookId;
+                const today = todayStr();
+                if (appData.lastReviewDate !== today) { appData.todayReviewCount = 0; appData.lastReviewDate = today; }
+                persistData();
+                renderWordbookList();
+                updateLearnUI();
+                updateAllStats();
+            }
+
+            function deleteWordBook(bookId) {
+                if (!confirm('确定删除这个词书吗？相关学习数据也会被删除。')) return;
+                const book = appData.wordBooks.find(b => b.id === bookId);
+                if (book) {
+                    for (const w of book.words) delete appData.learningData[`${bookId}::${w.spelling}`];
+                }
+                appData.wordBooks = appData.wordBooks.filter(b => b.id !== bookId);
+                if (appData.activeWordBookId === bookId) appData.activeWordBookId = appData.wordBooks.length > 0 ? appData.wordBooks[0].id : null;
+                persistData();
+                renderWordbookList();
+                updateLearnUI();
+                updateAllStats();
+                showToast('🗑️ 词书已删除');
+            }
+
+            let calendarYear, calendarMonth;
+            function updateCalendarView() {
+                const now = new Date();
+                if (calendarYear === undefined) calendarYear = now.getFullYear();
+                if (calendarMonth === undefined) calendarMonth = now.getMonth();
+                document.getElementById('monthLabel').textContent = `${calendarYear}年${calendarMonth + 1}月`;
+                const grid = document.getElementById('calendarGrid');
+                let html = ['日','一','二','三','四','五','六'].map(d => `<div class="day-header">${d}</div>`).join('');
+                const firstDay = new Date(calendarYear, calendarMonth, 1);
+                const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+                const totalDays = lastDay.getDate();
+                const startDay = firstDay.getDay();
+                const today = todayStr();
+                const prevLast = new Date(calendarYear, calendarMonth, 0).getDate();
+                for (let i = startDay - 1; i >= 0; i--) {
+                    const d = prevLast - i;
+                    const ds = dateStr(new Date(calendarYear, calendarMonth - 1, d));
+                    html += `<div class="day-cell other-month${appData.checkIns[ds] ? ' checked-in' : ''}">${d}</div>`;
+                }
+                for (let d = 1; d <= totalDays; d++) {
+                    const ds = dateStr(new Date(calendarYear, calendarMonth, d));
+                    const isToday = ds === today;
+                    const checked = appData.checkIns[ds];
+                    let cls = 'day-cell';
+                    if (isToday) cls += ' today';
+                    if (checked) cls += ' checked-in';
+                    html += `<div class="${cls}">${d}</div>`;
+                }
+                const remaining = 42 - (startDay + totalDays);
+                for (let d = 1; d <= remaining; d++) {
+                    const ds = dateStr(new Date(calendarYear, calendarMonth + 1, d));
+                    html += `<div class="day-cell other-month${appData.checkIns[ds] ? ' checked-in' : ''}">${d}</div>`;
+                }
+                grid.innerHTML = html;
+                updateStreakInfo();
+            }
+            function updateStreakInfo() {
+                const today = todayStr();
+                let streak = 0;
+                const d = new Date();
+                for (let i = 0; i < 3650; i++) {
+                    const checkDate = dateStr(addDays(d, -i));
+                    if (appData.checkIns[checkDate]) streak++;
+                    else if (i === 0 && !appData.checkIns[today]) continue;
+                    else break;
+                }
+                document.getElementById('streakDays').textContent = streak;
+                document.getElementById('totalCheckIns').textContent = Object.keys(appData.checkIns).length;
+            }
+            function navigateMonth(delta) {
+                calendarMonth += delta;
+                if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+                else if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+                updateCalendarView();
+            }
+
+            function updateAllStats() {
+                const bookId = appData.activeWordBookId;
+                const book = bookId ? appData.wordBooks.find(b => b.id === bookId) : null;
+                const totalWords = book ? book.words.length : 0;
+                let learned = 0, mastered = 0, totalReviews = 0, sumEF = 0, efCount = 0;
+                if (book) {
+                    for (const w of book.words) {
+                        const ld = appData.learningData[`${bookId}::${w.spelling}`];
+                        if (ld && ld.reviewCount > 0) {
+                            learned++;
+                            totalReviews += ld.reviewCount;
+                            if (ld.ef >= 2.8 && ld.n >= 3) mastered++;
+                            sumEF += ld.ef;
+                            efCount++;
+                        }
+                    }
+                }
+                document.getElementById('statTotalWords').textContent = totalWords;
+                document.getElementById('statLearned').textContent = learned;
+                document.getElementById('statMastered').textContent = mastered;
+                document.getElementById('statTotalReviews').textContent = totalReviews;
+                document.getElementById('statTodayReviews').textContent = appData.todayReviewCount || 0;
+                document.getElementById('statAvgEF').textContent = efCount > 0 ? (sumEF / efCount).toFixed(2) : '2.50';
+                updateDueBadge();
+                document.getElementById('dueCount').textContent = bookId ? countDueWords(bookId) : '0';
+            }
+
+            // 事件绑定
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const page = tab.dataset.page;
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    document.getElementById('page-' + page).classList.add('active');
+                    if (page === 'calendar') { calendarYear = undefined; calendarMonth = undefined; updateCalendarView(); }
+                    if (page === 'stats') updateAllStats();
+                    if (page === 'learn') updateLearnUI();
+                });
+            });
+
+            document.getElementById('cardContainer').addEventListener('click', (e) => {
+                if (!e.target.closest('.btn-speak')) flipCard();
+            });
+            document.getElementById('btnSpeakFront').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentLearnWord) {
+                    const book = appData.wordBooks.find(b => b.id === appData.activeWordBookId);
+                    speakWord(currentLearnWord.word.spelling, book?.language);
+                }
+            });
+            document.getElementById('btnSpeakBack').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentLearnWord) {
+                    const book = appData.wordBooks.find(b => b.id === appData.activeWordBookId);
+                    speakWord(currentLearnWord.word.spelling, book?.language);
+                }
+            });
+            document.getElementById('ratingButtons').addEventListener('click', (e) => {
+                const btn = e.target.closest('.rating-btn');
+                if (!btn) return;
+                const quality = parseInt(btn.dataset.rating);
+                if (!isNaN(quality)) submitRating(quality);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (!document.getElementById('page-learn').classList.contains('active')) return;
+                if (!currentLearnWord) return;
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!isCardFlipped) flipCard();
+                }
+                if (isCardFlipped) {
+                    const map = { '1': 0, '2': 2, '3': 3, '4': 5 };
+                    if (map[e.key] !== undefined) { e.preventDefault(); submitRating(map[e.key]); }
+                }
+            });
+
+            document.getElementById('activeBookSelect').addEventListener('change', (e) => {
+                if (e.target.value && e.target.value !== appData.activeWordBookId) activateWordBook(e.target.value);
+            });
+            document.getElementById('wordbookList').addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                if (btn.dataset.action === 'activate') activateWordBook(btn.dataset.id);
+                if (btn.dataset.action === 'delete') deleteWordBook(btn.dataset.id);
+            });
+
+            document.getElementById('importZone').addEventListener('click', () => document.getElementById('fileInput').click());
+            document.getElementById('fileInput').addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (!files.length) return;
+                let count = 0;
+                const next = (i) => {
+                    if (i >= files.length) {
+                        if (count > 0) { renderWordbookList(); updateLearnUI(); updateAllStats(); }
+                        document.getElementById('fileInput').value = '';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { if (importWordBook(ev.target.result, files[i].name.replace(/\.json$/i,''))) count++; next(i+1); };
+                    reader.onerror = () => { showToast('❌ 读取失败'); next(i+1); };
+                    reader.readAsText(files[i]);
+                };
+                next(0);
+            });
+
+            const importZone = document.getElementById('importZone');
+            importZone.addEventListener('dragover', (e) => { e.preventDefault(); importZone.style.borderColor='var(--accent)'; });
+            importZone.addEventListener('dragleave', () => { importZone.style.borderColor='#d5cdbc'; });
+            importZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                importZone.style.borderColor='#d5cdbc';
+                const files = e.dataTransfer.files;
+                if (!files.length) return;
+                let count = 0;
+                const next = (i) => {
+                    if (i >= files.length) { if (count>0) { renderWordbookList(); updateLearnUI(); updateAllStats(); } return; }
+                    if (!files[i].name.endsWith('.json')) { next(i+1); return; }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { if (importWordBook(ev.target.result, files[i].name.replace(/\.json$/i,''))) count++; next(i+1); };
+                    reader.onerror = () => next(i+1);
+                    reader.readAsText(files[i]);
+                };
+                next(0);
+            });
+
+            document.getElementById('btnUrlImport').addEventListener('click', async () => {
+                const url = document.getElementById('urlInput').value.trim();
+                if (!url) { showToast('请输入 URL'); return; }
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const text = await response.text();
+                    const fileName = url.split('/').pop().split('?')[0] || '远程词书';
+                    importWordBook(text, fileName);
+                } catch (err) {
+                    showToast('❌ 获取失败: ' + err.message);
+                }
+            });
+
+            document.getElementById('btnPrevMonth').addEventListener('click', () => navigateMonth(-1));
+            document.getElementById('btnNextMonth').addEventListener('click', () => navigateMonth(1));
+
+            document.getElementById('btnSaveSettings').addEventListener('click', () => {
+                appData.settings.dailyGoal = Math.max(0, parseInt(document.getElementById('dailyGoal').value) || 0);
+                appData.settings.dailyNewWords = Math.max(0, parseInt(document.getElementById('dailyNewWords').value) || 10);
+                persistData();
+                showToast('✅ 设置已保存');
+            });
+            document.getElementById('btnResetData').addEventListener('click', () => {
+                if (!confirm('⚠️ 确定重置所有数据吗？此操作不可恢复！')) return;
+                if (!confirm('再次确认：真的要清除所有数据吗？')) return;
+                appData = getDefaultData();
+                persistData();
+                renderWordbookList();
+                updateLearnUI();
+                updateAllStats();
+                calendarYear = undefined; calendarMonth = undefined;
+                updateCalendarView();
+                showToast('🗑️ 所有数据已重置');
+            });
+
+            function init() {
+                document.getElementById('dailyGoal').value = appData.settings.dailyGoal;
+                document.getElementById('dailyNewWords').value = appData.settings.dailyNewWords;
+                const today = todayStr();
+                if (appData.lastReviewDate !== today) { appData.todayReviewCount = 0; appData.lastReviewDate = today; persistData(); }
+                renderWordbookList();
+                updateLearnUI();
+                updateAllStats();
+                updateCalendarView();
+                if (appData.wordBooks.length === 0) {
+                    const sample = {
+                        id: generateId(), name: '示例英语词书', language: 'English',
+                        words: [
+                            { spelling: 'apple', meanings: ['苹果'], phonetic: '/ˈæpəl/', partOfSpeech: 'noun', example: 'I ate an apple.', exampleTranslation: '我吃了一个苹果。' },
+                            { spelling: 'book', meanings: ['书'], phonetic: '/bʊk/', partOfSpeech: 'noun', example: 'She is reading a book.', exampleTranslation: '她正在读一本书。' },
+                            { spelling: 'cat', meanings: ['猫'], phonetic: '/kæt/', partOfSpeech: 'noun', example: 'The cat is sleeping.', exampleTranslation: '猫在睡觉。' },
+                            { spelling: 'run', meanings: ['跑'], phonetic: '/rʌn/', partOfSpeech: 'verb', example: 'I like to run.', exampleTranslation: '我喜欢跑步。' },
+                        ],
+                        importedAt: new Date().toISOString(),
+                    };
+                    appData.wordBooks.push(sample);
+                    appData.activeWordBookId = sample.id;
+                    persistData();
+                    renderWordbookList();
+                    updateLearnUI();
+                    updateAllStats();
+                }
+            }
+            init();
+        })();
+    </script>
+</body>
+</html>

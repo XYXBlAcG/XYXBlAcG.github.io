@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zip2PDF - 压缩包图片转PDF工具</title>
+    <style>
+        :root {
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6b7280;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #eef2ff;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.04);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -180px;
+            right: -120px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -160px;
+            left: -100px;
+            width: 440px;
+            height: 440px;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        /* 卡片主体 */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 44px 40px 40px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: transform var(--transition);
+        }
+
+        /* 图标区域 */
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            background: var(--accent-light);
+            border-radius: 20px;
+            margin-bottom: 24px;
+            transition: transform var(--transition);
+        }
+        .icon-wrapper:hover {
+            transform: scale(1.05);
+        }
+        .icon-wrapper svg {
+            width: 36px;
+            height: 36px;
+            color: var(--accent);
+        }
+
+        /* 标题 */
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+            color: #111827;
+        }
+        .subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        /* 描述段落 */
+        .description {
+            font-size: 15px;
+            color: #4b5563;
+            margin-bottom: 32px;
+            line-height: 1.8;
+            text-align: center;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .description strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* 特性列表 */
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 34px;
+            text-align: left;
+        }
+        @media (max-width: 480px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+            .card {
+                padding: 32px 22px 28px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+        }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: #f9fafb;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.5;
+            transition: background var(--transition);
+        }
+        .feature-item:hover {
+            background: #f3f4f6;
+        }
+        .feature-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-top: 1px;
+            color: var(--accent);
+        }
+        .feature-item span {
+            font-weight: 500;
+        }
+
+        /* 下载按钮 */
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px 36px;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all var(--transition);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            border: none;
+        }
+        .download-btn:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.38);
+            transform: translateY(-2px);
+        }
+        .download-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+        }
+        .download-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 底部信息 */
+        .footer-note {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #9ca3af;
+            text-align: center;
+        }
+        .footer-note a {
+            color: #6b7280;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color var(--transition);
+        }
+        .footer-note a:hover {
+            color: var(--accent);
+        }
+
+        /* 版本标签 */
+        .version-tag {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            <!-- 版本标签 -->
+            <div class="version-tag">v1.0.0 · Windows / macOS</div>
+
+            <!-- 图标 -->
+            <div class="icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- 压缩包图标 -->
+                    <path d="M21 8v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6Z"/>
+                    <path d="M21 8h-6V2"/>
+                    <!-- 箭头表示转换 -->
+                    <polyline points="9 13 12 16 15 13"/>
+                    <line x1="12" y1="16" x2="12" y2="10"/>
+                </svg>
+            </div>
+
+            <!-- 标题 -->
+            <h1>Zip2PDF</h1>
+            <p class="subtitle">压缩包图片 → 合并输出 PDF，一步到位</p>
+
+            <!-- 核心描述 -->
+            <p class="description">
+                <strong>Zip2PDF</strong> 是一款轻量级桌面工具，专为解决一个高频需求而生：<br>
+                将 <strong>ZIP 压缩包</strong> 中的多张图片，按顺序合并输出为一份整洁的 <strong>PDF 文件</strong>。
+                无需手动解压、无需逐个拖拽，拖入压缩包即可自动完成转换。
+            </p>
+
+            <!-- 特性列表 -->
+            <div class="features">
+                <div class="feature-item">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>支持 ZIP 格式</span>
+                </div>
+                <div class="feature-item">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>支持 JPG / PNG / WebP / BMP</span>
+                </div>
+                <div class="feature-item">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>按文件名自动排序合并</span>
+                </div>
+                <div class="feature-item">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>离线运行，保护隐私安全</span>
+                </div>
+                <div class="feature-item">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>自定义 PDF 页面尺寸与方向</span>
+                </div>
+                <div class="feature-item">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>拖拽操作，极简体验</span>
+                </div>
+            </div>
+
+            <!-- 下载按钮 -->
+             <a href="./index.html" class="download-btn" title="网页版">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                网页版试用
+            </a>
+            <a href="#" class="download-btn" title="下载尚未提供，敬请期待">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                暂无下载
+            </a>
+        </div>
+
+        <!-- 底部备注 -->
+        <p class="footer-note">
+            完全免费 · 开源可查 · <a href="https://github.com/XYXBlAcG/zipped_photo_to_pdf">查看源代码</a><br>
+            <a href="/index.html">回到首页</a>
+        </p>
+    </div>
+
+</body>
+</html>

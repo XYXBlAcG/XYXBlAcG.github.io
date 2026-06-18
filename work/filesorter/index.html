@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileSorter - 文件智能整理工具</title>
+    <style>
+        :root {
+            --bg: #f5f6f8;
+            --surface: #ffffff;
+            --surface-alt: #f9fafb;
+            --border: #e2e5ea;
+            --border-light: #eef0f3;
+            --text: #1a1d23;
+            --text-secondary: #5f6570;
+            --text-muted: #949ba6;
+            --primary: #4f6ef7;
+            --primary-hover: #3b5de7;
+            --primary-light: #eef1fd;
+            --primary-ghost: #f5f7fe;
+            --success: #22c55e;
+            --success-light: #f0fdf4;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+            --radius-sm: 6px;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Menlo', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ========== 顶部导航栏 ========== */
+        .app-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+        }
+        .app-header .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-header .logo-icon {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #4f6ef7, #7b8cff);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .app-header .logo-text {
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.3px;
+            color: var(--text);
+        }
+        .app-header .logo-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-left: 2px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            white-space: nowrap;
+            letter-spacing: -0.1px;
+            font-family: inherit;
+            outline: none;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 1px 3px rgba(79, 110, 247, 0.3);
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 2px 8px rgba(79, 110, 247, 0.4);
+        }
+        .btn-primary:disabled {
+            background: #c4c9d6;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-outline {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover {
+            background: var(--surface-alt);
+            border-color: #c8cdd6;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 6px 10px;
+        }
+        .btn-ghost:hover {
+            background: var(--surface-alt);
+            color: var(--text);
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .btn-xs {
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #16a34a;
+        }
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border-radius: 50%;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* ========== 主体布局 ========== */
+        .app-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ========== 左侧配置面板 ========== */
+        .sidebar {
+            width: 340px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px;
+            gap: 6px;
+            z-index: 5;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        .sidebar-section {
+            background: var(--surface-alt);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+        .sidebar-section.active-highlight {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-label .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary);
+            flex-shrink: 0;
+        }
+        .folder-path-display {
+            background: #fff;
+            border: 1px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            word-break: break-all;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .folder-path-display:hover {
+            border-color: var(--primary);
+            background: var(--primary-ghost);
+            color: var(--text);
+        }
+        .folder-path-display.filled {
+            border-style: solid;
+            border-color: #c8cdd6;
+            color: var(--text);
+        }
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #fafbfc;
+            margin-top: 4px;
+        }
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: var(--primary-ghost);
+        }
+        .drop-zone .drop-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+        .drop-zone .drop-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .drop-zone .drop-hint {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        select,
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: inherit;
+            background: #fff;
+            color: var(--text);
+            transition: var(--transition);
+            outline: none;
+        }
+        select:focus,
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235f6570' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .radio-chip {
+            position: relative;
+        }
+        .radio-chip input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .radio-chip label {
+            display: block;
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #fff;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .radio-chip input:checked+label {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 1px 3px rgba(79, 110, 247, 0.3);
+        }
+        .radio-chip label:hover {
+            border-color: var(--primary);
+        }
+        .custom-rule-item {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 8px;
+            background: #fff;
+            border-radius: var(--radius-sm);
+            margin-bottom: 6px;
+            border: 1px solid var(--border-light);
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .custom-rule-item input {
+            font-size: 11px;
+            padding: 6px 8px;
+        }
+        .custom-rule-item input[type="text"] {
+            width: 80px;
+            flex-shrink: 0;
+        }
+        .custom-rule-item input[type="date"] {
+            width: 110px;
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .toggle-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #d1d5db;
+            border-radius: 22px;
+            transition: var(--transition);
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+        .toggle-switch input:checked+.toggle-slider {
+            background: var(--primary);
+        }
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(18px);
+        }
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            color: var(--text-muted);
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* ========== 右侧主内容区 ========== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg);
+        }
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            flex-shrink: 0;
+            gap: 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border-light);
+        }
+        .preview-title {
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-count-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .preview-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .preview-area::-webkit-scrollbar {
+            width: 5px;
+        }
+        .preview-area::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+        }
+        .empty-state .empty-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+        .empty-state .empty-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .empty-state .empty-desc {
+            font-size: 12px;
+            max-width: 300px;
+        }
+        .tree-container {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+        .tree-folder {
+            border-bottom: 1px solid var(--border-light);
+        }
+        .tree-folder:last-child {
+            border-bottom: none;
+        }
+        .tree-folder-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            background: var(--surface-alt);
+            transition: var(--transition);
+            user-select: none;
+        }
+        .tree-folder-header:hover {
+            background: #f0f2f5;
+        }
+        .tree-folder-header .folder-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .tree-folder-header .folder-name {
+            flex: 1;
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+        .tree-folder-header .folder-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .tree-folder-header .chevron {
+            transition: var(--transition);
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .tree-folder.collapsed .tree-folder-header .chevron {
+            transform: rotate(-90deg);
+        }
+        .tree-folder.collapsed .tree-folder-content {
+            display: none;
+        }
+        .tree-folder-content {
+            padding: 0;
+            background: #fff;
+        }
+        .tree-subfolder {
+            border-top: 1px solid #f5f5f5;
+        }
+        .tree-subfolder-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px 7px 28px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            font-family: var(--font-mono);
+            font-size: 11px;
+        }
+        .tree-subfolder-header:hover {
+            background: #fafbfc;
+            color: var(--text);
+        }
+        .tree-file-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 14px 5px 42px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            border-top: 1px solid #fafafa;
+            transition: var(--transition);
+        }
+        .tree-file-item:hover {
+            background: #fdfdff;
+            color: var(--text);
+        }
+        .tree-file-item .file-icon {
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .tree-file-item .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tree-file-item .file-date {
+            font-size: 10px;
+            color: #c0c5ce;
+            flex-shrink: 0;
+        }
+
+        /* ========== 底部日志栏 ========== */
+        .log-panel {
+            height: 160px;
+            flex-shrink: 0;
+            background: #1e1f24;
+            border-top: 1px solid #2a2b30;
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+        }
+        .log-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: #25262b;
+            flex-shrink: 0;
+        }
+        .log-panel-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #a0a5b0;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .log-panel-title .log-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 16px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 1.7;
+            color: #c8ccd4;
+        }
+        .log-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .log-content::-webkit-scrollbar-thumb {
+            background: #3a3b40;
+            border-radius: 10px;
+        }
+        .log-entry {
+            display: flex;
+            gap: 8px;
+            padding: 1px 0;
+        }
+        .log-entry .log-time {
+            color: #6b7080;
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+        .log-entry.log-info .log-msg {
+            color: #bcc1cc;
+        }
+        .log-entry.log-success .log-msg {
+            color: #4ade80;
+        }
+        .log-entry.log-warn .log-msg {
+            color: #fbbf24;
+        }
+        .log-entry.log-error .log-msg {
+            color: #f87171;
+        }
+        .log-entry .log-msg {
+            flex: 1;
+            word-break: break-all;
+        }
+        .progress-bar-container {
+            height: 3px;
+            background: #2a2b30;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f6ef7, #7b8cff);
+            transition: width 0.3s ease;
+            width: 0%;
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* ========== 模态框 ========== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInOverlay 0.2s ease;
+        }
+        @keyframes fadeInOverlay {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            animation: slideUp 0.25s ease;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        .modal p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .app-body {
+                flex-direction: column;
+            }
+            .log-panel {
+                height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== 顶部导航 ==================== -->
+    <header class="app-header">
+        <div class="logo-area">
+            <div class="logo-icon">📂</div>
+            <span class="logo-text">FileSorter</span>
+            <span class="logo-sub">文件智能整理</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline btn-sm" onclick="resetAll()" title="清除所有配置">🔄 重置</button>
+            <button class="btn btn-outline btn-sm" onclick="exportLog()" title="导出日志">📋 导出日志</button>
+            <button class="btn btn-primary" id="btnExecute" disabled onclick="executeClassification()">
+                ⚡ 执行分类
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== 主体布局 ==================== -->
+    <div class="app-body">
+        <!-- 左侧配置面板 -->
+        <aside class="sidebar" id="sidebar">
+            <!-- 源文件夹选择 -->
+            <div class="sidebar-section" id="sectionSource">
+                <div class="section-label"><span class="dot"></span>源文件夹</div>
+                <div class="drop-zone" id="dropZone" onclick="selectSourceFolder()" title="点击选择或拖拽文件夹">
+                    <div class="drop-icon">📁</div>
+                    <div class="drop-text">选择源文件夹</div>
+                    <div class="drop-hint">点击浏览或拖拽文件夹到此处</div>
+                </div>
+                <div class="folder-path-display" id="folderPathDisplay" onclick="selectSourceFolder()" style="margin-top:6px;">
+                    尚未选择文件夹...
+                </div>
+                <div style="margin-top:6px;">
+                    <label class="toggle-row">
+                        <span class="toggle-label">包含子文件夹（递归）</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleRecursive" onchange="onConfigChange()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 时间分类粒度 -->
+            <div class="sidebar-section" id="sectionTime">
+                <div class="section-label"><span class="dot"></span>时间分类粒度</div>
+                <div class="radio-group" id="timeGranularityGroup">
+                    <div class="radio-chip"><input type="radio" name="timeGranularity" value="year" id="tgYear" onchange="onTimeGranularityChange()"><label for="tgYear">📆 按年</label></div>
+                    <div class="radio-chip"><input type="radio" name="timeGranularity" value="month" id="tgMonth" checked onchange="onTimeGranularityChange()"><label for="tgMonth">📅 按月</label></div>
+                    <div class="radio-chip"><input type="radio" name="timeGranularity" value="week" id="tgWeek" onchange="onTimeGranularityChange()"><label for="tgWeek">📋 按周</label></div>
+                    <div class="radio-chip"><input type="radio" name="timeGranularity" value="day" id="tgDay" onchange="onTimeGranularityChange()"><label for="tgDay">📌 按天</label></div>
+                    <div class="radio-chip"><input type="radio" name="timeGranularity" value="custom" id="tgCustom" onchange="onTimeGranularityChange()"><label for="tgCustom">✏️ 自定义区间</label></div>
+                </div>
+                <!-- 自定义区间规则 -->
+                <div id="customRulesContainer" style="display:none; margin-top:8px;">
+                    <div id="customRulesList"></div>
+                    <button class="btn btn-ghost btn-sm" onclick="addCustomRule()" style="margin-top:4px;">＋ 添加规则</button>
+                    <div style="margin-top:6px;">
+                        <label style="font-size:11px;color:var(--text-muted);">未匹配文件的处理：</label>
+                        <select id="unmatchedPolicy" onchange="onConfigChange()" style="font-size:11px;margin-top:3px;">
+                            <option value="default">按默认粒度（月）分类</option>
+                            <option value="uncategorized">归入「未分类」文件夹</option>
+                            <option value="root">保留在扩展名文件夹根目录</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作模式 -->
+            <div class="sidebar-section" id="sectionMode">
+                <div class="section-label"><span class="dot"></span>操作模式</div>
+                <div class="radio-group">
+                    <div class="radio-chip"><input type="radio" name="operationMode" value="move" id="opMove" checked onchange="onConfigChange()"><label for="opMove">📦 移动文件</label></div>
+                    <div class="radio-chip"><input type="radio" name="operationMode" value="copy" id="opCopy" onchange="onConfigChange()"><label for="opCopy">📋 复制文件</label></div>
+                </div>
+            </div>
+
+            <!-- 冲突处理 -->
+            <div class="sidebar-section" id="sectionConflict">
+                <div class="section-label"><span class="dot"></span>冲突处理策略</div>
+                <select id="conflictPolicy" onchange="onConfigChange()">
+                    <option value="skip">跳过（保留已存在的文件）</option>
+                    <option value="overwrite">覆盖（替换已存在的文件）</option>
+                    <option value="rename" selected>自动重命名（添加 _1, _2 后缀）</option>
+                </select>
+            </div>
+
+            <!-- 扫描信息 -->
+            <div class="sidebar-section" style="background:#fff;border:1px solid var(--border-light);">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+                    <span style="color:var(--text-muted);">已扫描文件</span>
+                    <span class="info-badge" id="scannedCount">0 个文件</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:4px;">
+                    <span style="color:var(--text-muted);">扩展名类型</span>
+                    <span class="info-badge" id="extensionCount">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:4px;">
+                    <span style="color:var(--text-muted);">目标分类文件夹</span>
+                    <span class="info-badge" id="targetFolderCount">—</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧预览区 -->
+        <main class="main-content">
+            <div class="preview-header">
+                <div class="preview-title">
+                    📋 分类预览
+                    <span class="file-count-badge" id="previewFileCount">0 个文件</span>
+                </div>
+                <div class="preview-actions">
+                    <button class="btn btn-outline btn-sm" onclick="expandAllTree()">📂 全部展开</button>
+                    <button class="btn btn-outline btn-sm" onclick="collapseAllTree()">📁 全部折叠</button>
+                    <button class="btn btn-ghost btn-sm" onclick="refreshPreview()">🔄 刷新预览</button>
+                </div>
+            </div>
+            <div class="preview-area" id="previewArea">
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-title">暂无预览数据</div>
+                    <div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== 底部日志栏 ==================== -->
+    <div class="log-panel">
+        <div class="log-panel-header">
+            <span class="log-panel-title"><span class="log-dot"></span>操作日志</span>
+            <button class="btn btn-ghost btn-xs" style="color:#a0a5b0;font-size:10px;" onclick="clearLog()">清空日志</button>
+        </div>
+        <div class="log-content" id="logContent">
+            <div class="log-entry log-info">
+                <span class="log-time">--:--:--</span>
+                <span class="log-msg">FileSorter 已就绪，等待选择源文件夹...</span>
+            </div>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- ==================== 确认执行模态框 ==================== -->
+    <div class="modal-overlay" id="confirmModal" style="display:none;">
+        <div class="modal">
+            <h3>⚠️ 确认执行分类操作</h3>
+            <p id="confirmModalMsg">即将对文件进行分类整理。此操作不可完全撤销，建议先确认预览结果。是否继续？</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline btn-sm" onclick="closeConfirmModal()">取消</button>
+                <button class="btn btn-primary btn-sm" id="btnConfirmExecute" onclick="confirmedExecute()">确认执行</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局状态 ====================
+        const STATE = {
+            sourceDirHandle: null, // FileSystemDirectoryHandle
+            sourceDirName: '',
+            files: [], // { handle, name, extension, lastModified, size }
+            classificationTree: {}, // 分类树结构
+            totalFiles: 0,
+            logs: [],
+            pendingExecution: null,
+            isExecuting: false,
+            customRules: [], // [{name, startDate, endDate}]
+        };
+
+        // ==================== DOM 引用 ====================
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => document.querySelectorAll(sel);
+
+        const dom = {
+            folderPathDisplay: $('#folderPathDisplay'),
+            dropZone: $('#dropZone'),
+            previewArea: $('#previewArea'),
+            previewFileCount: $('#previewFileCount'),
+            btnExecute: $('#btnExecute'),
+            logContent: $('#logContent'),
+            progressBar: $('#progressBar'),
+            scannedCount: $('#scannedCount'),
+            extensionCount: $('#extensionCount'),
+            targetFolderCount: $('#targetFolderCount'),
+            customRulesContainer: $('#customRulesContainer'),
+            customRulesList: $('#customRulesList'),
+            confirmModal: $('#confirmModal'),
+            confirmModalMsg: $('#confirmModalMsg'),
+            toggleRecursive: $('#toggleRecursive'),
+            conflictPolicy: $('#conflictPolicy'),
+            unmatchedPolicy: $('#unmatchedPolicy'),
+            sectionSource: $('#sectionSource'),
+            sectionTime: $('#sectionTime'),
+        };
+
+        // ==================== 日志系统 ====================
+        function addLog(level, message) {
+            const now = new Date();
+            const timeStr = now.toTimeString().slice(0, 8);
+            STATE.logs.push({ time: timeStr, level, message });
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${level}`;
+            entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="log-msg">${escapeHtml(message)}</span>`;
+            dom.logContent.appendChild(entry);
+            dom.logContent.scrollTop = dom.logContent.scrollHeight;
+            // 限制日志条数
+            while (dom.logContent.children.length > 200) {
+                dom.logContent.removeChild(dom.logContent.firstChild);
+            }
+        }
+
+        function clearLog() {
+            STATE.logs = [];
+            dom.logContent.innerHTML = '';
+            addLog('info', '日志已清空');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function setProgress(percent) {
+            dom.progressBar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+        }
+
+        // ==================== 文件系统访问 ====================
+        async function selectSourceFolder() {
+            try {
+                if (!window.showDirectoryPicker) {
+                    alert('您的浏览器不支持 File System Access API。请使用 Chrome 或 Edge 的最新版本。');
+                    addLog('warn', '浏览器不支持 showDirectoryPicker API，请使用 Chrome/Edge');
+                    return;
+                }
+                const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                STATE.sourceDirHandle = dirHandle;
+                STATE.sourceDirName = dirHandle.name;
+                dom.folderPathDisplay.textContent = '📁 ' + dirHandle.name;
+                dom.folderPathDisplay.classList.add('filled');
+                dom.sectionSource.classList.add('active-highlight');
+                addLog('success', `已选择源文件夹: "${dirHandle.name}"`);
+                await scanFiles();
+                buildClassificationTree();
+                renderPreview();
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    addLog('info', '用户取消了文件夹选择');
+                } else {
+                    addLog('error', `选择文件夹失败: ${err.message}`);
+                    console.error(err);
+                }
+            }
+        }
+
+        async function scanFiles() {
+            STATE.files = [];
+            STATE.totalFiles = 0;
+            const recursive = dom.toggleRecursive.checked;
+            addLog('info', `开始扫描文件... (递归子文件夹: ${recursive ? '是' : '否'})`);
+            setProgress(10);
+
+            const skipPatterns = [
+                /^no_extension$/i,
+                /^未分类$/i,
+                /^其他$/i,
+                /^\d{4}$/,
+                /^\d{4}-\d{2}$/,
+                /^\d{4}-W\d{2}$/,
+                /^\d{4}-\d{2}-\d{2}$/,
+            ];
+
+            function shouldSkipDir(name) {
+                // 跳过明显是分类目标文件夹的目录
+                if (skipPatterns.some(p => p.test(name))) return true;
+                // 跳过以常见扩展名命名的文件夹
+                if (/^[a-z0-9]{1,10}$/i.test(name) && !name.includes(' ')) {
+                    const commonExts = ['txt', 'jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx',
+                        'ppt', 'pptx', 'mp3', 'mp4', 'avi', 'zip', 'rar', '7z', 'js', 'py', 'html', 'css', 'json',
+                        'xml', 'csv', 'md', 'svg', 'ico', 'webp', 'mov', 'wav', 'flac'
+                    ];
+                    if (commonExts.includes(name.toLowerCase())) return true;
+                }
+                return false;
+            }
+
+            async function traverse(dirHandle, depth) {
+                for await (const [name, handle] of dirHandle.entries()) {
+                    if (handle.kind === 'file') {
+                        const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+                        const fileData = {
+                            handle: handle,
+                            name: name,
+                            extension: ext,
+                            lastModified: null,
+                            size: null,
+                        };
+                        try {
+                            const fileObj = await handle.getFile();
+                            fileData.lastModified = fileObj.lastModified;
+                            fileData.size = fileObj.size;
+                        } catch (e) {
+                            // 如果无法获取详细信息，使用当前时间
+                            fileData.lastModified = Date.now();
+                            fileData.size = 0;
+                        }
+                        STATE.files.push(fileData);
+                        STATE.totalFiles++;
+                    } else if (handle.kind === 'directory' && recursive && depth < 20) {
+                        if (!shouldSkipDir(name)) {
+                            await traverse(handle, depth + 1);
+                        }
+                    }
+                }
+            }
+
+            try {
+                await traverse(STATE.sourceDirHandle, 0);
+                addLog('success', `扫描完成，共发现 ${STATE.totalFiles} 个文件`);
+                dom.scannedCount.textContent = STATE.totalFiles + ' 个文件';
+                setProgress(100);
+                setTimeout(() => setProgress(0), 600);
+            } catch (err) {
+                addLog('error', `扫描文件时出错: ${err.message}`);
+                setProgress(0);
+            }
+        }
+
+        // ==================== 时间工具函数 ====================
+        function getISOWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return { year: d.getUTCFullYear(), week: weekNo };
+        }
+
+        function getTimeCategory(lastModified, granularity, customRules) {
+            const d = new Date(lastModified);
+            if (isNaN(d.getTime())) return 'unknown';
+
+            if (granularity === 'custom' && customRules && customRules.length > 0) {
+                for (const rule of customRules) {
+                    const start = new Date(rule.startDate);
+                    const end = new Date(rule.endDate);
+                    end.setHours(23, 59, 59, 999);
+                    if (d >= start && d <= end) {
+                        return rule.name;
+                    }
+                }
+                // 未匹配
+                const unmatchedPolicy = dom.unmatchedPolicy?.value || 'default';
+                if (unmatchedPolicy === 'uncategorized') return '未分类';
+                if (unmatchedPolicy === 'root') return '__root__';
+                // 默认回退到按月
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                return `${y}-${m}`;
+            }
+
+            switch (granularity) {
+                case 'year':
+                    return String(d.getFullYear());
+                case 'month': {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    return `${y}-${m}`;
+                }
+                case 'week': {
+                    const iso = getISOWeekNumber(d);
+                    return `${iso.year}-W${String(iso.week).padStart(2, '0')}`;
+                }
+                case 'day': {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                }
+                default:
+                    const y2 = d.getFullYear();
+                    const m2 = String(d.getMonth() + 1).padStart(2, '0');
+                    return `${y2}-${m2}`;
+            }
+        }
+
+        // ==================== 分类树构建 ====================
+        function getCurrentGranularity() {
+            const checked = document.querySelector('input[name="timeGranularity"]:checked');
+            return checked ? checked.value : 'month';
+        }
+
+        function getCustomRules() {
+            const rules = [];
+            const items = dom.customRulesList.querySelectorAll('.custom-rule-item');
+            items.forEach(item => {
+                const nameInput = item.querySelector('.rule-name');
+                const startInput = item.querySelector('.rule-start');
+                const endInput = item.querySelector('.rule-end');
+                if (nameInput && startInput && endInput && nameInput.value.trim() && startInput.value &&
+                    endInput.value) {
+                    rules.push({
+                        name: nameInput.value.trim(),
+                        startDate: startInput.value,
+                        endDate: endInput.value,
+                    });
+                }
+            });
+            return rules;
+        }
+
+        function buildClassificationTree() {
+            const tree = {};
+            const granularity = getCurrentGranularity();
+            const customRules = granularity === 'custom' ? getCustomRules() : [];
+            STATE.customRules = customRules;
+
+            for (const file of STATE.files) {
+                const ext = file.extension || 'no_extension';
+                const extKey = ext.toLowerCase();
+                const timeCat = getTimeCategory(file.lastModified || Date.now(), granularity, customRules);
+
+                if (!tree[extKey]) {
+                    tree[extKey] = { extension: extKey, timeGroups: {}, totalCount: 0 };
+                }
+                if (!tree[extKey].timeGroups[timeCat]) {
+                    tree[extKey].timeGroups[timeCat] = [];
+                }
+                tree[extKey].timeGroups[timeCat].push(file);
+                tree[extKey].totalCount++;
+            }
+
+            STATE.classificationTree = tree;
+
+            // 更新统计
+            const extCount = Object.keys(tree).length;
+            let targetFolderCount = 0;
+            for (const extKey of Object.keys(tree)) {
+                targetFolderCount += Object.keys(tree[extKey].timeGroups).length;
+            }
+            dom.extensionCount.textContent = extCount + ' 种类型';
+            dom.targetFolderCount.textContent = targetFolderCount + ' 个文件夹';
+            dom.previewFileCount.textContent = STATE.totalFiles + ' 个文件';
+
+            if (STATE.totalFiles > 0) {
+                dom.btnExecute.disabled = false;
+                dom.btnExecute.textContent = '⚡ 执行分类';
+            } else {
+                dom.btnExecute.disabled = true;
+                dom.btnExecute.textContent = '⚡ 执行分类';
+            }
+        }
+
+        // ==================== 预览渲染 ====================
+        function renderPreview() {
+            const tree = STATE.classificationTree;
+            const extKeys = Object.keys(tree).sort();
+
+            if (extKeys.length === 0) {
+                dom.previewArea.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-title">暂无预览数据</div>
+                        <div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div>
+                    </div>`;
+                dom.previewFileCount.textContent = '0 个文件';
+                return;
+            }
+
+            let html = '<div class="tree-container">';
+            for (const extKey of extKeys) {
+                const extData = tree[extKey];
+                const displayExt = extKey === 'no_extension' ? '📄 无扩展名' : `📄 .${extKey}`;
+                const folderIcon = extKey === 'no_extension' ? '📁' : '📁';
+                const timeKeys = Object.keys(extData.timeGroups).sort();
+
+                html += `
+                <div class="tree-folder" data-ext="${extKey}">
+                    <div class="tree-folder-header" onclick="toggleTreeFolder(this)" title="点击展开/折叠">
+                        <span class="chevron">▼</span>
+                        <span class="folder-icon">${folderIcon}</span>
+                        <span class="folder-name">${displayExt}</span>
+                        <span class="folder-count">${extData.totalCount} 个文件 · ${timeKeys.length} 个时间组</span>
+                    </div>
+                    <div class="tree-folder-content">`;
+
+                for (const timeKey of timeKeys) {
+                    const files = extData.timeGroups[timeKey];
+                    const timeLabel = timeKey === '__root__' ? '📌 根目录（未分类）' :
+                        timeKey === '未分类' ? '❓ 未分类' :
+                        timeKey === 'unknown' ? '⚠️ 未知时间' :
+                        '📅 ' + timeKey;
+                    html += `
+                    <div class="tree-subfolder">
+                        <div class="tree-subfolder-header" onclick="toggleSubfolder(this)" title="点击展开/折叠">
+                            <span style="font-size:10px;">▶</span>
+                            <span>${timeLabel}</span>
+                            <span style="font-size:10px;color:#c0c5ce;">(${files.length} 个文件)</span>
+                        </div>
+                        <div class="tree-subfolder-content" style="display:none;">`;
+
+                    for (const file of files) {
+                        const dateStr = file.lastModified ?
+                            new Date(file.lastModified).toLocaleDateString('zh-CN', { year: 'numeric',
+                                month: '2-digit', day: '2-digit' }) :
+                            '未知日期';
+                        const sizeStr = file.size ?
+                            (file.size < 1024 ? file.size + ' B' :
+                                file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' :
+                                (file.size / 1048576).toFixed(2) + ' MB') :
+                            '?';
+                        const fileIcon = getFileIcon(file.extension);
+                        html += `
+                        <div class="tree-file-item">
+                            <span class="file-icon">${fileIcon}</span>
+                            <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+                            <span class="file-date">${dateStr} · ${sizeStr}</span>
+                        </div>`;
+                    }
+                    html += `</div></div>`;
+                }
+                html += `</div></div>`;
+            }
+            html += '</div>';
+            dom.previewArea.innerHTML = html;
+            dom.previewFileCount.textContent = STATE.totalFiles + ' 个文件';
+        }
+
+        function getFileIcon(ext) {
+            const iconMap = {
+                'jpg': '🖼️',
+                'jpeg': '🖼️',
+                'png': '🖼️',
+                'gif': '🖼️',
+                'svg': '🖼️',
+                'webp': '🖼️',
+                'pdf': '📕',
+                'doc': '📝',
+                'docx': '📝',
+                'xls': '📊',
+                'xlsx': '📊',
+                'ppt': '📽️',
+                'pptx': '📽️',
+                'txt': '📄',
+                'md': '📄',
+                'csv': '📄',
+                'json': '📄',
+                'xml': '📄',
+                'html': '🌐',
+                'css': '🎨',
+                'js': '📜',
+                'py': '🐍',
+                'zip': '📦',
+                'rar': '📦',
+                '7z': '📦',
+                'mp3': '🎵',
+                'wav': '🎵',
+                'flac': '🎵',
+                'mp4': '🎬',
+                'mov': '🎬',
+                'avi': '🎬',
+            };
+            return iconMap[ext?.toLowerCase()] || '📎';
+        }
+
+        function toggleTreeFolder(header) {
+            const folder = header.parentElement;
+            folder.classList.toggle('collapsed');
+        }
+
+        function toggleSubfolder(header) {
+            const content = header.nextElementSibling;
+            if (content) {
+                const isHidden = content.style.display === 'none';
+                content.style.display = isHidden ? 'block' : 'none';
+                const arrow = header.querySelector('span');
+                if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+            }
+        }
+
+        function expandAllTree() {
+            document.querySelectorAll('.tree-folder').forEach(f => f.classList.remove('collapsed'));
+            document.querySelectorAll('.tree-subfolder-content').forEach(c => c.style.display = 'block');
+            document.querySelectorAll('.tree-subfolder-header span:first-child').forEach(s => s.textContent = '▼');
+        }
+
+        function collapseAllTree() {
+            document.querySelectorAll('.tree-folder').forEach(f => f.classList.add('collapsed'));
+            document.querySelectorAll('.tree-subfolder-content').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.tree-subfolder-header span:first-child').forEach(s => s.textContent = '▶');
+        }
+
+        function refreshPreview() {
+            if (STATE.sourceDirHandle) {
+                scanFiles().then(() => {
+                    buildClassificationTree();
+                    renderPreview();
+                    addLog('info', '预览已刷新');
+                });
+            } else {
+                addLog('warn', '请先选择源文件夹');
+            }
+        }
+
+        // ==================== 自定义规则管理 ====================
+        function addCustomRule(ruleData = null) {
+            const rule = ruleData || { name: '', startDate: '', endDate: '' };
+            const item = document.createElement('div');
+            item.className = 'custom-rule-item';
+            item.innerHTML = `
+                <input type="text" class="rule-name" placeholder="规则名称" value="${escapeHtml(rule.name)}" style="width:80px;flex-shrink:0;">
+                <input type="date" class="rule-start" value="${rule.startDate}" style="width:115px;flex-shrink:0;font-size:10px;">
+                <span style="font-size:10px;color:var(--text-muted);">至</span>
+                <input type="date" class="rule-end" value="${rule.endDate}" style="width:115px;flex-shrink:0;font-size:10px;">
+                <button class="btn btn-ghost btn-xs" style="color:var(--danger);flex-shrink:0;" onclick="removeCustomRule(this)" title="删除规则">🗑️</button>
+            `;
+            // 监听变化以更新预览
+            item.querySelectorAll('input').forEach(inp => {
+                inp.addEventListener('change', () => {
+                    onConfigChange();
+                });
+                inp.addEventListener('input', () => {
+                    onConfigChange();
+                });
+            });
+            dom.customRulesList.appendChild(item);
+            if (!ruleData) {
+                onConfigChange();
+            }
+        }
+
+        function removeCustomRule(btn) {
+            const item = btn.closest('.custom-rule-item');
+            if (item) {
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(-10px)';
+                item.style.transition = '0.2s ease';
+                setTimeout(() => {
+                    item.remove();
+                    onConfigChange();
+                }, 200);
+            }
+        }
+
+        // ==================== 配置变更处理 ====================
+        function onTimeGranularityChange() {
+            const granularity = getCurrentGranularity();
+            if (granularity === 'custom') {
+                dom.customRulesContainer.style.display = 'block';
+                dom.sectionTime.classList.add('active-highlight');
+                if (dom.customRulesList.children.length === 0) {
+                    addCustomRule({ name: '2024上半年', startDate: '2024-01-01', endDate: '2024-06-30' });
+                }
+            } else {
+                dom.customRulesContainer.style.display = 'none';
+                dom.sectionTime.classList.remove('active-highlight');
+            }
+            onConfigChange();
+        }
+
+        function onConfigChange() {
+            if (STATE.sourceDirHandle && STATE.files.length > 0) {
+                buildClassificationTree();
+                renderPreview();
+            }
+        }
+
+        function resetAll() {
+            STATE.sourceDirHandle = null;
+            STATE.sourceDirName = '';
+            STATE.files = [];
+            STATE.classificationTree = {};
+            STATE.totalFiles = 0;
+            STATE.customRules = [];
+            STATE.pendingExecution = null;
+            STATE.isExecuting = false;
+            dom.folderPathDisplay.textContent = '尚未选择文件夹...';
+            dom.folderPathDisplay.classList.remove('filled');
+            dom.sectionSource.classList.remove('active-highlight');
+            dom.sectionTime.classList.remove('active-highlight');
+            dom.previewArea.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-title">暂无预览数据</div>
+                    <div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div>
+                </div>`;
+            dom.previewFileCount.textContent = '0 个文件';
+            dom.scannedCount.textContent = '0 个文件';
+            dom.extensionCount.textContent = '—';
+            dom.targetFolderCount.textContent = '—';
+            dom.btnExecute.disabled = true;
+            dom.btnExecute.textContent = '⚡ 执行分类';
+            dom.customRulesList.innerHTML = '';
+            dom.customRulesContainer.style.display = 'none';
+            document.querySelector('#tgMonth').checked = true;
+            setProgress(0);
+            addLog('info', '所有配置已重置');
+        }
+
+        // ==================== 执行分类 ====================
+        function executeClassification() {
+            if (!STATE.sourceDirHandle) {
+                addLog('warn', '请先选择源文件夹');
+                return;
+            }
+            if (STATE.totalFiles === 0) {
+                addLog('warn', '没有文件可供分类');
+                return;
+            }
+            if (STATE.isExecuting) {
+                addLog('warn', '正在执行中，请等待完成');
+                return;
+            }
+
+            // 重新构建以确保使用最新配置
+            buildClassificationTree();
+            renderPreview();
+
+            const operationMode = document.querySelector('input[name="operationMode"]:checked')?.value || 'move';
+            const conflictPolicy = dom.conflictPolicy.value;
+            const modeLabel = operationMode === 'move' ? '移动' : '复制';
+            const conflictLabel = conflictPolicy === 'skip' ? '跳过已存在文件' :
+                conflictPolicy === 'overwrite' ? '覆盖已存在文件' : '自动重命名';
+
+            dom.confirmModalMsg.textContent =
+                `即将对 "${STATE.sourceDirName}" 中的 ${STATE.totalFiles} 个文件执行【${modeLabel}】操作，冲突策略为【${conflictLabel}】。\n\n此操作将在源文件夹内创建分类子目录。建议先确认预览结果。是否继续？`;
+            dom.confirmModal.style.display = 'flex';
+            STATE.pendingExecution = { operationMode, conflictPolicy };
+        }
+
+        function closeConfirmModal() {
+            dom.confirmModal.style.display = 'none';
+            STATE.pendingExecution = null;
+        }
+
+        async function confirmedExecute() {
+            dom.confirmModal.style.display = 'none';
+            if (!STATE.pendingExecution) return;
+
+            const { operationMode, conflictPolicy } = STATE.pendingExecution;
+            STATE.pendingExecution = null;
+            STATE.isExecuting = true;
+            dom.btnExecute.disabled = true;
+            dom.btnExecute.textContent = '⏳ 执行中...';
+            setProgress(0);
+
+            const tree = STATE.classificationTree;
+            const extKeys = Object.keys(tree);
+            let processedCount = 0;
+            let successCount = 0;
+            let skipCount = 0;
+            let errorCount = 0;
+            const totalOps = STATE.totalFiles;
+            const operationLog = []; // 用于记录操作详情
+
+            addLog('info', `开始执行分类操作 (模式: ${operationMode === 'move' ? '移动' : '复制'}, 冲突: ${conflictPolicy})`);
+
+            for (const extKey of extKeys) {
+                const extData = tree[extKey];
+                const extFolderName = extKey === 'no_extension' ? 'no_extension' : extKey;
+
+                // 创建扩展名文件夹
+                let extDirHandle;
+                try {
+                    extDirHandle = await STATE.sourceDirHandle.getDirectoryHandle(extFolderName, { create: true });
+                } catch (err) {
+                    addLog('error', `无法创建扩展名文件夹 "${extFolderName}": ${err.message}`);
+                    errorCount += extData.totalCount;
+                    processedCount += extData.totalCount;
+                    continue;
+                }
+
+                const timeKeys = Object.keys(extData.timeGroups);
+                for (const timeKey of timeKeys) {
+                    const files = extData.timeGroups[timeKey];
+                    let targetDirHandle = extDirHandle;
+
+                    // 如果时间分类不是 __root__，则创建时间子文件夹
+                    if (timeKey !== '__root__') {
+                        const timeFolderName = timeKey === '未分类' ? '未分类' : timeKey;
+                        try {
+                            targetDirHandle = await extDirHandle.getDirectoryHandle(timeFolderName, { create: true });
+                        } catch (err) {
+                            addLog('error',
+                                `无法创建时间文件夹 "${extFolderName}/${timeFolderName}": ${err.message}`);
+                            errorCount += files.length;
+                            processedCount += files.length;
+                            continue;
+                        }
+                    }
+
+                    for (const file of files) {
+                        try {
+                            let targetName = file.name;
+
+                            // 检查目标文件是否已存在
+                            let fileExists = false;
+                            try {
+                                await targetDirHandle.getFileHandle(targetName);
+                                fileExists = true;
+                            } catch {
+                                fileExists = false;
+                            }
+
+                            if (fileExists) {
+                                if (conflictPolicy === 'skip') {
+                                    skipCount++;
+                                    processedCount++;
+                                    operationLog.push(
+                                        `[跳过] ${file.name} → ${extFolderName}/${timeKey !== '__root__' ? timeKey + '/' : ''}${targetName} (目标已存在)`
+                                        );
+                                    continue;
+                                } else if (conflictPolicy === 'rename') {
+                                    // 自动重命名
+                                    let counter = 1;
+                                    const baseName = file.name.includes('.') ?
+                                        file.name.slice(0, file.name.lastIndexOf('.')) :
+                                        file.name;
+                                    const ext = file.name.includes('.') ?
+                                        file.name.slice(file.name.lastIndexOf('.')) :
+                                        '';
+                                    let newName;
+                                    do {
+                                        newName = `${baseName}_${counter}${ext}`;
+                                        counter++;
+                                        try {
+                                            await targetDirHandle.getFileHandle(newName);
+                                            fileExists = true;
+                                        } catch {
+                                            fileExists = false;
+                                        }
+                                    } while (fileExists && counter < 1000);
+                                    targetName = newName;
+                                }
+                                // conflictPolicy === 'overwrite' 则直接覆盖，targetName 不变
+                            }
+
+                            if (operationMode === 'move') {
+                                try {
+                                    await file.handle.move(targetDirHandle, targetName);
+                                } catch (moveErr) {
+                                    // 如果 move 不支持，回退到复制+删除
+                                    const fileObj = await file.handle.getFile();
+                                    const newFileHandle = await targetDirHandle.getFileHandle(targetName, {
+                                        create: true
+                                    });
+                                    const writable = await newFileHandle.createWritable();
+                                    await writable.write(fileObj);
+                                    await writable.close();
+                                    try { await file.handle.remove(); } catch (e) { /* 忽略删除错误 */ }
+                                }
+                                operationLog.push(
+                                    `[移动] ${file.name} → ${extFolderName}/${timeKey !== '__root__' ? timeKey + '/' : ''}${targetName}`
+                                    );
+                            } else {
+                                // 复制
+                                const fileObj = await file.handle.getFile();
+                                const newFileHandle = await targetDirHandle.getFileHandle(targetName, { create: true });
+                                const writable = await newFileHandle.createWritable();
+                                await writable.write(fileObj);
+                                await writable.close();
+                                operationLog.push(
+                                    `[复制] ${file.name} → ${extFolderName}/${timeKey !== '__root__' ? timeKey + '/' : ''}${targetName}`
+                                    );
+                            }
+
+                            successCount++;
+                        } catch (err) {
+                            errorCount++;
+                            addLog('error', `处理文件 "${file.name}" 失败: ${err.message}`);
+                            operationLog.push(`[错误] ${file.name}: ${err.message}`);
+                        }
+                        processedCount++;
+                        const pct = Math.round((processedCount / totalOps) * 100);
+                        setProgress(pct);
+                        // 每处理10个文件更新一次日志
+                        if (processedCount % 10 === 0 || processedCount === totalOps) {
+                            dom.scannedCount.textContent = `${processedCount}/${totalOps} 处理中`;
+                        }
+                    }
+                }
+            }
+
+            // 完成
+            STATE.isExecuting = false;
+            dom.btnExecute.disabled = false;
+            dom.btnExecute.textContent = '⚡ 执行分类';
+            setProgress(100);
+            setTimeout(() => setProgress(0), 1500);
+            dom.scannedCount.textContent = STATE.totalFiles + ' 个文件';
+
+            addLog('success',
+                `✅ 分类完成！成功: ${successCount}, 跳过: ${skipCount}, 失败: ${errorCount}, 总计: ${totalOps}`);
+            if (operationLog.length <= 50) {
+                operationLog.forEach(l => addLog('info', l));
+            } else {
+                addLog('info', `详细操作记录共 ${operationLog.length} 条，可在导出的日志中查看完整列表`);
+                // 存储完整日志
+                STATE._lastOperationLog = operationLog;
+            }
+
+            // 重新扫描以更新预览
+            await scanFiles();
+            buildClassificationTree();
+            renderPreview();
+        }
+
+        // ==================== 导出日志 ====================
+        function exportLog() {
+            const allLogs = STATE.logs.map(l => `[${l.time}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
+            const operationLogExtra = STATE._lastOperationLog ?
+                '\n\n=== 详细操作记录 ===\n' + STATE._lastOperationLog.join('\n') :
+                '';
+            const fullLog = allLogs + operationLogExtra;
+            const blob = new Blob([fullLog], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `FileSorter_Log_${new Date().toISOString().slice(0, 10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('info', '日志已导出');
+        }
+
+        // ==================== 拖拽支持 ====================
+        function setupDragDrop() {
+            const dropZone = dom.dropZone;
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--primary)';
+                dropZone.style.background = 'var(--primary-ghost)';
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--border)';
+                dropZone.style.background = '#fafbfc';
+            });
+            dropZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--border)';
+                dropZone.style.background = '#fafbfc';
+                const items = e.dataTransfer.items;
+                if (items && items.length > 0) {
+                    const item = items[0];
+                    if (item.kind === 'file') {
+                        const handle = await item.getAsFileSystemHandle();
+                        if (handle && handle.kind === 'directory') {
+                            STATE.sourceDirHandle = handle;
+                            STATE.sourceDirName = handle.name;
+                            dom.folderPathDisplay.textContent = '📁 ' + handle.name;
+                            dom.folderPathDisplay.classList.add('filled');
+                            dom.sectionSource.classList.add('active-highlight');
+                            addLog('success', `已通过拖拽选择源文件夹: "${handle.name}"`);
+                            await scanFiles();
+                            buildClassificationTree();
+                            renderPreview();
+                        } else {
+                            addLog('warn', '请拖拽文件夹而非单个文件');
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==================== 键盘快捷键 ====================
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+                    e.preventDefault();
+                    selectSourceFolder();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!STATE.isExecuting && STATE.totalFiles > 0 && STATE.sourceDirHandle) {
+                        executeClassification();
+                    }
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                    e.preventDefault();
+                    expandAllTree();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+                    e.preventDefault();
+                    collapseAllTree();
+                }
+            });
+        }
+
+        // ==================== 模态框点击外部关闭 ====================
+        dom.confirmModal.addEventListener('click', function(e) {
+            if (e.target === dom.confirmModal) {
+                closeConfirmModal();
+            }
+        });
+
+        // ==================== 初始化 ====================
+        function init() {
+            setupDragDrop();
+            setupKeyboardShortcuts();
+            // 初始化时显示自定义规则区域的状态
+            onTimeGranularityChange();
+            addLog('info', 'FileSorter Pro 初始化完成 (Ctrl+O 选择文件夹 | Ctrl+Enter 执行)');
+        }
+
+        init();
+
+        console.log('%c📂 FileSorter Pro %c已就绪',
+            'font-size:16px;font-weight:bold;color:#4f6ef7;',
+            'font-size:12px;color:#5f6570;');
+        console.log('%c支持快捷键：Ctrl+O 选择文件夹 | Ctrl+Enter 执行分类 | Ctrl+E 展开预览 | Ctrl+W 折叠预览',
+            'font-size:11px;color:#949ba6;');
+        console.log('%c使用 File System Access API，请确保使用 Chrome 或 Edge 浏览器',
+            'font-size:10px;color:#c0c5ce;');
+    </script>
+</body>
+</html>

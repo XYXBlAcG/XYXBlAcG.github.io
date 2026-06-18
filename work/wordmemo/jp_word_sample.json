@@ -1,0 +1,149 @@
+{
+  "language": "Japanese",
+  "words": [
+    {
+      "spelling": "食べる",
+      "meanings": ["吃"],
+      "phonetic": "たべる",
+      "partOfSpeech": "动词",
+      "example": "朝ごはんを食べる。",
+      "exampleTranslation": "吃早餐。"
+    },
+    {
+      "spelling": "飲む",
+      "meanings": ["喝"],
+      "phonetic": "のむ",
+      "partOfSpeech": "动词",
+      "example": "水を飲む。",
+      "exampleTranslation": "喝水。"
+    },
+    {
+      "spelling": "行く",
+      "meanings": ["去"],
+      "phonetic": "いく",
+      "partOfSpeech": "动词",
+      "example": "学校に行く。",
+      "exampleTranslation": "去学校。"
+    },
+    {
+      "spelling": "来る",
+      "meanings": ["来"],
+      "phonetic": "くる",
+      "partOfSpeech": "动词",
+      "example": "友達が家に来る。",
+      "exampleTranslation": "朋友来家里。"
+    },
+    {
+      "spelling": "する",
+      "meanings": ["做"],
+      "phonetic": "する",
+      "partOfSpeech": "动词",
+      "example": "宿題をする。",
+      "exampleTranslation": "做作业。"
+    },
+    {
+      "spelling": "見る",
+      "meanings": ["看"],
+      "phonetic": "みる",
+      "partOfSpeech": "动词",
+      "example": "テレビを見る。",
+      "exampleTranslation": "看电视。"
+    },
+    {
+      "spelling": "聞く",
+      "meanings": ["听", "问"],
+      "phonetic": "きく",
+      "partOfSpeech": "动词",
+      "example": "音楽を聞く。",
+      "exampleTranslation": "听音乐。"
+    },
+    {
+      "spelling": "話す",
+      "meanings": ["说", "谈话"],
+      "phonetic": "はなす",
+      "partOfSpeech": "动词",
+      "example": "日本語を話す。",
+      "exampleTranslation": "说日语。"
+    },
+    {
+      "spelling": "読む",
+      "meanings": ["读"],
+      "phonetic": "よむ",
+      "partOfSpeech": "动词",
+      "example": "本を読む。",
+      "exampleTranslation": "读书。"
+    },
+    {
+      "spelling": "書く",
+      "meanings": ["写"],
+      "phonetic": "かく",
+      "partOfSpeech": "动词",
+      "example": "手紙を書く。",
+      "exampleTranslation": "写信。"
+    },
+    {
+      "spelling": "猫",
+      "meanings": ["猫"],
+      "phonetic": "ねこ",
+      "partOfSpeech": "名词",
+      "example": "猫が好きです。",
+      "exampleTranslation": "我喜欢猫。"
+    },
+    {
+      "spelling": "犬",
+      "meanings": ["狗"],
+      "phonetic": "いぬ",
+      "partOfSpeech": "名词",
+      "example": "犬が庭にいる。",
+      "exampleTranslation": "狗在院子里。"
+    },
+    {
+      "spelling": "学校",
+      "meanings": ["学校"],
+      "phonetic": "がっこう",
+      "partOfSpeech": "名词",
+      "example": "学校へ行きます。",
+      "exampleTranslation": "去学校。"
+    },
+    {
+      "spelling": "先生",
+      "meanings": ["老师"],
+      "phonetic": "せんせい",
+      "partOfSpeech": "名词",
+      "example": "先生は優しいです。",
+      "exampleTranslation": "老师很温柔。"
+    },
+    {
+      "spelling": "今日",
+      "meanings": ["今天"],
+      "phonetic": "きょう",
+      "partOfSpeech": "名词",
+      "example": "今日はいい天気ですね。",
+      "exampleTranslation": "今天天气真好啊。"
+    },
+    {
+      "spelling": "美味しい",
+      "meanings": ["好吃的"],
+      "phonetic": "おいしい",
+      "partOfSpeech": "形容词",
+      "example": "このラーメンは美味しい。",
+      "exampleTranslation": "这碗拉面很好吃。"
+    },
+    {
+      "spelling": "大きい",
+      "meanings": ["大的"],
+      "phonetic": "おおきい",
+      "partOfSpeech": "形容词",
+      "example": "大きい犬ですね。",
+      "exampleTranslation": "好大的狗啊。"
+    },
+    {
+      "spelling": "小さい",
+      "meanings": ["小的"],
+      "phonetic": "ちいさい",
+      "partOfSpeech": "形容词",
+      "example": "小さい猫が生まれた。",
+      "exampleTranslation": "小猫咪出生了。"
+    }
+  ]
+}
