@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FileSorter Pro - 文件智能整理工具</title>
+    <title>FileSorter - 文件智能整理工具</title>
     <style>
         :root {
             --bg: #f5f6f8;
@@ -194,7 +194,6 @@
             flex: 1;
             overflow: hidden;
             position: relative;
-            min-height: 0;
         }
 
         /* ========== 左侧配置面板 ========== */
@@ -464,12 +463,11 @@
 
         /* ========== 右侧主内容区 ========== */
         .main-content {
-            flex: 1 1 0;
+            flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             background: var(--bg);
-            min-height: 0;
         }
         .preview-header {
             display: flex;
@@ -500,26 +498,23 @@
             display: flex;
             gap: 6px;
         }
-        /* 关键修复：预览区域改为 block 布局，让内容自然流出并触发滚动 */
         .preview-area {
-            flex: 1 1 0;
+            flex: 1;
             overflow-y: auto;
             padding: 16px 20px;
-            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         .preview-area::-webkit-scrollbar {
-            width: 8px;
+            width: 5px;
         }
         .preview-area::-webkit-scrollbar-thumb {
             background: #d1d5db;
             border-radius: 10px;
         }
-        .preview-area::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        /* 空状态：使用 min-height 撑满并居中 */
         .empty-state {
-            min-height: 100%;
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -828,7 +823,7 @@
     <header class="app-header">
         <div class="logo-area">
             <div class="logo-icon">📂</div>
-            <span class="logo-text">FileSorter Pro</span>
+            <span class="logo-text">FileSorter</span>
             <span class="logo-sub">文件智能整理</span>
         </div>
         <div class="header-actions">
@@ -959,7 +954,7 @@
         <div class="log-content" id="logContent">
             <div class="log-entry log-info">
                 <span class="log-time">--:--:--</span>
-                <span class="log-msg">FileSorter Pro 已就绪，等待选择源文件夹...</span>
+                <span class="log-msg">FileSorter 已就绪，等待选择源文件夹...</span>
             </div>
         </div>
         <div class="progress-bar-container">
@@ -982,17 +977,18 @@
     <script>
         // ==================== 全局状态 ====================
         const STATE = {
-            sourceDirHandle: null,
+            sourceDirHandle: null, // FileSystemDirectoryHandle
             sourceDirName: '',
-            files: [],
-            classificationTree: {},
+            files: [], // { handle, name, extension, lastModified, size }
+            classificationTree: {}, // 分类树结构
             totalFiles: 0,
             logs: [],
             pendingExecution: null,
             isExecuting: false,
-            customRules: [],
+            customRules: [], // [{name, startDate, endDate}]
         };
 
+        // ==================== DOM 引用 ====================
         const $ = (sel) => document.querySelector(sel);
         const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -1014,8 +1010,11 @@
             toggleRecursive: $('#toggleRecursive'),
             conflictPolicy: $('#conflictPolicy'),
             unmatchedPolicy: $('#unmatchedPolicy'),
+            sectionSource: $('#sectionSource'),
+            sectionTime: $('#sectionTime'),
         };
 
+        // ==================== 日志系统 ====================
         function addLog(level, message) {
             const now = new Date();
             const timeStr = now.toTimeString().slice(0, 8);
@@ -1025,6 +1024,7 @@
             entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="log-msg">${escapeHtml(message)}</span>`;
             dom.logContent.appendChild(entry);
             dom.logContent.scrollTop = dom.logContent.scrollHeight;
+            // 限制日志条数
             while (dom.logContent.children.length > 200) {
                 dom.logContent.removeChild(dom.logContent.firstChild);
             }
@@ -1046,6 +1046,7 @@
             dom.progressBar.style.width = Math.min(100, Math.max(0, percent)) + '%';
         }
 
+        // ==================== 文件系统访问 ====================
         async function selectSourceFolder() {
             try {
                 if (!window.showDirectoryPicker) {
@@ -1058,7 +1059,7 @@
                 STATE.sourceDirName = dirHandle.name;
                 dom.folderPathDisplay.textContent = '📁 ' + dirHandle.name;
                 dom.folderPathDisplay.classList.add('filled');
-                dom.sectionSource?.classList.add('active-highlight');
+                dom.sectionSource.classList.add('active-highlight');
                 addLog('success', `已选择源文件夹: "${dirHandle.name}"`);
                 await scanFiles();
                 buildClassificationTree();
@@ -1068,6 +1069,7 @@
                     addLog('info', '用户取消了文件夹选择');
                 } else {
                     addLog('error', `选择文件夹失败: ${err.message}`);
+                    console.error(err);
                 }
             }
         }
@@ -1079,12 +1081,27 @@
             addLog('info', `开始扫描文件... (递归子文件夹: ${recursive ? '是' : '否'})`);
             setProgress(10);
 
-            const skipPatterns = [/^no_extension$/i, /^未分类$/i, /^其他$/i, /^\d{4}$/, /^\d{4}-\d{2}$/, /^\d{4}-W\d{2}$/, /^\d{4}-\d{2}-\d{2}$/];
-            const commonExts = ['txt','jpg','jpeg','png','gif','pdf','doc','docx','xls','xlsx','ppt','pptx','mp3','mp4','avi','zip','rar','7z','js','py','html','css','json','xml','csv','md','svg','ico','webp','mov','wav','flac'];
+            const skipPatterns = [
+                /^no_extension$/i,
+                /^未分类$/i,
+                /^其他$/i,
+                /^\d{4}$/,
+                /^\d{4}-\d{2}$/,
+                /^\d{4}-W\d{2}$/,
+                /^\d{4}-\d{2}-\d{2}$/,
+            ];
 
             function shouldSkipDir(name) {
+                // 跳过明显是分类目标文件夹的目录
                 if (skipPatterns.some(p => p.test(name))) return true;
-                if (/^[a-z0-9]{1,10}$/i.test(name) && commonExts.includes(name.toLowerCase())) return true;
+                // 跳过以常见扩展名命名的文件夹
+                if (/^[a-z0-9]{1,10}$/i.test(name) && !name.includes(' ')) {
+                    const commonExts = ['txt', 'jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx',
+                        'ppt', 'pptx', 'mp3', 'mp4', 'avi', 'zip', 'rar', '7z', 'js', 'py', 'html', 'css', 'json',
+                        'xml', 'csv', 'md', 'svg', 'ico', 'webp', 'mov', 'wav', 'flac'
+                    ];
+                    if (commonExts.includes(name.toLowerCase())) return true;
+                }
                 return false;
             }
 
@@ -1092,19 +1109,28 @@
                 for await (const [name, handle] of dirHandle.entries()) {
                     if (handle.kind === 'file') {
                         const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
-                        const fileData = { handle, name, extension: ext, lastModified: null, size: null };
+                        const fileData = {
+                            handle: handle,
+                            name: name,
+                            extension: ext,
+                            lastModified: null,
+                            size: null,
+                        };
                         try {
                             const fileObj = await handle.getFile();
                             fileData.lastModified = fileObj.lastModified;
                             fileData.size = fileObj.size;
                         } catch (e) {
+                            // 如果无法获取详细信息，使用当前时间
                             fileData.lastModified = Date.now();
                             fileData.size = 0;
                         }
                         STATE.files.push(fileData);
                         STATE.totalFiles++;
                     } else if (handle.kind === 'directory' && recursive && depth < 20) {
-                        if (!shouldSkipDir(name)) await traverse(handle, depth + 1);
+                        if (!shouldSkipDir(name)) {
+                            await traverse(handle, depth + 1);
+                        }
                     }
                 }
             }
@@ -1121,6 +1147,7 @@
             }
         }
 
+        // ==================== 时间工具函数 ====================
         function getISOWeekNumber(date) {
             const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
             const dayNum = d.getUTCDay() || 7;
@@ -1139,18 +1166,23 @@
                     const start = new Date(rule.startDate);
                     const end = new Date(rule.endDate);
                     end.setHours(23, 59, 59, 999);
-                    if (d >= start && d <= end) return rule.name;
+                    if (d >= start && d <= end) {
+                        return rule.name;
+                    }
                 }
+                // 未匹配
                 const unmatchedPolicy = dom.unmatchedPolicy?.value || 'default';
                 if (unmatchedPolicy === 'uncategorized') return '未分类';
                 if (unmatchedPolicy === 'root') return '__root__';
+                // 默认回退到按月
                 const y = d.getFullYear();
                 const m = String(d.getMonth() + 1).padStart(2, '0');
                 return `${y}-${m}`;
             }
 
             switch (granularity) {
-                case 'year': return String(d.getFullYear());
+                case 'year':
+                    return String(d.getFullYear());
                 case 'month': {
                     const y = d.getFullYear();
                     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -1166,14 +1198,14 @@
                     const day = String(d.getDate()).padStart(2, '0');
                     return `${y}-${m}-${day}`;
                 }
-                default: {
+                default:
                     const y2 = d.getFullYear();
                     const m2 = String(d.getMonth() + 1).padStart(2, '0');
                     return `${y2}-${m2}`;
-                }
             }
         }
 
+        // ==================== 分类树构建 ====================
         function getCurrentGranularity() {
             const checked = document.querySelector('input[name="timeGranularity"]:checked');
             return checked ? checked.value : 'month';
@@ -1186,8 +1218,13 @@
                 const nameInput = item.querySelector('.rule-name');
                 const startInput = item.querySelector('.rule-start');
                 const endInput = item.querySelector('.rule-end');
-                if (nameInput && startInput && endInput && nameInput.value.trim() && startInput.value && endInput.value) {
-                    rules.push({ name: nameInput.value.trim(), startDate: startInput.value, endDate: endInput.value });
+                if (nameInput && startInput && endInput && nameInput.value.trim() && startInput.value &&
+                    endInput.value) {
+                    rules.push({
+                        name: nameInput.value.trim(),
+                        startDate: startInput.value,
+                        endDate: endInput.value,
+                    });
                 }
             });
             return rules;
@@ -1200,15 +1237,23 @@
             STATE.customRules = customRules;
 
             for (const file of STATE.files) {
-                const extKey = (file.extension || 'no_extension').toLowerCase();
+                const ext = file.extension || 'no_extension';
+                const extKey = ext.toLowerCase();
                 const timeCat = getTimeCategory(file.lastModified || Date.now(), granularity, customRules);
-                if (!tree[extKey]) tree[extKey] = { extension: extKey, timeGroups: {}, totalCount: 0 };
-                if (!tree[extKey].timeGroups[timeCat]) tree[extKey].timeGroups[timeCat] = [];
+
+                if (!tree[extKey]) {
+                    tree[extKey] = { extension: extKey, timeGroups: {}, totalCount: 0 };
+                }
+                if (!tree[extKey].timeGroups[timeCat]) {
+                    tree[extKey].timeGroups[timeCat] = [];
+                }
                 tree[extKey].timeGroups[timeCat].push(file);
                 tree[extKey].totalCount++;
             }
 
             STATE.classificationTree = tree;
+
+            // 更新统计
             const extCount = Object.keys(tree).length;
             let targetFolderCount = 0;
             for (const extKey of Object.keys(tree)) {
@@ -1217,14 +1262,29 @@
             dom.extensionCount.textContent = extCount + ' 种类型';
             dom.targetFolderCount.textContent = targetFolderCount + ' 个文件夹';
             dom.previewFileCount.textContent = STATE.totalFiles + ' 个文件';
-            dom.btnExecute.disabled = STATE.totalFiles === 0;
+
+            if (STATE.totalFiles > 0) {
+                dom.btnExecute.disabled = false;
+                dom.btnExecute.textContent = '⚡ 执行分类';
+            } else {
+                dom.btnExecute.disabled = true;
+                dom.btnExecute.textContent = '⚡ 执行分类';
+            }
         }
 
+        // ==================== 预览渲染 ====================
         function renderPreview() {
             const tree = STATE.classificationTree;
             const extKeys = Object.keys(tree).sort();
+
             if (extKeys.length === 0) {
-                dom.previewArea.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">暂无预览数据</div><div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div></div>`;
+                dom.previewArea.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-title">暂无预览数据</div>
+                        <div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div>
+                    </div>`;
+                dom.previewFileCount.textContent = '0 个文件';
                 return;
             }
 
@@ -1232,18 +1292,51 @@
             for (const extKey of extKeys) {
                 const extData = tree[extKey];
                 const displayExt = extKey === 'no_extension' ? '📄 无扩展名' : `📄 .${extKey}`;
+                const folderIcon = extKey === 'no_extension' ? '📁' : '📁';
                 const timeKeys = Object.keys(extData.timeGroups).sort();
-                html += `<div class="tree-folder" data-ext="${extKey}">
-                    <div class="tree-folder-header" onclick="toggleTreeFolder(this)"><span class="chevron">▼</span><span class="folder-icon">📁</span><span class="folder-name">${displayExt}</span><span class="folder-count">${extData.totalCount} 个文件 · ${timeKeys.length} 个时间组</span></div>
+
+                html += `
+                <div class="tree-folder" data-ext="${extKey}">
+                    <div class="tree-folder-header" onclick="toggleTreeFolder(this)" title="点击展开/折叠">
+                        <span class="chevron">▼</span>
+                        <span class="folder-icon">${folderIcon}</span>
+                        <span class="folder-name">${displayExt}</span>
+                        <span class="folder-count">${extData.totalCount} 个文件 · ${timeKeys.length} 个时间组</span>
+                    </div>
                     <div class="tree-folder-content">`;
+
                 for (const timeKey of timeKeys) {
                     const files = extData.timeGroups[timeKey];
-                    const timeLabel = timeKey === '__root__' ? '📌 根目录（未分类）' : (timeKey === '未分类' ? '❓ 未分类' : (timeKey === 'unknown' ? '⚠️ 未知时间' : '📅 ' + timeKey));
-                    html += `<div class="tree-subfolder"><div class="tree-subfolder-header" onclick="toggleSubfolder(this)"><span style="font-size:10px;">▶</span><span>${timeLabel}</span><span style="font-size:10px;color:#c0c5ce;">(${files.length} 个文件)</span></div><div class="tree-subfolder-content" style="display:none;">`;
+                    const timeLabel = timeKey === '__root__' ? '📌 根目录（未分类）' :
+                        timeKey === '未分类' ? '❓ 未分类' :
+                        timeKey === 'unknown' ? '⚠️ 未知时间' :
+                        '📅 ' + timeKey;
+                    html += `
+                    <div class="tree-subfolder">
+                        <div class="tree-subfolder-header" onclick="toggleSubfolder(this)" title="点击展开/折叠">
+                            <span style="font-size:10px;">▶</span>
+                            <span>${timeLabel}</span>
+                            <span style="font-size:10px;color:#c0c5ce;">(${files.length} 个文件)</span>
+                        </div>
+                        <div class="tree-subfolder-content" style="display:none;">`;
+
                     for (const file of files) {
-                        const dateStr = file.lastModified ? new Date(file.lastModified).toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit' }) : '未知日期';
-                        const sizeStr = file.size ? (file.size < 1024 ? file.size+' B' : (file.size < 1048576 ? (file.size/1024).toFixed(1)+' KB' : (file.size/1048576).toFixed(2)+' MB')) : '?';
-                        html += `<div class="tree-file-item"><span class="file-icon">${getFileIcon(file.extension)}</span><span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span><span class="file-date">${dateStr} · ${sizeStr}</span></div>`;
+                        const dateStr = file.lastModified ?
+                            new Date(file.lastModified).toLocaleDateString('zh-CN', { year: 'numeric',
+                                month: '2-digit', day: '2-digit' }) :
+                            '未知日期';
+                        const sizeStr = file.size ?
+                            (file.size < 1024 ? file.size + ' B' :
+                                file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' :
+                                (file.size / 1048576).toFixed(2) + ' MB') :
+                            '?';
+                        const fileIcon = getFileIcon(file.extension);
+                        html += `
+                        <div class="tree-file-item">
+                            <span class="file-icon">${fileIcon}</span>
+                            <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+                            <span class="file-date">${dateStr} · ${sizeStr}</span>
+                        </div>`;
                     }
                     html += `</div></div>`;
                 }
@@ -1251,14 +1344,51 @@
             }
             html += '</div>';
             dom.previewArea.innerHTML = html;
+            dom.previewFileCount.textContent = STATE.totalFiles + ' 个文件';
         }
 
         function getFileIcon(ext) {
-            const map = { jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', svg:'🖼️', webp:'🖼️', pdf:'📕', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📽️', pptx:'📽️', txt:'📄', md:'📄', csv:'📄', json:'📄', xml:'📄', html:'🌐', css:'🎨', js:'📜', py:'🐍', zip:'📦', rar:'📦', '7z':'📦', mp3:'🎵', wav:'🎵', flac:'🎵', mp4:'🎬', mov:'🎬', avi:'🎬' };
-            return map[ext?.toLowerCase()] || '📎';
+            const iconMap = {
+                'jpg': '🖼️',
+                'jpeg': '🖼️',
+                'png': '🖼️',
+                'gif': '🖼️',
+                'svg': '🖼️',
+                'webp': '🖼️',
+                'pdf': '📕',
+                'doc': '📝',
+                'docx': '📝',
+                'xls': '📊',
+                'xlsx': '📊',
+                'ppt': '📽️',
+                'pptx': '📽️',
+                'txt': '📄',
+                'md': '📄',
+                'csv': '📄',
+                'json': '📄',
+                'xml': '📄',
+                'html': '🌐',
+                'css': '🎨',
+                'js': '📜',
+                'py': '🐍',
+                'zip': '📦',
+                'rar': '📦',
+                '7z': '📦',
+                'mp3': '🎵',
+                'wav': '🎵',
+                'flac': '🎵',
+                'mp4': '🎬',
+                'mov': '🎬',
+                'avi': '🎬',
+            };
+            return iconMap[ext?.toLowerCase()] || '📎';
         }
 
-        function toggleTreeFolder(header) { header.parentElement.classList.toggle('collapsed'); }
+        function toggleTreeFolder(header) {
+            const folder = header.parentElement;
+            folder.classList.toggle('collapsed');
+        }
+
         function toggleSubfolder(header) {
             const content = header.nextElementSibling;
             if (content) {
@@ -1268,182 +1398,443 @@
                 if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
             }
         }
+
         function expandAllTree() {
             document.querySelectorAll('.tree-folder').forEach(f => f.classList.remove('collapsed'));
             document.querySelectorAll('.tree-subfolder-content').forEach(c => c.style.display = 'block');
             document.querySelectorAll('.tree-subfolder-header span:first-child').forEach(s => s.textContent = '▼');
         }
+
         function collapseAllTree() {
             document.querySelectorAll('.tree-folder').forEach(f => f.classList.add('collapsed'));
             document.querySelectorAll('.tree-subfolder-content').forEach(c => c.style.display = 'none');
             document.querySelectorAll('.tree-subfolder-header span:first-child').forEach(s => s.textContent = '▶');
         }
+
         function refreshPreview() {
             if (STATE.sourceDirHandle) {
-                scanFiles().then(() => { buildClassificationTree(); renderPreview(); addLog('info', '预览已刷新'); });
-            } else addLog('warn', '请先选择源文件夹');
+                scanFiles().then(() => {
+                    buildClassificationTree();
+                    renderPreview();
+                    addLog('info', '预览已刷新');
+                });
+            } else {
+                addLog('warn', '请先选择源文件夹');
+            }
         }
 
+        // ==================== 自定义规则管理 ====================
         function addCustomRule(ruleData = null) {
-            const rule = ruleData || { name:'', startDate:'', endDate:'' };
+            const rule = ruleData || { name: '', startDate: '', endDate: '' };
             const item = document.createElement('div');
             item.className = 'custom-rule-item';
-            item.innerHTML = `<input type="text" class="rule-name" placeholder="规则名称" value="${escapeHtml(rule.name)}" style="width:80px;"><input type="date" class="rule-start" value="${rule.startDate}" style="width:115px;font-size:10px;"><span style="font-size:10px;color:var(--text-muted);">至</span><input type="date" class="rule-end" value="${rule.endDate}" style="width:115px;font-size:10px;"><button class="btn btn-ghost btn-xs" style="color:var(--danger);" onclick="removeCustomRule(this)">🗑️</button>`;
-            item.querySelectorAll('input').forEach(inp => inp.addEventListener('change', onConfigChange));
+            item.innerHTML = `
+                <input type="text" class="rule-name" placeholder="规则名称" value="${escapeHtml(rule.name)}" style="width:80px;flex-shrink:0;">
+                <input type="date" class="rule-start" value="${rule.startDate}" style="width:115px;flex-shrink:0;font-size:10px;">
+                <span style="font-size:10px;color:var(--text-muted);">至</span>
+                <input type="date" class="rule-end" value="${rule.endDate}" style="width:115px;flex-shrink:0;font-size:10px;">
+                <button class="btn btn-ghost btn-xs" style="color:var(--danger);flex-shrink:0;" onclick="removeCustomRule(this)" title="删除规则">🗑️</button>
+            `;
+            // 监听变化以更新预览
+            item.querySelectorAll('input').forEach(inp => {
+                inp.addEventListener('change', () => {
+                    onConfigChange();
+                });
+                inp.addEventListener('input', () => {
+                    onConfigChange();
+                });
+            });
             dom.customRulesList.appendChild(item);
-            if (!ruleData) onConfigChange();
+            if (!ruleData) {
+                onConfigChange();
+            }
         }
 
         function removeCustomRule(btn) {
             const item = btn.closest('.custom-rule-item');
-            if (item) { item.style.opacity='0'; item.style.transform='translateX(-10px)'; item.style.transition='0.2s ease'; setTimeout(() => { item.remove(); onConfigChange(); }, 200); }
+            if (item) {
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(-10px)';
+                item.style.transition = '0.2s ease';
+                setTimeout(() => {
+                    item.remove();
+                    onConfigChange();
+                }, 200);
+            }
         }
 
+        // ==================== 配置变更处理 ====================
         function onTimeGranularityChange() {
             const granularity = getCurrentGranularity();
             if (granularity === 'custom') {
                 dom.customRulesContainer.style.display = 'block';
-                dom.sectionTime?.classList.add('active-highlight');
-                if (dom.customRulesList.children.length === 0) addCustomRule({ name:'2024上半年', startDate:'2024-01-01', endDate:'2024-06-30' });
+                dom.sectionTime.classList.add('active-highlight');
+                if (dom.customRulesList.children.length === 0) {
+                    addCustomRule({ name: '2024上半年', startDate: '2024-01-01', endDate: '2024-06-30' });
+                }
             } else {
                 dom.customRulesContainer.style.display = 'none';
-                dom.sectionTime?.classList.remove('active-highlight');
+                dom.sectionTime.classList.remove('active-highlight');
             }
             onConfigChange();
         }
 
         function onConfigChange() {
-            if (STATE.sourceDirHandle && STATE.files.length > 0) { buildClassificationTree(); renderPreview(); }
+            if (STATE.sourceDirHandle && STATE.files.length > 0) {
+                buildClassificationTree();
+                renderPreview();
+            }
         }
 
         function resetAll() {
-            STATE.sourceDirHandle = null; STATE.sourceDirName = ''; STATE.files = []; STATE.classificationTree = {}; STATE.totalFiles = 0; STATE.customRules = []; STATE.pendingExecution = null; STATE.isExecuting = false;
-            dom.folderPathDisplay.textContent = '尚未选择文件夹...'; dom.folderPathDisplay.classList.remove('filled');
-            dom.sectionSource?.classList.remove('active-highlight'); dom.sectionTime?.classList.remove('active-highlight');
-            dom.previewArea.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">暂无预览数据</div><div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div></div>`;
-            dom.previewFileCount.textContent = '0 个文件'; dom.scannedCount.textContent = '0 个文件'; dom.extensionCount.textContent = '—'; dom.targetFolderCount.textContent = '—';
-            dom.btnExecute.disabled = true; dom.customRulesList.innerHTML = ''; dom.customRulesContainer.style.display = 'none';
-            document.querySelector('#tgMonth').checked = true; setProgress(0); addLog('info', '所有配置已重置');
+            STATE.sourceDirHandle = null;
+            STATE.sourceDirName = '';
+            STATE.files = [];
+            STATE.classificationTree = {};
+            STATE.totalFiles = 0;
+            STATE.customRules = [];
+            STATE.pendingExecution = null;
+            STATE.isExecuting = false;
+            dom.folderPathDisplay.textContent = '尚未选择文件夹...';
+            dom.folderPathDisplay.classList.remove('filled');
+            dom.sectionSource.classList.remove('active-highlight');
+            dom.sectionTime.classList.remove('active-highlight');
+            dom.previewArea.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-title">暂无预览数据</div>
+                    <div class="empty-desc">请先在左侧选择一个源文件夹，系统将自动扫描并展示分类预览</div>
+                </div>`;
+            dom.previewFileCount.textContent = '0 个文件';
+            dom.scannedCount.textContent = '0 个文件';
+            dom.extensionCount.textContent = '—';
+            dom.targetFolderCount.textContent = '—';
+            dom.btnExecute.disabled = true;
+            dom.btnExecute.textContent = '⚡ 执行分类';
+            dom.customRulesList.innerHTML = '';
+            dom.customRulesContainer.style.display = 'none';
+            document.querySelector('#tgMonth').checked = true;
+            setProgress(0);
+            addLog('info', '所有配置已重置');
         }
 
+        // ==================== 执行分类 ====================
         function executeClassification() {
-            if (!STATE.sourceDirHandle) { addLog('warn','请先选择源文件夹'); return; }
-            if (STATE.totalFiles === 0) { addLog('warn','没有文件可供分类'); return; }
-            if (STATE.isExecuting) { addLog('warn','正在执行中'); return; }
-            buildClassificationTree(); renderPreview();
+            if (!STATE.sourceDirHandle) {
+                addLog('warn', '请先选择源文件夹');
+                return;
+            }
+            if (STATE.totalFiles === 0) {
+                addLog('warn', '没有文件可供分类');
+                return;
+            }
+            if (STATE.isExecuting) {
+                addLog('warn', '正在执行中，请等待完成');
+                return;
+            }
+
+            // 重新构建以确保使用最新配置
+            buildClassificationTree();
+            renderPreview();
+
             const operationMode = document.querySelector('input[name="operationMode"]:checked')?.value || 'move';
             const conflictPolicy = dom.conflictPolicy.value;
-            dom.confirmModalMsg.textContent = `即将对 "${STATE.sourceDirName}" 中的 ${STATE.totalFiles} 个文件执行【${operationMode==='move'?'移动':'复制'}】操作，冲突策略为【${conflictPolicy==='skip'?'跳过':conflictPolicy==='overwrite'?'覆盖':'自动重命名'}】。`;
+            const modeLabel = operationMode === 'move' ? '移动' : '复制';
+            const conflictLabel = conflictPolicy === 'skip' ? '跳过已存在文件' :
+                conflictPolicy === 'overwrite' ? '覆盖已存在文件' : '自动重命名';
+
+            dom.confirmModalMsg.textContent =
+                `即将对 "${STATE.sourceDirName}" 中的 ${STATE.totalFiles} 个文件执行【${modeLabel}】操作，冲突策略为【${conflictLabel}】。\n\n此操作将在源文件夹内创建分类子目录。建议先确认预览结果。是否继续？`;
             dom.confirmModal.style.display = 'flex';
             STATE.pendingExecution = { operationMode, conflictPolicy };
         }
 
-        function closeConfirmModal() { dom.confirmModal.style.display = 'none'; STATE.pendingExecution = null; }
+        function closeConfirmModal() {
+            dom.confirmModal.style.display = 'none';
+            STATE.pendingExecution = null;
+        }
 
         async function confirmedExecute() {
             dom.confirmModal.style.display = 'none';
             if (!STATE.pendingExecution) return;
+
             const { operationMode, conflictPolicy } = STATE.pendingExecution;
-            STATE.pendingExecution = null; STATE.isExecuting = true;
-            dom.btnExecute.disabled = true; dom.btnExecute.textContent = '⏳ 执行中...'; setProgress(0);
-            const tree = STATE.classificationTree; const totalOps = STATE.totalFiles;
-            let processed = 0, success = 0, skip = 0, error = 0;
-            addLog('info', `开始执行分类操作 (模式: ${operationMode==='move'?'移动':'复制'}, 冲突: ${conflictPolicy})`);
-            for (const extKey of Object.keys(tree)) {
+            STATE.pendingExecution = null;
+            STATE.isExecuting = true;
+            dom.btnExecute.disabled = true;
+            dom.btnExecute.textContent = '⏳ 执行中...';
+            setProgress(0);
+
+            const tree = STATE.classificationTree;
+            const extKeys = Object.keys(tree);
+            let processedCount = 0;
+            let successCount = 0;
+            let skipCount = 0;
+            let errorCount = 0;
+            const totalOps = STATE.totalFiles;
+            const operationLog = []; // 用于记录操作详情
+
+            addLog('info', `开始执行分类操作 (模式: ${operationMode === 'move' ? '移动' : '复制'}, 冲突: ${conflictPolicy})`);
+
+            for (const extKey of extKeys) {
                 const extData = tree[extKey];
                 const extFolderName = extKey === 'no_extension' ? 'no_extension' : extKey;
+
+                // 创建扩展名文件夹
                 let extDirHandle;
-                try { extDirHandle = await STATE.sourceDirHandle.getDirectoryHandle(extFolderName, { create: true }); }
-                catch (err) { addLog('error', `无法创建扩展名文件夹 "${extFolderName}": ${err.message}`); error += extData.totalCount; processed += extData.totalCount; continue; }
-                for (const timeKey of Object.keys(extData.timeGroups)) {
+                try {
+                    extDirHandle = await STATE.sourceDirHandle.getDirectoryHandle(extFolderName, { create: true });
+                } catch (err) {
+                    addLog('error', `无法创建扩展名文件夹 "${extFolderName}": ${err.message}`);
+                    errorCount += extData.totalCount;
+                    processedCount += extData.totalCount;
+                    continue;
+                }
+
+                const timeKeys = Object.keys(extData.timeGroups);
+                for (const timeKey of timeKeys) {
                     const files = extData.timeGroups[timeKey];
                     let targetDirHandle = extDirHandle;
+
+                    // 如果时间分类不是 __root__，则创建时间子文件夹
                     if (timeKey !== '__root__') {
                         const timeFolderName = timeKey === '未分类' ? '未分类' : timeKey;
-                        try { targetDirHandle = await extDirHandle.getDirectoryHandle(timeFolderName, { create: true }); }
-                        catch (err) { addLog('error', `无法创建时间文件夹: ${err.message}`); error += files.length; processed += files.length; continue; }
+                        try {
+                            targetDirHandle = await extDirHandle.getDirectoryHandle(timeFolderName, { create: true });
+                        } catch (err) {
+                            addLog('error',
+                                `无法创建时间文件夹 "${extFolderName}/${timeFolderName}": ${err.message}`);
+                            errorCount += files.length;
+                            processedCount += files.length;
+                            continue;
+                        }
                     }
+
                     for (const file of files) {
                         try {
                             let targetName = file.name;
-                            let exists = false;
-                            try { await targetDirHandle.getFileHandle(targetName); exists = true; } catch {}
-                            if (exists) {
-                                if (conflictPolicy === 'skip') { skip++; processed++; continue; }
-                                else if (conflictPolicy === 'rename') {
-                                    let c = 1; const base = file.name.includes('.') ? file.name.slice(0, file.name.lastIndexOf('.')) : file.name;
-                                    const ext = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')) : '';
-                                    let newName; do { newName = `${base}_${c}${ext}`; c++; try { await targetDirHandle.getFileHandle(newName); exists = true; } catch { exists = false; } } while (exists && c < 1000);
+
+                            // 检查目标文件是否已存在
+                            let fileExists = false;
+                            try {
+                                await targetDirHandle.getFileHandle(targetName);
+                                fileExists = true;
+                            } catch {
+                                fileExists = false;
+                            }
+
+                            if (fileExists) {
+                                if (conflictPolicy === 'skip') {
+                                    skipCount++;
+                                    processedCount++;
+                                    operationLog.push(
+                                        `[跳过] ${file.name} → ${extFolderName}/${timeKey !== '__root__' ? timeKey + '/' : ''}${targetName} (目标已存在)`
+                                        );
+                                    continue;
+                                } else if (conflictPolicy === 'rename') {
+                                    // 自动重命名
+                                    let counter = 1;
+                                    const baseName = file.name.includes('.') ?
+                                        file.name.slice(0, file.name.lastIndexOf('.')) :
+                                        file.name;
+                                    const ext = file.name.includes('.') ?
+                                        file.name.slice(file.name.lastIndexOf('.')) :
+                                        '';
+                                    let newName;
+                                    do {
+                                        newName = `${baseName}_${counter}${ext}`;
+                                        counter++;
+                                        try {
+                                            await targetDirHandle.getFileHandle(newName);
+                                            fileExists = true;
+                                        } catch {
+                                            fileExists = false;
+                                        }
+                                    } while (fileExists && counter < 1000);
                                     targetName = newName;
                                 }
+                                // conflictPolicy === 'overwrite' 则直接覆盖，targetName 不变
                             }
+
                             if (operationMode === 'move') {
-                                try { await file.handle.move(targetDirHandle, targetName); }
-                                catch (moveErr) {
+                                try {
+                                    await file.handle.move(targetDirHandle, targetName);
+                                } catch (moveErr) {
+                                    // 如果 move 不支持，回退到复制+删除
                                     const fileObj = await file.handle.getFile();
-                                    const newHandle = await targetDirHandle.getFileHandle(targetName, { create: true });
-                                    const writable = await newHandle.createWritable(); await writable.write(fileObj); await writable.close();
-                                    try { await file.handle.remove(); } catch {}
+                                    const newFileHandle = await targetDirHandle.getFileHandle(targetName, {
+                                        create: true
+                                    });
+                                    const writable = await newFileHandle.createWritable();
+                                    await writable.write(fileObj);
+                                    await writable.close();
+                                    try { await file.handle.remove(); } catch (e) { /* 忽略删除错误 */ }
                                 }
+                                operationLog.push(
+                                    `[移动] ${file.name} → ${extFolderName}/${timeKey !== '__root__' ? timeKey + '/' : ''}${targetName}`
+                                    );
                             } else {
+                                // 复制
                                 const fileObj = await file.handle.getFile();
-                                const newHandle = await targetDirHandle.getFileHandle(targetName, { create: true });
-                                const writable = await newHandle.createWritable(); await writable.write(fileObj); await writable.close();
+                                const newFileHandle = await targetDirHandle.getFileHandle(targetName, { create: true });
+                                const writable = await newFileHandle.createWritable();
+                                await writable.write(fileObj);
+                                await writable.close();
+                                operationLog.push(
+                                    `[复制] ${file.name} → ${extFolderName}/${timeKey !== '__root__' ? timeKey + '/' : ''}${targetName}`
+                                    );
                             }
-                            success++;
-                        } catch (err) { error++; addLog('error', `处理 "${file.name}" 失败: ${err.message}`); }
-                        processed++; setProgress(Math.round((processed/totalOps)*100));
+
+                            successCount++;
+                        } catch (err) {
+                            errorCount++;
+                            addLog('error', `处理文件 "${file.name}" 失败: ${err.message}`);
+                            operationLog.push(`[错误] ${file.name}: ${err.message}`);
+                        }
+                        processedCount++;
+                        const pct = Math.round((processedCount / totalOps) * 100);
+                        setProgress(pct);
+                        // 每处理10个文件更新一次日志
+                        if (processedCount % 10 === 0 || processedCount === totalOps) {
+                            dom.scannedCount.textContent = `${processedCount}/${totalOps} 处理中`;
+                        }
                     }
                 }
             }
-            STATE.isExecuting = false; dom.btnExecute.disabled = false; dom.btnExecute.textContent = '⚡ 执行分类';
-            setProgress(100); setTimeout(() => setProgress(0), 1500);
-            addLog('success', `✅ 分类完成！成功: ${success}, 跳过: ${skip}, 失败: ${error}`);
-            await scanFiles(); buildClassificationTree(); renderPreview();
+
+            // 完成
+            STATE.isExecuting = false;
+            dom.btnExecute.disabled = false;
+            dom.btnExecute.textContent = '⚡ 执行分类';
+            setProgress(100);
+            setTimeout(() => setProgress(0), 1500);
+            dom.scannedCount.textContent = STATE.totalFiles + ' 个文件';
+
+            addLog('success',
+                `✅ 分类完成！成功: ${successCount}, 跳过: ${skipCount}, 失败: ${errorCount}, 总计: ${totalOps}`);
+            if (operationLog.length <= 50) {
+                operationLog.forEach(l => addLog('info', l));
+            } else {
+                addLog('info', `详细操作记录共 ${operationLog.length} 条，可在导出的日志中查看完整列表`);
+                // 存储完整日志
+                STATE._lastOperationLog = operationLog;
+            }
+
+            // 重新扫描以更新预览
+            await scanFiles();
+            buildClassificationTree();
+            renderPreview();
         }
 
+        // ==================== 导出日志 ====================
         function exportLog() {
             const allLogs = STATE.logs.map(l => `[${l.time}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
-            const blob = new Blob([allLogs], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `FileSorter_Log_${new Date().toISOString().slice(0,10)}.txt`; a.click(); URL.revokeObjectURL(url);
+            const operationLogExtra = STATE._lastOperationLog ?
+                '\n\n=== 详细操作记录 ===\n' + STATE._lastOperationLog.join('\n') :
+                '';
+            const fullLog = allLogs + operationLogExtra;
+            const blob = new Blob([fullLog], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `FileSorter_Log_${new Date().toISOString().slice(0, 10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
             addLog('info', '日志已导出');
         }
 
+        // ==================== 拖拽支持 ====================
         function setupDragDrop() {
-            dom.dropZone.addEventListener('dragover', e => { e.preventDefault(); dom.dropZone.style.borderColor='var(--primary)'; dom.dropZone.style.background='var(--primary-ghost)'; });
-            dom.dropZone.addEventListener('dragleave', e => { dom.dropZone.style.borderColor='var(--border)'; dom.dropZone.style.background='#fafbfc'; });
-            dom.dropZone.addEventListener('drop', async e => {
-                e.preventDefault(); dom.dropZone.style.borderColor='var(--border)'; dom.dropZone.style.background='#fafbfc';
+            const dropZone = dom.dropZone;
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--primary)';
+                dropZone.style.background = 'var(--primary-ghost)';
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--border)';
+                dropZone.style.background = '#fafbfc';
+            });
+            dropZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--border)';
+                dropZone.style.background = '#fafbfc';
                 const items = e.dataTransfer.items;
                 if (items && items.length > 0) {
-                    const handle = await items[0].getAsFileSystemHandle();
-                    if (handle && handle.kind === 'directory') {
-                        STATE.sourceDirHandle = handle; STATE.sourceDirName = handle.name;
-                        dom.folderPathDisplay.textContent = '📁 ' + handle.name; dom.folderPathDisplay.classList.add('filled');
-                        dom.sectionSource?.classList.add('active-highlight');
-                        addLog('success', `已通过拖拽选择源文件夹: "${handle.name}"`);
-                        await scanFiles(); buildClassificationTree(); renderPreview();
-                    } else addLog('warn', '请拖拽文件夹而非单个文件');
+                    const item = items[0];
+                    if (item.kind === 'file') {
+                        const handle = await item.getAsFileSystemHandle();
+                        if (handle && handle.kind === 'directory') {
+                            STATE.sourceDirHandle = handle;
+                            STATE.sourceDirName = handle.name;
+                            dom.folderPathDisplay.textContent = '📁 ' + handle.name;
+                            dom.folderPathDisplay.classList.add('filled');
+                            dom.sectionSource.classList.add('active-highlight');
+                            addLog('success', `已通过拖拽选择源文件夹: "${handle.name}"`);
+                            await scanFiles();
+                            buildClassificationTree();
+                            renderPreview();
+                        } else {
+                            addLog('warn', '请拖拽文件夹而非单个文件');
+                        }
+                    }
                 }
             });
         }
 
+        // ==================== 键盘快捷键 ====================
         function setupKeyboardShortcuts() {
-            document.addEventListener('keydown', e => {
-                if ((e.ctrlKey||e.metaKey) && e.key === 'o') { e.preventDefault(); selectSourceFolder(); }
-                if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (!STATE.isExecuting && STATE.totalFiles>0 && STATE.sourceDirHandle) executeClassification(); }
-                if ((e.ctrlKey||e.metaKey) && e.key === 'e') { e.preventDefault(); expandAllTree(); }
-                if ((e.ctrlKey||e.metaKey) && e.key === 'w') { e.preventDefault(); collapseAllTree(); }
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+                    e.preventDefault();
+                    selectSourceFolder();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!STATE.isExecuting && STATE.totalFiles > 0 && STATE.sourceDirHandle) {
+                        executeClassification();
+                    }
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                    e.preventDefault();
+                    expandAllTree();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+                    e.preventDefault();
+                    collapseAllTree();
+                }
             });
         }
 
-        dom.confirmModal.addEventListener('click', function(e) { if (e.target === dom.confirmModal) closeConfirmModal(); });
+        // ==================== 模态框点击外部关闭 ====================
+        dom.confirmModal.addEventListener('click', function(e) {
+            if (e.target === dom.confirmModal) {
+                closeConfirmModal();
+            }
+        });
 
+        // ==================== 初始化 ====================
         function init() {
-            setupDragDrop(); setupKeyboardShortcuts(); onTimeGranularityChange();
+            setupDragDrop();
+            setupKeyboardShortcuts();
+            // 初始化时显示自定义规则区域的状态
+            onTimeGranularityChange();
             addLog('info', 'FileSorter Pro 初始化完成 (Ctrl+O 选择文件夹 | Ctrl+Enter 执行)');
         }
+
         init();
+
+        console.log('%c📂 FileSorter Pro %c已就绪',
+            'font-size:16px;font-weight:bold;color:#4f6ef7;',
+            'font-size:12px;color:#5f6570;');
+        console.log('%c支持快捷键：Ctrl+O 选择文件夹 | Ctrl+Enter 执行分类 | Ctrl+E 展开预览 | Ctrl+W 折叠预览',
+            'font-size:11px;color:#949ba6;');
+        console.log('%c使用 File System Access API，请确保使用 Chrome 或 Edge 浏览器',
+            'font-size:10px;color:#c0c5ce;');
     </script>
 </body>
 </html>
