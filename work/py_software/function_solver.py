@@ -341,19 +341,89 @@ def expression_task(task):
     return operations[operation](expression)
 
 
+def apply_matrix_method(value, method):
+    if method.startswith("_"):
+        raise ValueError("不支持的矩阵方法")
+    methods = {
+        "det": lambda matrix: matrix.det(),
+        "inv": lambda matrix: matrix.inv(),
+        "transpose": lambda matrix: matrix.transpose()
+    }
+    if method not in methods:
+        raise ValueError("不支持的矩阵方法")
+    try:
+        return methods[method](value)
+    except AttributeError as exc:
+        raise ValueError("不支持的矩阵方法") from exc
+
+
+def eval_matrix_ast(node, matrix_values):
+    if isinstance(node, ast.Name):
+        if node.id in matrix_values:
+            return matrix_values[node.id]
+        raise ValueError("不支持的矩阵表达式：未知名称 " + node.id)
+
+    if isinstance(node, ast.Constant):
+        if isinstance(node.value, bool) or not isinstance(node.value, int):
+            raise ValueError("不支持的矩阵表达式：幂次必须是整数")
+        return node.value
+
+    if isinstance(node, ast.UnaryOp):
+        value = eval_matrix_ast(node.operand, matrix_values)
+        if isinstance(node.op, ast.UAdd):
+            return +value
+        if isinstance(node.op, ast.USub):
+            return -value
+        raise ValueError("不支持的矩阵表达式")
+
+    if isinstance(node, ast.BinOp):
+        left = eval_matrix_ast(node.left, matrix_values)
+        right = eval_matrix_ast(node.right, matrix_values)
+        if isinstance(node.op, ast.Add):
+            return left + right
+        if isinstance(node.op, ast.Sub):
+            return left - right
+        if isinstance(node.op, (ast.Mult, ast.MatMult)):
+            return left * right
+        if isinstance(node.op, ast.Pow):
+            if not isinstance(right, int) or abs(right) > 8:
+                raise ValueError("不支持的矩阵表达式：幂次必须是不超过 8 的整数")
+            return left ** right
+        raise ValueError("不支持的矩阵表达式")
+
+    if isinstance(node, ast.Attribute):
+        if node.attr.startswith("_"):
+            raise ValueError("不支持的矩阵方法")
+        value = eval_matrix_ast(node.value, matrix_values)
+        if node.attr == "T":
+            return value.T
+        raise ValueError("不支持的矩阵方法")
+
+    if isinstance(node, ast.Call):
+        if not isinstance(node.func, ast.Attribute):
+            raise ValueError("不支持的矩阵表达式")
+        if node.args or node.keywords:
+            raise ValueError("不支持的矩阵方法")
+        value = eval_matrix_ast(node.func.value, matrix_values)
+        return apply_matrix_method(value, node.func.attr)
+
+    raise ValueError("不支持的矩阵表达式")
+
+
+def eval_matrix_expression(expression, matrix_values):
+    try:
+        parsed = ast.parse(expression, mode="eval")
+    except SyntaxError as exc:
+        raise ValueError("不支持的矩阵表达式") from exc
+    return eval_matrix_ast(parsed.body, matrix_values)
+
+
 def matrix_task(task):
     matrix_values = {
         name: Matrix(value)
         for name, value in task["matrices"].items()
     }
-    allowed_names = {
-        "__builtins__": {},
-        "Matrix": Matrix,
-        "eye": eye,
-        "zeros": zeros,
-        "ones": ones
-    }
-    return eval(task["expression"], allowed_names, matrix_values)
+    return eval_matrix_expression(task["expression"], matrix_values)
 
 
 def dispatch_task(task):
