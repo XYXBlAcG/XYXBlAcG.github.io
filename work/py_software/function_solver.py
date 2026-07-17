@@ -119,11 +119,36 @@ def split_header_body(text, command_name):
     return header.strip(), body.strip()
 
 
+def validate_variable_name(variable, command_name):
+    if not re.match(r"^[A-Za-z_]\w*$", variable):
+        raise ValueError(command_name + " 命令变量名不正确")
+    return variable
+
+
+def validate_expression_body(expression, message):
+    expression = expression.strip()
+    if not expression:
+        raise ValueError(message)
+    return expression
+
+
 def parse_equation_text(equation_text):
     if "=" not in equation_text:
         raise ValueError("方程缺少等号")
     left, right = equation_text.split("=", 1)
     return Eq(sympify(left.strip()), sympify(right.strip()))
+
+
+def parse_matrix_cell(item):
+    if isinstance(item, bool):
+        raise ValueError("矩阵元素必须是数字或简单变量名")
+    if isinstance(item, (int, float, complex)):
+        return item
+    if isinstance(item, str):
+        if not re.match(r"^[A-Za-z_]\w*$", item):
+            raise ValueError("矩阵字符串元素只能是简单变量名")
+        return sympify(item)
+    raise ValueError("矩阵元素必须是数字或简单变量名")
 
 
 def parse_matrix_literal(text):
@@ -136,7 +161,7 @@ def parse_matrix_literal(text):
     row_length = len(data[0])
     if row_length == 0 or any(len(row) != row_length for row in data):
         raise ValueError("矩阵每一行的列数必须一致")
-    return [[sympify(item) for item in row] for row in data]
+    return [[parse_matrix_cell(item) for item in row] for row in data]
 
 
 def parse_solve(command):
@@ -144,6 +169,7 @@ def parse_solve(command):
     variables = header.replace("solve", "", 1).strip().split()
     if not variables:
         raise ValueError("solve 命令需要至少一个变量，例如 solve x: x + 1 = 0")
+    variables = [validate_variable_name(variable, "solve") for variable in variables]
     equations = [line.strip() for line in body.splitlines() if line.strip()]
     if not equations:
         raise ValueError("solve 命令需要至少一个方程")
@@ -159,6 +185,8 @@ def parse_diff(command):
     variable = header.replace("diff", "", 1).strip()
     if not variable:
         raise ValueError("diff 命令需要变量，例如 diff x: x**2")
+    variable = validate_variable_name(variable, "diff")
+    body = validate_expression_body(body, "diff 命令需要表达式，例如 diff x: x**2")
     return {
         "type": "diff",
         "variable": variable,
@@ -171,9 +199,11 @@ def parse_integrate(command):
     match = re.match(r"integrate\s+(\w+)(?:\s+from\s+(.+?)\s+to\s+(.+))?$", header)
     if not match:
         raise ValueError("integrate 格式应为 integrate x: x**2 或 integrate x from 0 to 1: x**2")
+    variable = validate_variable_name(match.group(1), "integrate")
+    body = validate_expression_body(body, "integrate 命令需要表达式，例如 integrate x: x**2")
     return {
         "type": "integrate",
-        "variable": match.group(1),
+        "variable": variable,
         "expression": body,
         "bounds": [match.group(2), match.group(3)] if match.group(2) is not None else None
     }
@@ -184,9 +214,11 @@ def parse_sum(command):
     match = re.match(r"sum\s+(\w+)\s+from\s+(.+?)\s+to\s+(.+)$", header)
     if not match:
         raise ValueError("sum 格式应为 sum n from 1 to 10: n**2")
+    variable = validate_variable_name(match.group(1), "sum")
+    body = validate_expression_body(body, "sum 命令需要表达式，例如 sum n from 1 to 10: n**2")
     return {
         "type": "sum",
-        "variable": match.group(1),
+        "variable": variable,
         "lower": match.group(2),
         "upper": match.group(3),
         "expression": body
@@ -198,10 +230,11 @@ def parse_expression(command):
     operation = operation.strip()
     if operation not in ["simplify", "expand", "factor", "trigsimp", "expand_trig"]:
         raise ValueError("不支持的表达式操作")
+    expression = validate_expression_body(expression, operation + " 命令需要表达式")
     return {
         "type": "expression",
         "operation": operation,
-        "expression": expression.strip()
+        "expression": expression
     }
 
 
