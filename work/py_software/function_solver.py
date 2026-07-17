@@ -455,11 +455,17 @@ def set_result_output(result):
     output_div = document.querySelector("#output")
     latex_code = document.querySelector("#latexCode")
     latex_div = document.querySelector("#latexDiv")
+    copyable_div = document.querySelector("#copyable_output")
 
     output_div.innerText = result["plain"]
     latex_code.innerText = result["latex"]
+    if copyable_div:
+        copyable_div.innerText = result["copyable"]
     if latex_div:
-        latex_div.innerText = "点击“显示Latex”查看渲染结果。" if result["latex"] else result["plain"]
+        if result["latex"]:
+            latex_div.innerText = "点击“显示Latex”查看渲染结果。"
+        else:
+            latex_div.innerText = result["plain"]
 
 
 def run_smart_solver(content):

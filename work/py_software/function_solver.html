@@ -350,6 +350,19 @@
             border-radius: 8px;
         }
 
+        #copyable_output {
+            min-height: 2.75rem;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.85rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: rgba(255, 255, 255, 0.82);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+        }
+
         #latexCode {
             display: none;
         }
@@ -842,6 +855,10 @@
             <h2 class="major">结果</h2>
             <div id="output">请选择一种计算模式并输入内容。</div>
             <div id="latexDiv">Latex 预览会显示在这里。</div>
+            <div id="copyable_output" class="copyable-output"></div>
+            <div class="solver-actions">
+                <button type="button" id="copy-result-button">复制结果</button>
+            </div>
             <div id="latexCode"></div>
         </section>
 
@@ -1176,6 +1193,17 @@
             output.innerHTML = '$$ ' + input + ' $$';
             if (window.MathJax && MathJax.typesetPromise) {
                 MathJax.typesetPromise([output]);
+            }
+        });
+
+        document.getElementById('copy-result-button')?.addEventListener('click', async function () {
+            const text = document.getElementById('copyable_output')?.textContent || '';
+            if (!text.trim()) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                this.title = '已复制';
+            } catch (error) {
+                this.title = '复制失败';
             }
         });
     </script>
