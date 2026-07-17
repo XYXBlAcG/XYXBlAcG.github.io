@@ -456,11 +456,14 @@ def set_result_output(result):
     latex_code = document.querySelector("#latexCode")
     latex_div = document.querySelector("#latexDiv")
     copyable_div = document.querySelector("#copyable_output")
+    copy_button = document.querySelector("#copy-result-button")
 
     output_div.innerText = result["plain"]
     latex_code.innerText = result["latex"]
     if copyable_div:
         copyable_div.innerText = result["copyable"]
+    if copy_button:
+        copy_button.title = "复制结果"
     if latex_div:
         if result["latex"]:
             latex_div.innerText = "点击“显示Latex”查看渲染结果。"
@@ -511,6 +514,12 @@ def clean_content(content):
     output_div.innerText = " "
     output_div = document.querySelector("#latexDiv")
     output_div.innerText = " "
+    output_div = document.querySelector("#copyable_output")
+    if output_div:
+        output_div.innerText = " "
+    copy_button = document.querySelector("#copy-result-button")
+    if copy_button:
+        copy_button.title = "复制结果"
 
 def extract_expressions(input_str):
     expressions = [expr.strip() for expr in input_str.split(',')]
