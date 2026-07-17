@@ -984,6 +984,192 @@
             showSelectedMode('smart_input');
         }
 
+        const smartInput = document.getElementById('smart_inputer');
+        const visualBuilder = document.getElementById('visual-builder');
+        const visualToggleButton = document.getElementById('visual-toggle-button');
+
+        function normalizeBuilderLine(value) {
+            return String(value || '').trim();
+        }
+
+        function setSmartInput(command, append) {
+            if (!smartInput) return;
+            const nextCommand = normalizeBuilderLine(command);
+            if (!nextCommand) return;
+            if (append && smartInput.value.trim()) {
+                smartInput.value = smartInput.value.trim() + '\n' + nextCommand;
+            } else {
+                smartInput.value = nextCommand;
+            }
+            smartInput.focus();
+        }
+
+        function clickPyButtonByText(text) {
+            const buttons = Array.from(document.querySelectorAll('#smart_input button'));
+            const target = buttons.find((button) => button.textContent.trim() === text);
+            if (target && !target.disabled) target.click();
+        }
+
+        document.getElementById('smart-template-button')?.addEventListener('click', function () {
+            setSmartInput('solve x: x + 1 = 0', false);
+        });
+
+        visualToggleButton?.addEventListener('click', function () {
+            if (!visualBuilder) return;
+            const willShow = visualBuilder.classList.contains('hidden');
+            visualBuilder.classList.toggle('hidden', !willShow);
+            visualToggleButton.setAttribute('aria-expanded', String(willShow));
+        });
+
+        document.querySelectorAll('[data-builder-tab]').forEach(function (tabButton) {
+            tabButton.addEventListener('click', function () {
+                const tabName = tabButton.dataset.builderTab;
+                document.querySelectorAll('[data-builder-tab]').forEach(function (button) {
+                    const isActive = button === tabButton;
+                    button.classList.toggle('is-active', isActive);
+                    button.setAttribute('aria-selected', String(isActive));
+                });
+                document.querySelectorAll('[data-builder-pane]').forEach(function (pane) {
+                    const isActive = pane.dataset.builderPane === tabName;
+                    pane.classList.toggle('hidden', !isActive);
+                    pane.classList.toggle('is-active', isActive);
+                });
+            });
+        });
+
+        function renderMatrixGrid() {
+            const rowsInput = document.getElementById('builder-matrix-rows');
+            const colsInput = document.getElementById('builder-matrix-cols');
+            const table = document.getElementById('builder-matrix-table');
+            if (!rowsInput || !colsInput || !table) return;
+
+            const rows = Math.max(1, Math.min(8, Number(rowsInput.value) || 1));
+            const cols = Math.max(1, Math.min(8, Number(colsInput.value) || 1));
+            rowsInput.value = String(rows);
+            colsInput.value = String(cols);
+            table.innerHTML = '';
+
+            for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+                const row = document.createElement('div');
+                row.className = 'matrix-row';
+                row.style.gridTemplateColumns = `repeat(${cols}, minmax(4.5rem, 1fr))`;
+                for (let colIndex = 0; colIndex < cols; colIndex += 1) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'matrix-cell';
+                    input.value = rowIndex === colIndex ? '1' : '0';
+                    input.dataset.row = String(rowIndex);
+                    input.dataset.col = String(colIndex);
+                    row.appendChild(input);
+                }
+                table.appendChild(row);
+            }
+        }
+
+        function parsePastedMatrix(text) {
+            return String(text || '')
+                .trim()
+                .split(';')
+                .map((row) => row.trim().split(/[\s,]+/).filter(Boolean));
+        }
+
+        function fillMatrixGridFromRows(rows) {
+            if (!rows.length || !rows[0].length) return;
+            document.getElementById('builder-matrix-rows').value = String(rows.length);
+            document.getElementById('builder-matrix-cols').value = String(rows[0].length);
+            renderMatrixGrid();
+            rows.forEach(function (row, rowIndex) {
+                row.forEach(function (value, colIndex) {
+                    const cell = document.querySelector(`.matrix-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                    if (cell) cell.value = value;
+                });
+            });
+        }
+
+        document.getElementById('builder-matrix-rows')?.addEventListener('change', renderMatrixGrid);
+        document.getElementById('builder-matrix-cols')?.addEventListener('change', renderMatrixGrid);
+        document.getElementById('builder-matrix-apply-paste')?.addEventListener('click', function () {
+            const text = document.getElementById('builder-matrix-paste').value;
+            fillMatrixGridFromRows(parsePastedMatrix(text));
+        });
+
+        renderMatrixGrid();
+
+        function buildEquationCommand() {
+            const vars = normalizeBuilderLine(document.getElementById('builder-equation-vars').value);
+            const equations = document.getElementById('builder-equations').value
+                .split(/\n+/)
+                .map(normalizeBuilderLine)
+                .filter(Boolean);
+            return `solve ${vars}:\n  ${equations.join('\n  ')}`;
+        }
+
+        function buildMatrixCommand() {
+            const name = normalizeBuilderLine(document.getElementById('builder-matrix-name').value) || 'A';
+            const expression = normalizeBuilderLine(document.getElementById('builder-matrix-expression').value) || `${name}.det()`;
+            const rows = Array.from(document.querySelectorAll('#builder-matrix-table .matrix-row')).map(function (row) {
+                return Array.from(row.querySelectorAll('.matrix-cell')).map(function (cell) {
+                    return normalizeBuilderLine(cell.value) || '0';
+                });
+            });
+            const matrixLiteral = '[' + rows.map((row) => '[' + row.join(', ') + ']').join(', ') + ']';
+            return `matrix ${name} = ${matrixLiteral}\ncalc ${expression}`;
+        }
+
+        function buildIntegralCommand() {
+            const variable = normalizeBuilderLine(document.getElementById('builder-integral-var').value) || 'x';
+            const type = document.getElementById('builder-integral-type').value;
+            const expression = normalizeBuilderLine(document.getElementById('builder-integral-expression').value);
+            if (type === 'definite') {
+                const lower = normalizeBuilderLine(document.getElementById('builder-integral-lower').value) || '0';
+                const upper = normalizeBuilderLine(document.getElementById('builder-integral-upper').value) || '1';
+                return `integrate ${variable} from ${lower} to ${upper}: ${expression}`;
+            }
+            return `integrate ${variable}: ${expression}`;
+        }
+
+        function buildSumCommand() {
+            const variable = normalizeBuilderLine(document.getElementById('builder-sum-var').value) || 'n';
+            const lower = normalizeBuilderLine(document.getElementById('builder-sum-lower').value) || '1';
+            const upper = normalizeBuilderLine(document.getElementById('builder-sum-upper').value) || '10';
+            const expression = normalizeBuilderLine(document.getElementById('builder-sum-expression').value);
+            return `sum ${variable} from ${lower} to ${upper}: ${expression}`;
+        }
+
+        function buildExpressionCommand() {
+            const operation = document.getElementById('builder-expression-op').value;
+            const expression = normalizeBuilderLine(document.getElementById('builder-expression-input').value);
+            return `${operation}: ${expression}`;
+        }
+
+        function buildCommand(kind) {
+            const builders = {
+                equation: buildEquationCommand,
+                matrix: buildMatrixCommand,
+                integral: buildIntegralCommand,
+                sum: buildSumCommand,
+                expression: buildExpressionCommand
+            };
+            return builders[kind] ? builders[kind]() : '';
+        }
+
+        document.querySelectorAll('[data-build-command]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const command = buildCommand(button.dataset.buildCommand);
+                setSmartInput(command, false);
+                if (button.dataset.runAfterInsert === 'true') {
+                    clickPyButtonByText('计算');
+                }
+            });
+        });
+
+        smartInput?.addEventListener('keydown', function (event) {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                event.preventDefault();
+                clickPyButtonByText('计算');
+            }
+        });
+
         document.getElementById('latex_test_inputer').addEventListener('input', function() {
             const input = document.getElementById('latex_test_inputer').value;
             const output = document.getElementById('latex_preview');
