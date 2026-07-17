@@ -795,6 +795,60 @@ def runsrc_sum(content):
         return
     run_legacy_command("sum " + parts[0] + " from " + parts[1] + " to " + parts[2] + ": " + input_equ.value)
 
+def split_latex_entries(raw_input):
+    text = raw_input.replace("\\\\", "\n")
+    entries = []
+    current = []
+    brace_depth = 0
+    escaped = False
+    for char in text:
+        if char == "\\" and not escaped:
+            current.append(char)
+            escaped = True
+            continue
+        if char == "{" and not escaped:
+            brace_depth += 1
+        elif char == "}" and not escaped and brace_depth > 0:
+            brace_depth -= 1
+        if (char == "\n" or char == ";" or char == ",") and brace_depth == 0 and not escaped:
+            entry = "".join(current).strip()
+            if entry:
+                entries.append(entry)
+            current = []
+        else:
+            current.append(char)
+        escaped = False
+    entry = "".join(current).strip()
+    if entry:
+        entries.append(entry)
+    return entries
+
+
+def latex_to_equations(raw_input):
+    entries = split_latex_entries(raw_input)
+    if not entries:
+        raise ValueError("请输入至少一个 Latex 方程")
+    equations = []
+    for entry in entries:
+        converted = latex2sympy(entry)
+        if isinstance(converted, (list, tuple, set)):
+            equations.extend(converted)
+        else:
+            equations.append(converted)
+    return equations
+
+
+def solve_latex_input(variables_text, latex_text):
+    variables = [validate_variable_name(item, "latex") for item in variables_text.split()]
+    if not variables:
+        raise ValueError("Latex 输入需要先填写变量，例如 x 或 x y")
+    symbol_values = symbols_as_list(variables)
+    equations = latex_to_equations(latex_text)
+    if len(symbol_values) == 1 and len(equations) == 1:
+        return solve(equations[0], symbol_values[0])
+    return solve(equations, symbol_values, dict=True)
+
+
 def runsrc_console(content):
     input_text = document.querySelector("#console_inputer")
     output_div = document.querySelector("#console_output")
@@ -804,7 +858,7 @@ def runsrc_latex_test(content):
     input_var = document.querySelector("#latex_test_num")
     input_equ = document.querySelector("#latex_test_inputer")
     try:
-        answer = mult_func_solve(input_var.value, input_equ.value.split(','), 1)
+        answer = solve_latex_input(input_var.value, input_equ.value)
         set_result_output(make_result("latex_test", answer))
     except Exception as exc:
         set_result_output(make_error("latex_test", str(exc)))
