@@ -2,6 +2,8 @@
 from sympy import *
 from pyscript import document, display
 from latex2sympy2 import latex2sympy, latex2latex
+import ast
+import re
 #from sympy import symbols, solve, Eq
 # from math import *
 
@@ -51,6 +53,216 @@ def modifier(input_str):
     if is_on.checked:
         input_text.value = latex2sympy(input_text.value)
     return input_text.value
+
+
+def make_error(kind, message, warning=None):
+    return {
+        "ok": False,
+        "kind": kind,
+        "plain": message,
+        "latex": "",
+        "copyable": message,
+        "warnings": [warning] if warning else []
+    }
+
+
+def latex_for_value(value):
+    try:
+        if isinstance(value, (list, tuple, set)):
+            return "$$" + " , ".join([latex(item) for item in value]) + "$$"
+        if isinstance(value, dict):
+            pairs = []
+            for key, item in value.items():
+                pairs.append(latex(key) + " = " + latex(item))
+            return "$$" + " , ".join(pairs) + "$$"
+        return "$$" + latex(value) + "$$"
+    except Exception:
+        return ""
+
+
+def make_result(kind, value, warnings=None):
+    plain = str(value)
+    return {
+        "ok": True,
+        "kind": kind,
+        "plain": plain,
+        "latex": latex_for_value(value),
+        "copyable": plain,
+        "warnings": warnings or []
+    }
+
+
+def split_commands(raw_input):
+    commands = []
+    current = []
+    for line in raw_input.replace(";", "\n").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if re.match(r"^(solve|diff|integrate|sum|simplify|expand|factor|trigsimp|expand_trig|matrix|calc)\b", stripped):
+            if current:
+                commands.append("\n".join(current))
+                current = []
+        current.append(stripped)
+    if current:
+        commands.append("\n".join(current))
+    return commands
+
+
+def split_header_body(text, command_name):
+    prefix = command_name + " "
+    if not text.startswith(prefix) and not text.startswith(command_name + ":"):
+        raise ValueError("命令格式不正确")
+    if ":" not in text:
+        raise ValueError("缺少冒号")
+    header, body = text.split(":", 1)
+    return header.strip(), body.strip()
+
+
+def parse_equation_text(equation_text):
+    if "=" not in equation_text:
+        raise ValueError("方程缺少等号")
+    left, right = equation_text.split("=", 1)
+    return Eq(sympify(left.strip()), sympify(right.strip()))
+
+
+def parse_matrix_literal(text):
+    try:
+        data = ast.literal_eval(text)
+    except Exception as exc:
+        raise ValueError("矩阵必须是 [[1, 2], [3, 4]] 这样的列表格式") from exc
+    if not isinstance(data, list) or not data or not all(isinstance(row, list) for row in data):
+        raise ValueError("矩阵必须是二维列表")
+    row_length = len(data[0])
+    if row_length == 0 or any(len(row) != row_length for row in data):
+        raise ValueError("矩阵每一行的列数必须一致")
+    return [[sympify(item) for item in row] for row in data]
+
+
+def parse_solve(command):
+    header, body = split_header_body(command, "solve")
+    variables = header.replace("solve", "", 1).strip().split()
+    if not variables:
+        raise ValueError("solve 命令需要至少一个变量，例如 solve x: x + 1 = 0")
+    equations = [line.strip() for line in body.splitlines() if line.strip()]
+    if not equations:
+        raise ValueError("solve 命令需要至少一个方程")
+    return {
+        "type": "solve",
+        "variables": variables,
+        "equations": equations
+    }
+
+
+def parse_diff(command):
+    header, body = split_header_body(command, "diff")
+    variable = header.replace("diff", "", 1).strip()
+    if not variable:
+        raise ValueError("diff 命令需要变量，例如 diff x: x**2")
+    return {
+        "type": "diff",
+        "variable": variable,
+        "expression": body
+    }
+
+
+def parse_integrate(command):
+    header, body = split_header_body(command, "integrate")
+    match = re.match(r"integrate\s+(\w+)(?:\s+from\s+(.+?)\s+to\s+(.+))?$", header)
+    if not match:
+        raise ValueError("integrate 格式应为 integrate x: x**2 或 integrate x from 0 to 1: x**2")
+    return {
+        "type": "integrate",
+        "variable": match.group(1),
+        "expression": body,
+        "bounds": [match.group(2), match.group(3)] if match.group(2) is not None else None
+    }
+
+
+def parse_sum(command):
+    header, body = split_header_body(command, "sum")
+    match = re.match(r"sum\s+(\w+)\s+from\s+(.+?)\s+to\s+(.+)$", header)
+    if not match:
+        raise ValueError("sum 格式应为 sum n from 1 to 10: n**2")
+    return {
+        "type": "sum",
+        "variable": match.group(1),
+        "lower": match.group(2),
+        "upper": match.group(3),
+        "expression": body
+    }
+
+
+def parse_expression(command):
+    operation, expression = command.split(":", 1)
+    operation = operation.strip()
+    if operation not in ["simplify", "expand", "factor", "trigsimp", "expand_trig"]:
+        raise ValueError("不支持的表达式操作")
+    return {
+        "type": "expression",
+        "operation": operation,
+        "expression": expression.strip()
+    }
+
+
+def parse_matrix_commands(commands):
+    matrices = {}
+    expression = ""
+    for command in commands:
+        if command.startswith("matrix "):
+            match = re.match(r"matrix\s+([A-Za-z]\w*)\s*=\s*(.+)$", command, re.S)
+            if not match:
+                raise ValueError("matrix 格式应为 matrix A = [[1, 2], [3, 4]]")
+            matrices[match.group(1)] = parse_matrix_literal(match.group(2).strip())
+        elif command.startswith("calc "):
+            expression = command.replace("calc", "", 1).strip()
+    if not matrices:
+        raise ValueError("矩阵计算需要至少一个 matrix 定义")
+    if not expression:
+        raise ValueError("矩阵计算需要 calc 表达式")
+    return {
+        "type": "matrix",
+        "matrices": matrices,
+        "expression": expression
+    }
+
+
+def parse_input(raw_input, mode=None):
+    text = raw_input.strip()
+    if not text:
+        raise ValueError("请输入要计算的内容")
+    commands = split_commands(text)
+    first = commands[0]
+    if first.startswith("matrix ") or first.startswith("calc "):
+        return parse_matrix_commands(commands)
+    if first.startswith("solve "):
+        return parse_solve(first)
+    if first.startswith("diff "):
+        return parse_diff(first)
+    if first.startswith("integrate "):
+        return parse_integrate(first)
+    if first.startswith("sum "):
+        return parse_sum(first)
+    if any(first.startswith(name + ":") for name in ["simplify", "expand", "factor", "trigsimp", "expand_trig"]):
+        return parse_expression(first)
+    raise ValueError("无法识别输入。示例：solve x: x + 1 = 0")
+
+
+def format_task_preview(task):
+    lines = ["类型：" + task.get("type", "unknown")]
+    if "variables" in task:
+        lines.append("变量：" + " ".join(task["variables"]))
+    if "variable" in task:
+        lines.append("变量：" + task["variable"])
+    if "equations" in task:
+        lines.append("方程：" + "\n".join(task["equations"]))
+    if "expression" in task:
+        lines.append("表达式：" + task["expression"])
+    if task.get("bounds"):
+        lines.append("上下界：" + " 到 ".join(task["bounds"]))
+    if task.get("matrices"):
+        lines.append("矩阵：" + ", ".join(task["matrices"].keys()))
+    return "\n".join(lines)
 
 
 def helper(content):
