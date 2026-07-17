@@ -2,11 +2,33 @@
 from sympy import *
 from pyscript import document, display
 from latex2sympy2 import latex2sympy, latex2latex
+from pyodide.ffi.wrappers import add_event_listener
 import ast
+import json
+import math
 import re
 #from sympy import symbols, solve, Eq
 # from math import *
 
+
+def handle_py_action(event):
+    action = event.currentTarget.getAttribute("data-py-action")
+    handler = globals().get(action)
+    if not handler:
+        set_result_output(make_error("action_error", "找不到操作：" + str(action)))
+        return
+    try:
+        handler(event)
+    except Exception as exc:
+        set_result_output(make_error("action_error", str(exc)))
+
+
+def bind_py_actions():
+    buttons = document.querySelectorAll("[data-py-action]")
+    for button in buttons:
+        add_event_listener(button, "click", handle_py_action)
+    document.body.dataset.pyActionsBound = str(len(buttons))
+    print("Bound Python actions:", len(buttons))
 
 
 
@@ -58,9 +80,31 @@ def make_error(kind, message, warning=None):
         "kind": kind,
         "plain": message,
         "latex": "",
+        "decimal": "",
         "copyable": message,
+        "plot": "",
         "warnings": [warning] if warning else []
     }
+
+
+def decimal_for_value(value):
+    try:
+        return decimal_value_to_text(value)
+    except Exception:
+        return ""
+
+
+def decimal_value_to_text(value):
+    if isinstance(value, (list, tuple, set)):
+        return "[" + ", ".join(decimal_value_to_text(item) for item in value) + "]"
+    if isinstance(value, dict):
+        pairs = []
+        for key, item in value.items():
+            pairs.append(str(key) + ": " + decimal_value_to_text(item))
+        return "{" + ", ".join(pairs) + "}"
+    if hasattr(value, "evalf"):
+        return str(N(value, 10))
+    return str(value)
 
 
 def latex_for_value(value):
@@ -77,15 +121,98 @@ def latex_for_value(value):
         return ""
 
 
-def make_result(kind, value, warnings=None):
+ASSUMPTION_ALIASES = {
+    "real": "real",
+    "reals": "real",
+    "r": "real",
+    "integer": "integer",
+    "integers": "integer",
+    "int": "integer",
+    "z": "integer",
+    "positive": "positive",
+    "negative": "negative",
+    "nonnegative": "nonnegative",
+    "non-negative": "nonnegative",
+    "nonpositive": "nonpositive",
+    "non-positive": "nonpositive",
+    "rational": "rational",
+    "complex": "complex",
+    "nonzero": "nonzero",
+    "non-zero": "nonzero"
+}
+
+
+def split_condition_suffix(body):
+    parts = re.split(r"\s+where\s+", body, maxsplit=1, flags=re.I)
+    if len(parts) == 1:
+        return body, {}
+    return parts[0].strip(), parse_variable_conditions(parts[1])
+
+
+def parse_variable_conditions(conditions_text):
+    conditions = {}
+    for item in conditions_text.replace("，", ",").split(","):
+        item = item.strip()
+        if not item:
+            continue
+        parts = item.split()
+        if len(parts) < 2:
+            raise ValueError("变量条件格式应为 x real 或 x positive")
+        variable = validate_variable_name(parts[0], "where")
+        assumptions = conditions.setdefault(variable, {})
+        for raw_assumption in parts[1:]:
+            assumption = ASSUMPTION_ALIASES.get(raw_assumption.lower())
+            if not assumption:
+                raise ValueError("暂不支持变量条件：" + raw_assumption)
+            assumptions[assumption] = True
+    return conditions
+
+
+def symbol_map_from_names(names, conditions=None):
+    conditions = conditions or {}
+    symbol_map = {}
+    ordered_names = list(names or [])
+    for name in conditions:
+        if name not in ordered_names:
+            ordered_names.append(name)
+    for name in ordered_names:
+        symbol_map[name] = symbols(name, **conditions.get(name, {}))
+    return symbol_map
+
+
+def condition_summary(conditions):
+    if not conditions:
+        return ""
+    parts = []
+    for name, assumptions in conditions.items():
+        parts.append(name + " " + " ".join(assumptions.keys()))
+    return ", ".join(parts)
+
+
+def make_result(kind, value, warnings=None, task=None):
     plain = str(value)
     return {
         "ok": True,
         "kind": kind,
         "plain": plain,
         "latex": latex_for_value(value),
+        "decimal": decimal_for_value(value),
         "copyable": plain,
+        "plot": plot_json_for_task(task, value) if task else "",
         "warnings": warnings or []
+    }
+
+
+def make_text_result(kind, text):
+    return {
+        "ok": True,
+        "kind": kind,
+        "plain": text,
+        "latex": "",
+        "decimal": "",
+        "copyable": text,
+        "plot": "",
+        "warnings": []
     }
 
 
@@ -96,7 +223,7 @@ def split_commands(raw_input):
         stripped = line.strip()
         if not stripped:
             continue
-        if re.match(r"^(solve|diff|integrate|sum|simplify|expand|factor|trigsimp|expand_trig|matrix|calc)\b", stripped):
+        if re.match(r"^(help|solve|diff|integrate|sum|limit|series|nsolve|solveset|roots|solve_inequality|reduce_inequalities|factor_list|laplace|inverse_laplace|linsolve|nonlinsolve|groebner|simplify|expand|factor|trigsimp|expand_trig|apart|together|cancel|matrix|calc)\b", stripped):
             if current:
                 commands.append("\n".join(current))
                 current = []
@@ -122,6 +249,22 @@ def validate_variable_name(variable, command_name):
     return variable
 
 
+def split_variable_names(variables_text, command_name):
+    text = variables_text.replace("，", ",").strip()
+    if not text:
+        raise ValueError(command_name + " 命令需要至少一个变量，例如 x 或 x,y")
+    if "," not in text and re.search(r"\s+", text):
+        raise ValueError(command_name + " 命令变量请用逗号分隔，例如 x,y")
+
+    variables = [item.strip() for item in text.split(",")]
+    if not all(variables):
+        raise ValueError(command_name + " 命令变量列表不能有空项")
+    for variable in variables:
+        if re.search(r"\s+", variable):
+            raise ValueError(command_name + " 命令变量请用逗号分隔，例如 x,y")
+    return [validate_variable_name(variable, command_name) for variable in variables]
+
+
 def validate_expression_body(expression, message):
     expression = expression.strip()
     if not expression:
@@ -129,18 +272,18 @@ def validate_expression_body(expression, message):
     return expression
 
 
-def parse_equation_text(equation_text):
+def parse_equation_text(equation_text, symbol_map=None):
     if "=" not in equation_text:
         raise ValueError("方程缺少等号")
     left, right = equation_text.split("=", 1)
-    return Eq(sympify(left.strip()), sympify(right.strip()))
+    return Eq(sympify(left.strip(), locals=symbol_map or {}), sympify(right.strip(), locals=symbol_map or {}))
 
 
-def symbols_as_list(names):
-    parsed = symbols(" ".join(names) if isinstance(names, list) else names)
-    if isinstance(parsed, tuple):
-        return list(parsed)
-    return [parsed]
+def symbols_as_list(names, conditions=None):
+    if isinstance(names, list):
+        symbol_map = symbol_map_from_names(names, conditions)
+        return [symbol_map[name] for name in names]
+    return [symbols(names, **(conditions or {}).get(names, {}))]
 
 
 MATRIX_CELL_ERROR = "矩阵元素只支持数字、变量名和简单算术表达式"
@@ -225,22 +368,22 @@ def parse_matrix_literal(text):
 
 def parse_solve(command):
     header, body = split_header_body(command, "solve")
-    variables = header.replace("solve", "", 1).strip().split()
-    if not variables:
-        raise ValueError("solve 命令需要至少一个变量，例如 solve x: x + 1 = 0")
-    variables = [validate_variable_name(variable, "solve") for variable in variables]
+    variables = split_variable_names(header.replace("solve", "", 1), "solve")
+    body, conditions = split_condition_suffix(body)
     equations = [line.strip() for line in body.splitlines() if line.strip()]
     if not equations:
         raise ValueError("solve 命令需要至少一个方程")
     return {
         "type": "solve",
         "variables": variables,
-        "equations": equations
+        "equations": equations,
+        "conditions": conditions
     }
 
 
 def parse_diff(command):
     header, body = split_header_body(command, "diff")
+    body, conditions = split_condition_suffix(body)
     variable = header.replace("diff", "", 1).strip()
     if not variable:
         raise ValueError("diff 命令需要变量，例如 diff x: x**2")
@@ -249,12 +392,14 @@ def parse_diff(command):
     return {
         "type": "diff",
         "variable": variable,
-        "expression": body
+        "expression": body,
+        "conditions": conditions
     }
 
 
 def parse_integrate(command):
     header, body = split_header_body(command, "integrate")
+    body, conditions = split_condition_suffix(body)
     match = re.match(r"integrate\s+(\w+)(?:\s+from\s+(.+?)\s+to\s+(.+))?$", header)
     if not match:
         raise ValueError("integrate 格式应为 integrate x: x**2 或 integrate x from 0 to 1: x**2")
@@ -264,12 +409,14 @@ def parse_integrate(command):
         "type": "integrate",
         "variable": variable,
         "expression": body,
-        "bounds": [match.group(2), match.group(3)] if match.group(2) is not None else None
+        "bounds": [match.group(2), match.group(3)] if match.group(2) is not None else None,
+        "conditions": conditions
     }
 
 
 def parse_sum(command):
     header, body = split_header_body(command, "sum")
+    body, conditions = split_condition_suffix(body)
     match = re.match(r"sum\s+(\w+)\s+from\s+(.+?)\s+to\s+(.+)$", header)
     if not match:
         raise ValueError("sum 格式应为 sum n from 1 to 10: n**2")
@@ -280,21 +427,455 @@ def parse_sum(command):
         "variable": variable,
         "lower": match.group(2),
         "upper": match.group(3),
-        "expression": body
+        "expression": body,
+        "conditions": conditions
     }
 
 
 def parse_expression(command):
     operation, expression = command.split(":", 1)
     operation = operation.strip()
-    if operation not in ["simplify", "expand", "factor", "trigsimp", "expand_trig"]:
+    if operation not in ["simplify", "expand", "factor", "trigsimp", "expand_trig", "apart", "together", "cancel"]:
         raise ValueError("不支持的表达式操作")
+    expression, conditions = split_condition_suffix(expression)
     expression = validate_expression_body(expression, operation + " 命令需要表达式")
     return {
         "type": "expression",
         "operation": operation,
-        "expression": expression
+        "expression": expression,
+        "conditions": conditions
     }
+
+
+def parse_limit(command):
+    header, body = split_header_body(command, "limit")
+    body, conditions = split_condition_suffix(body)
+    match = re.match(r"limit\s+(\w+)\s+to\s+(.+)$", header)
+    if not match:
+        raise ValueError("limit 格式应为 limit x to 0: sin(x)/x")
+    variable = validate_variable_name(match.group(1), "limit")
+    target = match.group(2).strip()
+    direction = "+-"
+    if target.endswith("+") or target.endswith("-"):
+        direction = target[-1]
+        target = target[:-1].strip()
+    return {
+        "type": "limit",
+        "variable": variable,
+        "target": target,
+        "direction": direction,
+        "expression": validate_expression_body(body, "limit 命令需要表达式"),
+        "conditions": conditions
+    }
+
+
+def parse_series(command):
+    header, body = split_header_body(command, "series")
+    body, conditions = split_condition_suffix(body)
+    match = re.match(r"series\s+(\w+)\s+at\s+(.+?)\s+order\s+(\d+)$", header)
+    if not match:
+        raise ValueError("series 格式应为 series x at 0 order 6: sin(x)")
+    order = int(match.group(3))
+    if order < 1 or order > 30:
+        raise ValueError("series 阶数应在 1 到 30 之间")
+    return {
+        "type": "series",
+        "variable": validate_variable_name(match.group(1), "series"),
+        "point": match.group(2).strip(),
+        "order": order,
+        "expression": validate_expression_body(body, "series 命令需要表达式"),
+        "conditions": conditions
+    }
+
+
+def parse_nsolve(command):
+    header, body = split_header_body(command, "nsolve")
+    body, conditions = split_condition_suffix(body)
+    match = re.match(r"nsolve\s+(\w+)\s+near\s+(.+)$", header)
+    if not match:
+        raise ValueError("nsolve 格式应为 nsolve x near 1: cos(x) - x")
+    return {
+        "type": "nsolve",
+        "variable": validate_variable_name(match.group(1), "nsolve"),
+        "guess": match.group(2).strip(),
+        "expression": validate_expression_body(body, "nsolve 命令需要表达式或方程"),
+        "conditions": conditions
+    }
+
+
+def parse_variable_expression(command, command_name):
+    header, body = split_header_body(command, command_name)
+    body, conditions = split_condition_suffix(body)
+    variable = header.replace(command_name, "", 1).strip()
+    if not variable:
+        raise ValueError(command_name + " 格式应为 " + command_name + " x: 表达式")
+    return {
+        "type": command_name,
+        "variable": validate_variable_name(variable, command_name),
+        "expression": validate_expression_body(body, command_name + " 命令需要表达式"),
+        "conditions": conditions
+    }
+
+
+DOMAIN_ALIASES = {
+    "reals": Reals,
+    "real": Reals,
+    "r": Reals,
+    "complexes": Complexes,
+    "complex": Complexes,
+    "c": Complexes,
+    "integers": Integers,
+    "integer": Integers,
+    "z": Integers,
+    "naturals": Naturals,
+    "natural": Naturals,
+    "n": Naturals,
+    "naturals0": Naturals0,
+    "n0": Naturals0,
+    "rationals": Rationals,
+    "rational": Rationals,
+    "q": Rationals
+}
+
+
+def parse_domain_text(domain_text):
+    text = domain_text.strip()
+    if not text:
+        return Complexes
+    alias = DOMAIN_ALIASES.get(text.lower())
+    if alias is not None:
+        return alias
+    return sympify(text, locals={
+        "S": S,
+        "Interval": Interval,
+        "Union": Union,
+        "FiniteSet": FiniteSet,
+        "Reals": Reals,
+        "Complexes": Complexes,
+        "Integers": Integers,
+        "Naturals": Naturals,
+        "Naturals0": Naturals0,
+        "Rationals": Rationals,
+        "oo": oo
+    })
+
+
+def expression_lines(body):
+    lines = [line.strip() for line in body.splitlines() if line.strip()]
+    if not lines:
+        raise ValueError("命令需要至少一个表达式")
+    return lines
+
+
+def parse_solveset(command):
+    header, body = split_header_body(command, "solveset")
+    body, conditions = split_condition_suffix(body)
+    match = re.match(r"solveset\s+(\w+)(?:\s+in\s+(.+))?$", header)
+    if not match:
+        raise ValueError("solveset 格式应为 solveset x in Reals: sin(x) = 0")
+    return {
+        "type": "solveset",
+        "variable": validate_variable_name(match.group(1), "solveset"),
+        "domain": (match.group(2) or "Complexes").strip(),
+        "expression": validate_expression_body(body, "solveset 命令需要表达式或方程"),
+        "conditions": conditions
+    }
+
+
+def parse_transform(command, command_name):
+    header, body = split_header_body(command, command_name)
+    body, conditions = split_condition_suffix(body)
+    variables_text = header.replace(command_name, "", 1).strip()
+    variables = split_variable_names(variables_text, command_name)
+    if len(variables) != 2:
+        raise ValueError(command_name + " 格式应为 " + command_name + " t,s: 表达式")
+    return {
+        "type": command_name,
+        "variable": variables[0],
+        "target_variable": variables[1],
+        "expression": validate_expression_body(body, command_name + " 命令需要表达式"),
+        "conditions": conditions
+    }
+
+
+def parse_system_command(command, command_name):
+    header, body = split_header_body(command, command_name)
+    body, conditions = split_condition_suffix(body)
+    variables = split_variable_names(header.replace(command_name, "", 1).strip(), command_name)
+    return {
+        "type": command_name,
+        "variables": variables,
+        "expressions": expression_lines(body),
+        "conditions": conditions
+    }
+
+
+HELP_COMMAND_ORDER = [
+    "solve",
+    "diff",
+    "integrate",
+    "sum",
+    "limit",
+    "series",
+    "nsolve",
+    "solveset",
+    "solve_inequality",
+    "reduce_inequalities",
+    "roots",
+    "factor_list",
+    "laplace",
+    "inverse_laplace",
+    "linsolve",
+    "nonlinsolve",
+    "groebner",
+    "matrix",
+    "det",
+    "inv",
+    "transpose",
+    "rref",
+    "eigenvals",
+    "eigenvects",
+    "simplify",
+    "expand",
+    "factor",
+    "trigsimp",
+    "expand_trig",
+    "apart",
+    "together",
+    "cancel"
+]
+
+
+HELP_TOPICS = {
+    "solve": """solve: 解方程或方程组
+格式：
+  solve x: 方程
+  solve x,y: 方程1; 方程2
+示例：
+  solve x: x**2 - 1 = 0
+  solve x,y: x + y = 3; x - y = 1
+变量必须用逗号分隔。可以追加条件：
+  solve x: x**2 = 1 where x positive""",
+    "diff": """diff: 求导
+格式：
+  diff 变量: 表达式
+示例：
+  diff x: sin(x) * x**2""",
+    "integrate": """integrate: 不定积分或定积分
+格式：
+  integrate x: 表达式
+  integrate x from 下界 to 上界: 表达式
+示例：
+  integrate x: x**2
+  integrate x from 0 to 1: x**2""",
+    "sum": """sum: 求和
+格式：
+  sum n from 下界 to 上界: 表达式
+示例：
+  sum n from 1 to 10: n**2""",
+    "limit": """limit: 求极限
+格式：
+  limit x to 趋近值: 表达式
+  limit x to 0+: 表达式
+  limit x to 0-: 表达式
+示例：
+  limit x to 0: sin(x)/x""",
+    "series": """series: 泰勒/幂级数展开
+格式：
+  series x at 展开点 order 阶数: 表达式
+示例：
+  series x at 0 order 6: sin(x)
+阶数建议保持较小，当前限制为 1 到 30。""",
+    "nsolve": """nsolve: 数值求解
+格式：
+  nsolve x near 初值: 表达式或方程
+示例：
+  nsolve x near 1: cos(x) - x
+  nsolve x near 1: cos(x) = x
+初值会影响收敛到哪个解。""",
+    "solveset": """solveset: 在指定集合中求解
+格式：
+  solveset x in 域: 表达式或方程
+示例：
+  solveset x in Reals: sin(x) = 0
+常用域：Reals, Complexes, Integers, Naturals, Naturals0, Rationals。""",
+    "solve_inequality": """solve_inequality: 单变量不等式
+格式：
+  solve_inequality x: 不等式
+示例：
+  solve_inequality x: x**2 - 1 > 0""",
+    "reduce_inequalities": """reduce_inequalities: 不等式组化简
+格式：
+  reduce_inequalities x: 不等式1; 不等式2
+示例：
+  reduce_inequalities x: x**2 - 1 > 0; x < 5""",
+    "roots": """roots: 多项式根和重数
+格式：
+  roots x: 多项式
+示例：
+  roots x: x**3 - 1""",
+    "factor_list": """factor_list: 因式和重数
+格式：
+  factor_list x: 多项式
+示例：
+  factor_list x: x**4 - 1""",
+    "laplace": """laplace: Laplace 变换
+格式：
+  laplace 原变量,目标变量: 表达式
+示例：
+  laplace t,s: sin(t)
+输出通常为 (变换结果, 收敛平面, 条件)。""",
+    "inverse_laplace": """inverse_laplace: 逆 Laplace 变换
+格式：
+  inverse_laplace 原变量,目标变量: 表达式
+示例：
+  inverse_laplace s,t: 1/(s**2 + 1)""",
+    "linsolve": """linsolve: 线性方程组解集
+格式：
+  linsolve x,y: 方程1; 方程2
+示例：
+  linsolve x,y: x + y = 3; x - y = 1""",
+    "nonlinsolve": """nonlinsolve: 非线性方程组解集
+格式：
+  nonlinsolve x,y: 方程1; 方程2
+示例：
+  nonlinsolve x,y: x**2 + y**2 = 1; x - y = 0""",
+    "groebner": """groebner: 多项式系统 Groebner 基
+格式：
+  groebner x,y: 多项式1; 多项式2
+示例：
+  groebner x,y: x**2 + y**2 - 1; x - y""",
+    "matrix": """matrix / calc: 矩阵定义和计算
+格式：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.det()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  matrix B = [[5, 6], [7, 8]]
+  calc A + B
+常用表达式：A.det(), A.inv(), A.T, A.rref(), A.eigenvals(), A.eigenvects()。""",
+    "det": """det: 矩阵行列式
+格式：
+  calc A.det()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.det()
+只适用于方阵。""",
+    "inv": """inv: 矩阵逆
+格式：
+  calc A.inv()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.inv()
+矩阵必须可逆。""",
+    "transpose": """transpose / T: 矩阵转置
+格式：
+  calc A.T
+  calc A.transpose()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.T""",
+    "rref": """rref: 矩阵行最简形
+格式：
+  calc A.rref()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.rref()
+输出通常是 (行最简矩阵, 主元列)。""",
+    "eigenvals": """eigenvals: 矩阵特征值
+格式：
+  calc A.eigenvals()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.eigenvals()
+输出是 特征值: 重数。""",
+    "eigenvects": """eigenvects: 矩阵特征向量
+格式：
+  calc A.eigenvects()
+示例：
+  matrix A = [[1, 2], [3, 4]]
+  calc A.eigenvects()
+输出包含特征值、重数和对应特征向量。""",
+    "simplify": """simplify: 化简表达式
+格式：
+  simplify: 表达式
+示例：
+  simplify: sin(x)**2 + cos(x)**2""",
+    "expand": """expand: 展开表达式
+格式：
+  expand: 表达式
+示例：
+  expand: (x + 1)**4""",
+    "factor": """factor: 因式分解
+格式：
+  factor: 表达式
+示例：
+  factor: x**4 - 1""",
+    "trigsimp": """trigsimp: 三角化简
+格式：
+  trigsimp: 表达式
+示例：
+  trigsimp: sin(x)**2 + cos(x)**2""",
+    "expand_trig": """expand_trig: 三角展开
+格式：
+  expand_trig: 表达式
+示例：
+  expand_trig: sin(x + y)""",
+    "apart": """apart: 部分分式展开
+格式：
+  apart: 表达式
+示例：
+  apart: 1/(x**2 - 1)""",
+    "together": """together: 通分合并
+格式：
+  together: 表达式
+示例：
+  together: 1/x + 1/(x + 1)""",
+    "cancel": """cancel: 有理式约分
+格式：
+  cancel: 表达式
+示例：
+  cancel: (x**2 - 1)/(x - 1)"""
+}
+
+
+HELP_ALIASES = {
+    "calc": "matrix",
+    "inequality": "solve_inequality",
+    "reduce": "reduce_inequalities",
+    "t": "transpose"
+}
+
+
+def parse_help(command):
+    topic = command.replace("help", "", 1).strip().lower()
+    if topic.startswith("+"):
+        topic = topic[1:].strip()
+    if "." in topic:
+        topic = topic.rsplit(".", 1)[1]
+    if topic.endswith("()"):
+        topic = topic[:-2]
+    return {
+        "type": "help",
+        "command": HELP_ALIASES.get(topic, topic)
+    }
+
+
+def help_task(task):
+    topic = task.get("command", "")
+    if not topic:
+        return (
+            "help: 查看智能输入命令用法\n"
+            "格式：help 指令\n"
+            "示例：help solve\n\n"
+            "可查指令：\n  " + ", ".join(HELP_COMMAND_ORDER)
+        )
+    if topic in HELP_TOPICS:
+        return HELP_TOPICS[topic].strip()
+    return (
+        "没有找到指令：" + topic + "\n"
+        "输入 help 查看可查指令列表。"
+    )
 
 
 def parse_matrix_commands(commands):
@@ -325,6 +906,8 @@ def parse_input(raw_input, mode=None):
         raise ValueError("请输入要计算的内容")
     commands = split_commands(text)
     first = commands[0]
+    if first.startswith("help"):
+        return parse_help(first)
     if first.startswith("matrix ") or first.startswith("calc "):
         return parse_matrix_commands(commands)
     if first.startswith("solve "):
@@ -335,62 +918,207 @@ def parse_input(raw_input, mode=None):
         return parse_integrate(first)
     if first.startswith("sum "):
         return parse_sum(first)
-    if any(first.startswith(name + ":") for name in ["simplify", "expand", "factor", "trigsimp", "expand_trig"]):
+    if first.startswith("limit "):
+        return parse_limit(first)
+    if first.startswith("series "):
+        return parse_series(first)
+    if first.startswith("nsolve "):
+        return parse_nsolve(first)
+    if first.startswith("solveset "):
+        return parse_solveset(first)
+    if first.startswith("roots "):
+        return parse_variable_expression(first, "roots")
+    if first.startswith("solve_inequality "):
+        return parse_variable_expression(first, "solve_inequality")
+    if first.startswith("reduce_inequalities "):
+        return parse_system_command(first, "reduce_inequalities")
+    if first.startswith("factor_list "):
+        return parse_variable_expression(first, "factor_list")
+    if first.startswith("laplace "):
+        return parse_transform(first, "laplace")
+    if first.startswith("inverse_laplace "):
+        return parse_transform(first, "inverse_laplace")
+    if first.startswith("linsolve "):
+        return parse_system_command(first, "linsolve")
+    if first.startswith("nonlinsolve "):
+        return parse_system_command(first, "nonlinsolve")
+    if first.startswith("groebner "):
+        return parse_system_command(first, "groebner")
+    if any(first.startswith(name + ":") for name in ["simplify", "expand", "factor", "trigsimp", "expand_trig", "apart", "together", "cancel"]):
         return parse_expression(first)
-    raise ValueError("无法识别输入。示例：solve x: x + 1 = 0")
+    raise ValueError("无法识别输入。示例：solve x: x + 1 = 0 或 limit x to 0: sin(x)/x")
 
 
 def format_task_preview(task):
     lines = ["类型：" + task.get("type", "unknown")]
     if "variables" in task:
-        lines.append("变量：" + " ".join(task["variables"]))
+        lines.append("变量：" + ", ".join(task["variables"]))
     if "variable" in task:
         lines.append("变量：" + task["variable"])
     if "equations" in task:
         lines.append("方程：" + "\n".join(task["equations"]))
+    if "expressions" in task:
+        lines.append("表达式组：" + "\n".join(task["expressions"]))
     if "expression" in task:
         lines.append("表达式：" + task["expression"])
+    if task.get("conditions"):
+        lines.append("条件：" + condition_summary(task["conditions"]))
     if task.get("bounds"):
         lines.append("上下界：" + " 到 ".join(task["bounds"]))
+    if task.get("target"):
+        lines.append("趋近：" + task["target"])
+    if task.get("target_variable"):
+        lines.append("目标变量：" + task["target_variable"])
+    if task.get("domain"):
+        lines.append("域：" + task["domain"])
+    if task.get("point") is not None:
+        lines.append("展开点：" + task["point"])
+    if task.get("order") is not None:
+        lines.append("阶数：" + str(task["order"]))
+    if task.get("guess") is not None:
+        lines.append("初值：" + task["guess"])
     if task.get("matrices"):
         lines.append("矩阵：" + ", ".join(task["matrices"].keys()))
+    if task.get("type") == "help":
+        lines.append("主题：" + (task.get("command") or "命令列表"))
     return "\n".join(lines)
 
 
 def solve_task(task):
-    symbol_values = symbols_as_list(task["variables"])
-    equations = [parse_equation_text(equation) for equation in task["equations"]]
+    symbol_values = symbols_as_list(task["variables"], task.get("conditions"))
+    symbol_map = symbol_map_from_names(task["variables"], task.get("conditions"))
+    equations = [parse_equation_text(equation, symbol_map) for equation in task["equations"]]
     if len(symbol_values) == 1 and len(equations) == 1:
         return solve(equations[0], symbol_values[0])
     return solve(equations, symbol_values, dict=True)
 
 
 def calculus_task(task):
-    variable = symbols(task["variable"])
-    expression = sympify(task["expression"])
+    symbol_map = symbol_map_from_names([task["variable"]], task.get("conditions"))
+    variable = symbol_map[task["variable"]]
+    expression = sympify(task["expression"], locals=symbol_map)
     if task["type"] == "diff":
         return diff(expression, variable)
     if task["type"] == "integrate":
         if task.get("bounds"):
             lower, upper = task["bounds"]
-            return integrate(expression, (variable, sympify(lower), sympify(upper)))
+            return integrate(expression, (variable, sympify(lower, locals=symbol_map), sympify(upper, locals=symbol_map)))
         return integrate(expression, variable)
     if task["type"] == "sum":
-        return summation(expression, (variable, sympify(task["lower"]), sympify(task["upper"])))
+        return summation(expression, (variable, sympify(task["lower"], locals=symbol_map), sympify(task["upper"], locals=symbol_map)))
     raise ValueError("不支持的微积分任务")
 
 
 def expression_task(task):
-    expression = sympify(task["expression"])
+    symbol_map = symbol_map_from_names([], task.get("conditions"))
+    expression = sympify(task["expression"], locals=symbol_map)
     operation = task["operation"]
     operations = {
         "simplify": simplify,
         "expand": expand,
         "factor": factor,
         "trigsimp": trigsimp,
-        "expand_trig": expand_trig
+        "expand_trig": expand_trig,
+        "apart": apart,
+        "together": together,
+        "cancel": cancel
     }
     return operations[operation](expression)
+
+
+def is_plain_equation_text(text):
+    if "=" in text and not any(operator in text for operator in [">=", "<=", ">", "<"]):
+        return True
+    return False
+
+
+def expression_or_equation_difference(text, symbol_map):
+    if is_plain_equation_text(text):
+        equation = parse_equation_text(text, symbol_map)
+        return equation.lhs - equation.rhs
+    return sympify(text, locals=symbol_map)
+
+
+def equation_or_expression(text, symbol_map):
+    if is_plain_equation_text(text):
+        return parse_equation_text(text, symbol_map)
+    return sympify(text, locals=symbol_map)
+
+
+def same_limit_value(left, right):
+    if left == right:
+        return True
+    try:
+        return simplify(left - right) == 0
+    except Exception:
+        return False
+
+
+def advanced_task(task):
+    variable_names = task.get("variables") or [task["variable"]]
+    if task.get("target_variable"):
+        variable_names = variable_names + [task["target_variable"]]
+    symbol_map = symbol_map_from_names(variable_names, task.get("conditions"))
+    primary_variable_name = task.get("variable") or task.get("variables", [None])[0]
+    variable = symbol_map[primary_variable_name] if primary_variable_name else None
+    expression = task.get("expression", "")
+    if task["type"] == "limit":
+        parsed_expression = sympify(expression, locals=symbol_map)
+        target = sympify(task["target"], locals=symbol_map)
+        if task["direction"] == "+-":
+            left_limit = limit(parsed_expression, variable, target, dir="-")
+            right_limit = limit(parsed_expression, variable, target, dir="+")
+            if same_limit_value(left_limit, right_limit):
+                return right_limit
+            return {"left": left_limit, "right": right_limit}
+        return limit(parsed_expression, variable, target, dir=task["direction"])
+    if task["type"] == "series":
+        return series(
+            sympify(expression, locals=symbol_map),
+            variable,
+            sympify(task["point"], locals=symbol_map),
+            task["order"]
+        )
+    if task["type"] == "nsolve":
+        return nsolve(
+            expression_or_equation_difference(expression, symbol_map),
+            variable,
+            sympify(task["guess"], locals=symbol_map)
+        )
+    if task["type"] == "roots":
+        return roots(sympify(expression, locals=symbol_map), variable)
+    if task["type"] == "solve_inequality":
+        return solve_univariate_inequality(sympify(expression, locals=symbol_map), variable)
+    if task["type"] == "solveset":
+        return solveset(
+            expression_or_equation_difference(expression, symbol_map),
+            variable,
+            parse_domain_text(task["domain"])
+        )
+    if task["type"] == "reduce_inequalities":
+        relations = [sympify(item, locals=symbol_map) for item in task["expressions"]]
+        return reduce_inequalities(relations, variable)
+    if task["type"] == "factor_list":
+        return factor_list(sympify(expression, locals=symbol_map), variable)
+    if task["type"] == "laplace":
+        target_variable = symbol_map[task["target_variable"]]
+        return laplace_transform(sympify(expression, locals=symbol_map), variable, target_variable)
+    if task["type"] == "inverse_laplace":
+        target_variable = symbol_map[task["target_variable"]]
+        return inverse_laplace_transform(sympify(expression, locals=symbol_map), variable, target_variable)
+    if task["type"] == "linsolve":
+        variables = [symbol_map[name] for name in task["variables"]]
+        system = [equation_or_expression(item, symbol_map) for item in task["expressions"]]
+        return linsolve(system, variables)
+    if task["type"] == "nonlinsolve":
+        variables = [symbol_map[name] for name in task["variables"]]
+        system = [expression_or_equation_difference(item, symbol_map) for item in task["expressions"]]
+        return nonlinsolve(system, variables)
+    if task["type"] == "groebner":
+        variables = [symbol_map[name] for name in task["variables"]]
+        polynomials = [expression_or_equation_difference(item, symbol_map) for item in task["expressions"]]
+        return groebner(polynomials, *variables)
+    raise ValueError("不支持的高级任务")
 
 
 def apply_matrix_method(value, method):
@@ -399,7 +1127,10 @@ def apply_matrix_method(value, method):
     methods = {
         "det": lambda matrix: matrix.det(),
         "inv": lambda matrix: matrix.inv(),
-        "transpose": lambda matrix: matrix.transpose()
+        "transpose": lambda matrix: matrix.transpose(),
+        "rref": lambda matrix: matrix.rref(),
+        "eigenvals": lambda matrix: matrix.eigenvals(),
+        "eigenvects": lambda matrix: matrix.eigenvects()
     }
     if method not in methods:
         raise ValueError("不支持的矩阵方法")
@@ -478,12 +1209,95 @@ def matrix_task(task):
     return eval_matrix_expression(task["expression"], matrix_values)
 
 
+def finite_float(value):
+    try:
+        numeric = complex(value.evalf()) if hasattr(value, "evalf") else complex(value)
+    except Exception:
+        return None
+    if abs(numeric.imag) > 1e-8:
+        return None
+    result = float(numeric.real)
+    return result if math.isfinite(result) else None
+
+
+def plot_json_for_expression(expression, variable, title):
+    points = []
+    sample_count = 161
+    for index in range(sample_count):
+        x_value = -10 + 20 * index / (sample_count - 1)
+        try:
+            y_value = finite_float(expression.subs(variable, x_value))
+        except Exception:
+            y_value = None
+        if y_value is not None:
+            points.append([round(x_value, 4), round(y_value, 8)])
+    if len(points) < 2:
+        return ""
+    return json.dumps({
+        "title": title,
+        "variable": str(variable),
+        "points": points
+    }, ensure_ascii=False, separators=(",", ":"))
+
+
+def plot_expression_from_task(task, value):
+    if not task:
+        return None, None, ""
+    task_type = task.get("type")
+    if task_type == "solve" and len(task.get("variables", [])) == 1 and len(task.get("equations", [])) == 1:
+        symbol_map = symbol_map_from_names(task["variables"], task.get("conditions"))
+        equation = parse_equation_text(task["equations"][0], symbol_map)
+        variable = symbol_map[task["variables"][0]]
+        return equation.lhs - equation.rhs, variable, "方程左右差值"
+    if task_type in ["diff", "integrate"]:
+        symbol_map = symbol_map_from_names([task["variable"]], task.get("conditions"))
+        variable = symbol_map[task["variable"]]
+        if hasattr(value, "free_symbols") and variable in value.free_symbols:
+            return value, variable, "结果函数"
+    if task_type == "expression":
+        target = value
+        if not hasattr(target, "free_symbols"):
+            return None, None, ""
+        free_symbols = list(target.free_symbols)
+        if len(free_symbols) == 1:
+            return target, free_symbols[0], "表达式"
+    return None, None, ""
+
+
+def plot_json_for_task(task, value):
+    try:
+        expression, variable, title = plot_expression_from_task(task, value)
+        if expression is None or variable is None:
+            return ""
+        return plot_json_for_expression(expression, variable, title)
+    except Exception:
+        return ""
+
+
 def dispatch_task(task):
     task_type = task["type"]
+    if task_type == "help":
+        return help_task(task)
     if task_type == "solve":
         return solve_task(task)
     if task_type in ["diff", "integrate", "sum"]:
         return calculus_task(task)
+    if task_type in [
+        "limit",
+        "series",
+        "nsolve",
+        "solveset",
+        "roots",
+        "solve_inequality",
+        "reduce_inequalities",
+        "factor_list",
+        "laplace",
+        "inverse_laplace",
+        "linsolve",
+        "nonlinsolve",
+        "groebner"
+    ]:
+        return advanced_task(task)
     if task_type == "expression":
         return expression_task(task)
     if task_type == "matrix":
@@ -495,7 +1309,9 @@ def run_solver(raw_input, mode=None):
     try:
         task = parse_input(raw_input, mode)
         value = dispatch_task(task)
-        return make_result(task["type"], value)
+        if task["type"] == "help":
+            return make_text_result("help", value)
+        return make_result(task["type"], value, task=task)
     except Exception as exc:
         return make_error("solver_error", str(exc))
 
@@ -510,18 +1326,26 @@ def set_result_output(result):
     output_div = document.querySelector("#output")
     latex_code = document.querySelector("#latexCode")
     latex_div = document.querySelector("#latexDiv")
+    numeric_div = document.querySelector("#numeric_output")
     copyable_div = document.querySelector("#copyable_output")
     copy_button = document.querySelector("#copy-result-button")
+    plot_data = document.querySelector("#plot_data")
 
+    output_div.dataset.resultKind = result["kind"]
+    output_div.dataset.helpRendered = "false"
     output_div.innerText = result["plain"]
     latex_code.innerText = result["latex"]
+    if numeric_div:
+        numeric_div.innerText = result["decimal"] or "暂无小数近似"
     if copyable_div:
         copyable_div.innerText = result["copyable"]
     if copy_button:
         copy_button.title = "复制结果"
+    if plot_data:
+        plot_data.innerText = result["plot"]
     if latex_div:
         if result["latex"]:
-            latex_div.innerText = "点击“显示Latex”查看渲染结果。"
+            latex_div.innerText = "正在渲染 Latex 结果..."
         else:
             latex_div.innerText = result["plain"]
 
@@ -564,6 +1388,7 @@ def helper(content):
     
 def clean_content(content):
     output_div = document.querySelector("#output")
+    output_div.dataset.resultKind = ""
     output_div.innerText = " "
     output_div = document.querySelector("#latexCode")
     output_div.innerText = " "
@@ -572,6 +1397,15 @@ def clean_content(content):
     output_div = document.querySelector("#copyable_output")
     if output_div:
         output_div.innerText = " "
+    output_div = document.querySelector("#numeric_output")
+    if output_div:
+        output_div.innerText = " "
+    output_div = document.querySelector("#plot_data")
+    if output_div:
+        output_div.innerText = " "
+    output_div = document.querySelector("#plot_status")
+    if output_div:
+        output_div.innerText = "暂无可绘制图像"
     copy_button = document.querySelector("#copy-result-button")
     if copy_button:
         copy_button.title = "复制结果"
@@ -617,35 +1451,84 @@ def runsrc_mult(content):
     equations = "\n  ".join([item.strip() for item in input_equ.value.replace(",", "\n").splitlines() if item.strip()])
     run_legacy_command("solve " + input_var.value + ":\n  " + equations)
 
-def define_mat():
-    # matrix_names = input("请输入你想定义的矩阵的名称（以空格分隔）：").split()
-    # matrix_inputs = input("请输入矩阵内容，格式为 '1,2;3,4#2,3;4,5#3,4;5,6'（#号用于分隔不同的矩阵）：").split('#')
-    matrix_names = document.querySelector("#unknown_mat").value.split()
-    matrix_inputs = document.querySelector("#mat_inputer").value.split('#')
-    matrices = []
-    for name, input_data in zip(matrix_names, matrix_inputs):
-        matrix_values = [[float(num) for num in row.split(',')] for row in input_data.split(';')]
-        matrices.append((name, Matrix(matrix_values)))
-    return matrices
+def split_matrix_row_values(row_text):
+    row_text = row_text.strip().strip("[]()")
+    if not row_text:
+        raise ValueError("矩阵行不能为空")
+    if "," in row_text:
+        values = [value.strip() for value in row_text.split(",") if value.strip()]
+    else:
+        values = [value.strip() for value in row_text.split() if value.strip()]
+    if not values:
+        raise ValueError("矩阵行不能为空")
+    return values
 
-def legacy_matrix_to_command(names_text, matrix_text, expression_text):
-    names = names_text.split()
-    matrix_inputs = matrix_text.split("#")
+
+def matrix_data_to_literal(matrix_data):
+    matrix_data = matrix_data.strip()
+    if not matrix_data:
+        raise ValueError("矩阵内容不能为空")
+    if not matrix_data.startswith("[["):
+        raise ValueError("矩阵定义格式应为 A = [[1, 2], [3, 4]]")
+    parse_matrix_literal(matrix_data)
+    return matrix_data
+
+
+def matrix_definition_to_command(name, matrix_data):
+    validate_variable_name(name, "matrix")
+    return "matrix " + name + " = " + matrix_data_to_literal(matrix_data)
+
+
+def readable_matrix_to_command(matrix_text, expression_text):
+    text = matrix_text.strip()
+    if not text:
+        raise ValueError("请先输入矩阵定义")
+    if "#" in text:
+        raise ValueError("矩阵不再支持 # 分隔的旧格式；请使用 A = [[1, 2], [3, 4]]")
+
+    if re.search(r"(?m)^\s*(matrix\s+|calc\s+)", text):
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        if expression_text.strip() and not any(line.startswith("calc ") for line in lines):
+            lines.append("calc " + expression_text.strip())
+        return "\n".join(lines)
+
     lines = []
-    for name, input_data in zip(names, matrix_inputs):
-        rows = []
-        for row in input_data.split(";"):
-            values = [value.strip() for value in row.split(",") if value.strip()]
-            rows.append("[" + ", ".join(values) + "]")
-        lines.append("matrix " + name + " = [" + ", ".join(rows) + "]")
-    lines.append("calc " + expression_text)
+    current_name = ""
+    current_data = []
+
+    def flush_current():
+        if current_name:
+            if not current_data:
+                raise ValueError("矩阵 " + current_name + " 缺少内容")
+            lines.append(matrix_definition_to_command(current_name, "\n".join(current_data)))
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = re.match(r"^(?:matrix\s+)?([A-Za-z]\w*)\s*[:=]\s*(.*)$", line)
+        if match:
+            flush_current()
+            current_name = match.group(1)
+            rest = match.group(2).strip()
+            current_data = [rest] if rest else []
+        elif current_name:
+            current_data.append(line)
+        else:
+            raise ValueError("矩阵定义格式应为 A = [[1, 2], [3, 4]]")
+
+    flush_current()
+    if not lines:
+        raise ValueError("矩阵定义格式应为 A = [[1, 2], [3, 4]]")
+    if expression_text.strip():
+        lines.append("calc " + expression_text.strip())
     return "\n".join(lines)
 
+
 def runsrc_mat(content):
-    names = document.querySelector("#unknown_mat").value
     matrices = document.querySelector("#mat_inputer").value
     expression = document.querySelector("#mat_cal").value
-    run_legacy_command(legacy_matrix_to_command(names, matrices, expression))
+    run_legacy_command(readable_matrix_to_command(matrices, expression))
 
 def der_diff(content):
     x = symbols('x')
@@ -720,9 +1603,11 @@ def runsrc_expand_trig(content):
 def high_solver(variables, equations, domains):
     # try:
     # domains = domains.split()
-    symbols_list = []
+    variable_names = split_variable_names(variables, "high")
+    if len(variable_names) != 1:
+        raise ValueError("高级求解目前只支持一个变量，例如 x")
     # if(len(domains) == 0):
-    symbols_list = symbols(variables)
+    symbol_value = symbols(variable_names[0])
     # else:
     #     a = 0
     #     for i in variables:
@@ -736,7 +1621,7 @@ def high_solver(variables, equations, domains):
     Q = Rationals
     domains = sympify(domains)
     print("domain = ", domains)
-    return solveset(equations, symbols_list, domains)
+    return solveset(equations, symbol_value, domains)
     # except Exception as e:
     #     return "解方程时出现错误, 输入可能非法."
 
@@ -749,12 +1634,6 @@ def runsrc_high(content):
         set_result_output(make_result("high", answer))
     except Exception as exc:
         set_result_output(make_error("high", str(exc)))
-
-def runsrc_chem_e(content):
-    pass
-
-def runsrc_chem_a(content):
-    pass
 
 def inte_ud(var, equ, domain):
     symbols_list = symbols(var)
@@ -795,13 +1674,152 @@ def runsrc_sum(content):
         return
     run_legacy_command("sum " + parts[0] + " from " + parts[1] + " to " + parts[2] + ": " + input_equ.value)
 
+def clean_latex_entry(entry):
+    entry = entry.strip()
+    for left, right in [("$$", "$$"), ("\\[", "\\]"), ("\\(", "\\)")]:
+        if entry.startswith(left) and entry.endswith(right):
+            entry = entry[len(left):-len(right)].strip()
+            break
+    if entry.startswith("$") and entry.endswith("$"):
+        entry = entry[1:-1].strip()
+    entry = re.sub(r"\\begin\{(?:aligned|align|cases|array)\}", "", entry)
+    entry = re.sub(r"\\end\{(?:aligned|align|cases|array)\}", "", entry)
+    return entry.replace("&", "").strip()
+
+
+def latex_environment_at(text, index):
+    before = text[:index]
+    begins = re.findall(r"\\begin\{([A-Za-z*]+)\}", before)
+    ends = re.findall(r"\\end\{([A-Za-z*]+)\}", before)
+    stack = []
+    for name in begins:
+        stack.append(name)
+    for name in ends:
+        if name in stack:
+            stack.remove(name)
+    return stack[-1] if stack else ""
+
+
+def is_matrix_latex_environment(name):
+    return name in ["matrix", "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "smallmatrix"]
+
+
 def split_latex_entries(raw_input):
-    text = raw_input.replace("\\\\", "\n")
+    text = raw_input.replace("\r\n", "\n").replace("\r", "\n")
     entries = []
     current = []
     brace_depth = 0
+    bracket_depth = 0
+    paren_depth = 0
     escaped = False
-    for char in text:
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char == "\\" and index + 1 < length and text[index + 1] == "\\":
+            environment = latex_environment_at(text, index)
+            if (
+                brace_depth == 0
+                and bracket_depth == 0
+                and paren_depth == 0
+                and not is_matrix_latex_environment(environment)
+            ):
+                entry = "".join(current).strip()
+                if entry:
+                    entries.append(clean_latex_entry(entry))
+                current = []
+            else:
+                current.append("\\\\")
+            index += 2
+            escaped = False
+            continue
+        if char == "\\" and not escaped:
+            current.append(char)
+            escaped = True
+            index += 1
+            continue
+        if char == "{" and not escaped:
+            brace_depth += 1
+        elif char == "}" and not escaped and brace_depth > 0:
+            brace_depth -= 1
+        elif char == "[" and not escaped:
+            bracket_depth += 1
+        elif char == "]" and not escaped and bracket_depth > 0:
+            bracket_depth -= 1
+        elif char == "(" and not escaped:
+            paren_depth += 1
+        elif char == ")" and not escaped and paren_depth > 0:
+            paren_depth -= 1
+        if (
+            (char == "\n" or char == ";")
+            and brace_depth == 0
+            and bracket_depth == 0
+            and paren_depth == 0
+            and not escaped
+        ):
+            entry = "".join(current).strip()
+            if entry:
+                entries.append(clean_latex_entry(entry))
+            current = []
+        else:
+            current.append(char)
+        escaped = False
+        index += 1
+    entry = "".join(current).strip()
+    if entry:
+        entries.append(clean_latex_entry(entry))
+    return entries
+
+
+def split_latex_equation(entry):
+    brace_depth = 0
+    bracket_depth = 0
+    paren_depth = 0
+    escaped = False
+    for index, char in enumerate(entry):
+        if char == "\\" and not escaped:
+            escaped = True
+            continue
+        if char == "{" and not escaped:
+            brace_depth += 1
+        elif char == "}" and not escaped and brace_depth > 0:
+            brace_depth -= 1
+        elif char == "[" and not escaped:
+            bracket_depth += 1
+        elif char == "]" and not escaped and bracket_depth > 0:
+            bracket_depth -= 1
+        elif char == "(" and not escaped:
+            paren_depth += 1
+        elif char == ")" and not escaped and paren_depth > 0:
+            paren_depth -= 1
+        elif (
+            char == "="
+            and brace_depth == 0
+            and bracket_depth == 0
+            and paren_depth == 0
+            and not escaped
+        ):
+            left = entry[:index].strip()
+            right = entry[index + 1:].strip()
+            if not left or not right:
+                raise ValueError("Latex 方程等号两边都需要表达式")
+            return left, right
+        escaped = False
+    return None
+
+
+def has_top_level_latex_equation(entry):
+    return split_latex_equation(entry) is not None
+
+
+def split_latex_relation_commas(entry):
+    parts = []
+    current = []
+    brace_depth = 0
+    bracket_depth = 0
+    paren_depth = 0
+    escaped = False
+    for index, char in enumerate(entry):
         if char == "\\" and not escaped:
             current.append(char)
             escaped = True
@@ -810,18 +1828,81 @@ def split_latex_entries(raw_input):
             brace_depth += 1
         elif char == "}" and not escaped and brace_depth > 0:
             brace_depth -= 1
-        if (char == "\n" or char == ";" or char == ",") and brace_depth == 0 and not escaped:
-            entry = "".join(current).strip()
-            if entry:
-                entries.append(entry)
-            current = []
+        elif char == "[" and not escaped:
+            bracket_depth += 1
+        elif char == "]" and not escaped and bracket_depth > 0:
+            bracket_depth -= 1
+        elif char == "(" and not escaped:
+            paren_depth += 1
+        elif char == ")" and not escaped and paren_depth > 0:
+            paren_depth -= 1
+        if (
+            char == ","
+            and brace_depth == 0
+            and bracket_depth == 0
+            and paren_depth == 0
+            and not escaped
+        ):
+            left = "".join(current).strip()
+            right = entry[index + 1:].strip()
+            if (
+                left
+                and right
+                and has_top_level_latex_equation(left)
+                and has_top_level_latex_equation(right)
+            ):
+                parts.append(left)
+                current = []
+            else:
+                current.append(char)
         else:
             current.append(char)
         escaped = False
-    entry = "".join(current).strip()
-    if entry:
-        entries.append(entry)
-    return entries
+    final = "".join(current).strip()
+    if final:
+        parts.append(final)
+    return parts if len(parts) > 1 else [entry]
+
+
+def normalize_latex_number_commas(fragment):
+    def remove_thousands(match):
+        return match.group(0).replace(",", "")
+
+    fragment = re.sub(r"\d{1,3}(?:,\d{3})+(?!\d)", remove_thousands, fragment)
+    return re.sub(r"(?<=\d),(?=\d)", ".", fragment)
+
+
+def latex_fragment_to_sympy(fragment):
+    fragment = normalize_latex_number_commas(fragment)
+    try:
+        return latex2sympy(fragment)
+    except Exception as exc:
+        pythonish = fragment.replace("^", "**").replace("\\cdot", "*").replace("\\times", "*")
+        try:
+            return sympify(pythonish)
+        except Exception:
+            raise exc
+
+
+def flatten_latex_result(converted):
+    if isinstance(converted, (list, tuple, set)):
+        return list(converted)
+    return [converted]
+
+
+def latex_entry_to_equations(entry):
+    entry = clean_latex_entry(entry)
+    comma_parts = split_latex_relation_commas(entry)
+    if len(comma_parts) > 1:
+        equations = []
+        for part in comma_parts:
+            equations.extend(latex_entry_to_equations(part))
+        return equations
+    equation_parts = split_latex_equation(entry)
+    if equation_parts:
+        left, right = equation_parts
+        return [Eq(latex_fragment_to_sympy(left), latex_fragment_to_sympy(right))]
+    return flatten_latex_result(latex_fragment_to_sympy(entry))
 
 
 def latex_to_equations(raw_input):
@@ -830,29 +1911,18 @@ def latex_to_equations(raw_input):
         raise ValueError("请输入至少一个 Latex 方程")
     equations = []
     for entry in entries:
-        converted = latex2sympy(entry)
-        if isinstance(converted, (list, tuple, set)):
-            equations.extend(converted)
-        else:
-            equations.append(converted)
+        equations.extend(latex_entry_to_equations(entry))
     return equations
 
 
 def solve_latex_input(variables_text, latex_text):
-    variables = [validate_variable_name(item, "latex") for item in variables_text.split()]
-    if not variables:
-        raise ValueError("Latex 输入需要先填写变量，例如 x 或 x y")
+    variables = split_variable_names(variables_text, "latex")
     symbol_values = symbols_as_list(variables)
     equations = latex_to_equations(latex_text)
     if len(symbol_values) == 1 and len(equations) == 1:
         return solve(equations[0], symbol_values[0])
     return solve(equations, symbol_values, dict=True)
 
-
-def runsrc_console(content):
-    input_text = document.querySelector("#console_inputer")
-    output_div = document.querySelector("#console_output")
-    output_div.innerText = exec(input_text.value)
 
 def runsrc_latex_test(content):
     input_var = document.querySelector("#latex_test_num")
@@ -862,3 +1932,6 @@ def runsrc_latex_test(content):
         set_result_output(make_result("latex_test", answer))
     except Exception as exc:
         set_result_output(make_error("latex_test", str(exc)))
+
+
+bind_py_actions()

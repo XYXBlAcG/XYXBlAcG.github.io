@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.6.2/core.js"></script>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/xterm.css">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <title>Easy Math Solver</title>
     <script>
@@ -46,6 +45,24 @@
                 outputDiv.textContent = err.message;
             });
         }
+
+        function scheduleLatexRender() {
+            var latexCodeElement = document.getElementById("latexCode");
+            if (!latexCodeElement || !latexCodeElement.innerText.trim()) return;
+
+            window.clearTimeout(window.easyMathLatexRenderTimer);
+            window.easyMathLatexRenderTimer = window.setTimeout(renderLatex, 0);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var latexCodeElement = document.getElementById("latexCode");
+            if (!latexCodeElement) return;
+            new MutationObserver(scheduleLatexRender).observe(latexCodeElement, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+        });
     </script>
     <!-- hitokoto -->
     <script>
@@ -64,9 +81,13 @@
             });
     });
 
-    function openLink(url) {
+    window.openLink = function openLink(url) {
+            if (url && url.charAt(0) === "#" && window.openArticleModal) {
+                window.openArticleModal(url.slice(1));
+                return;
+            }
             window.location.href = url;
-        }
+        };
     </script>
     <style>
         :root {
@@ -78,10 +99,29 @@
             --solver-accent: #7dd3fc;
             --solver-accent-strong: #2dd4bf;
             --solver-radius: 12px;
+            --solver-font: Consolas, "SFMono-Regular", "Cascadia Code", "Liberation Mono", Menlo, Monaco, monospace;
         }
 
         .hidden {
             display: none !important;
+        }
+
+        html,
+        body,
+        input,
+        textarea,
+        select,
+        button,
+        code,
+        pre,
+        #output,
+        #latexDiv,
+        #copyable_output,
+        #numeric_output,
+        #history_list,
+        .latex-output,
+        mjx-container {
+            font-family: var(--solver-font) !important;
         }
 
         body.is-preload #header > * {
@@ -103,22 +143,38 @@
             position: fixed;
             top: 0.75rem;
             right: 0.75rem;
-            display: flex;
-            gap: 0.6rem;
+            display: grid;
+            grid-template-columns: repeat(3, max-content);
+            gap: 0.35rem;
+            max-width: calc(100vw - 1.5rem);
+            padding: 0.35rem;
             z-index: 10002;
-            flex-wrap: wrap;
-            justify-content: flex-end;
+            background: rgba(8, 13, 18, 0.74);
+            border: 1px solid var(--solver-border-soft);
+            border-radius: 10px;
+            box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.24);
+            backdrop-filter: blur(10px);
         }
 
         .top-right-buttons button {
             cursor: pointer;
-            min-width: 5.5rem;
-            height: 2.75rem;
-            padding: 0 1rem;
+            min-width: 0;
+            height: 2.35rem;
+            padding: 0 0.78rem;
             line-height: 1;
-            background: rgba(18, 23, 27, 0.72);
+            white-space: nowrap;
+            font-size: 0.78rem;
+            letter-spacing: 0.03rem;
+            text-transform: none;
+            background: rgba(255, 255, 255, 0.055);
             border-color: var(--solver-border);
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.16);
+            border-radius: 7px;
+            box-shadow: none;
+        }
+
+        .top-right-buttons button:hover {
+            background: rgba(125, 211, 252, 0.14);
+            border-color: rgba(125, 211, 252, 0.48);
         }
 
         .top-right-buttons button:disabled {
@@ -202,8 +258,8 @@
         }
 
         .solver-mode input[type="text"],
-        .solver-mode textarea,
-        #console_inputer {
+        .solver-mode input[type="number"],
+        .solver-mode textarea {
             width: 100%;
             max-width: 100%;
             min-height: 3rem;
@@ -214,15 +270,14 @@
             letter-spacing: 0;
         }
 
-        .solver-mode textarea,
-        #console_inputer {
+        .solver-mode textarea {
             min-height: 10rem;
             resize: vertical;
         }
 
         .solver-mode input[type="text"]:focus,
-        .solver-mode textarea:focus,
-        #console_inputer:focus {
+        .solver-mode input[type="number"]:focus,
+        .solver-mode textarea:focus {
             border-color: var(--solver-accent);
             box-shadow: 0 0 0 0.15rem rgba(125, 211, 252, 0.16);
         }
@@ -243,8 +298,7 @@
         }
 
         .solver-mode nav button,
-        .solver-mode nav a,
-        #py-console button {
+        .solver-mode nav a {
             min-height: 2.65rem;
             padding: 0 1rem;
             border-radius: 8px;
@@ -254,8 +308,7 @@
         }
 
         .solver-mode nav button:hover,
-        .solver-mode nav a:hover,
-        #py-console button:hover {
+        .solver-mode nav a:hover {
             background-color: rgba(125, 211, 252, 0.14);
             border-color: rgba(125, 211, 252, 0.55);
         }
@@ -284,10 +337,17 @@
         .builder-grid { display: grid; gap: 0.85rem; }
         .builder-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .builder-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .builder-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         .builder-grid label { display: grid; gap: 0.4rem; color: var(--solver-text-muted); }
+        .builder-grid label span { color: var(--solver-text-muted); font-size: 0.78rem; letter-spacing: 0.08rem; text-transform: uppercase; }
         .matrix-builder { display: grid; gap: 0.45rem; overflow-x: auto; }
         .matrix-row { display: grid; gap: 0.45rem; }
         .matrix-cell { min-width: 4.5rem; text-align: center; }
+        .legacy-matrix-workspace { display: grid; gap: 0.85rem; padding: 0.95rem; background: rgba(0, 0, 0, 0.14); border: 1px solid var(--solver-border-soft); border-radius: 8px; }
+        .legacy-matrix-output { min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+        .legacy-field { display: grid; gap: 0.4rem; }
+        .legacy-field span { color: var(--solver-text-muted); font-size: 0.78rem; letter-spacing: 0.08rem; text-transform: uppercase; }
+        .matrix-format-note { margin: 0; color: var(--solver-text-muted); font-size: 0.9rem; }
 
         .latex_container {
             display: flex;
@@ -335,12 +395,52 @@
             letter-spacing: 0.16rem;
         }
 
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem;
+        }
+
+        .result-card {
+            min-width: 0;
+            padding: 0.85rem;
+            background: rgba(0, 0, 0, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+        }
+
+        .result-card-wide {
+            grid-column: 1 / -1;
+        }
+
+        .results-panel.is-help-result .result-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .results-panel.is-help-result .result-card:not(:first-child) {
+            display: none;
+        }
+
+        .result-card-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.55rem;
+            color: var(--solver-text-muted);
+            font-size: 0.78rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+        }
+
+        .result-card-body,
         #output,
         #latexDiv,
-        #console_output {
+        #numeric_output,
+        #copyable_output,
+        #history_list {
             min-height: 3rem;
             padding: 0.9rem 1rem;
-            margin-bottom: 0.85rem;
             overflow-x: auto;
             white-space: pre-wrap;
             word-break: break-word;
@@ -351,16 +451,48 @@
         }
 
         #copyable_output {
-            min-height: 2.75rem;
-            padding: 0.8rem 1rem;
-            margin-bottom: 0.85rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
             color: rgba(255, 255, 255, 0.82);
             background: rgba(255, 255, 255, 0.05);
             border: 1px dashed rgba(255, 255, 255, 0.16);
-            border-radius: 8px;
+        }
+
+        .help-output {
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .help-output-line {
+            min-width: 0;
+            white-space: pre-wrap;
+        }
+
+        .help-example-line {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.6rem;
+            align-items: center;
+            padding: 0.35rem 0.45rem;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 7px;
+        }
+
+        .help-example-line code {
+            min-width: 0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .help-insert-button {
+            display: grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            min-height: 0;
+            padding: 0;
+            line-height: 1;
+            letter-spacing: 0;
+            border-radius: 999px;
         }
 
         #latexCode {
@@ -371,9 +503,230 @@
             overflow-x: auto;
         }
 
-        #py-console {
+        #plot_canvas {
+            display: block;
+            width: 100%;
+            height: 16rem;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+        }
+
+        #plot_status {
+            min-height: 2rem;
+            margin-top: 0.55rem;
+            color: var(--solver-text-muted);
+            font-size: 0.9rem;
+        }
+
+        #plot_data {
+            display: none;
+        }
+
+        #history_list {
             display: grid;
-            gap: 1rem;
+            gap: 0.55rem;
+            max-height: 32rem;
+            min-height: 14rem;
+        }
+
+        .history-item {
+            display: grid;
+            gap: 0.3rem;
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            padding: 0.6rem;
+            color: rgba(255, 255, 255, 0.86);
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            box-shadow: none;
+            cursor: pointer;
+            line-height: 1.4;
+            text-align: left;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .history-item:hover {
+            border-color: rgba(125, 211, 252, 0.5);
+        }
+
+        .history-item strong,
+        .history-item span,
+        .history-item small {
+            display: block;
+            min-width: 0;
+            line-height: 1.35;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        .history-item strong,
+        .history-item small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-item span {
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .history-item small {
+            color: var(--solver-text-muted);
+        }
+
+        .smart-input-wrap {
+            display: grid;
+            gap: 0.45rem;
+            position: relative;
+        }
+
+        .smart-textarea-shell {
+            position: relative;
+            display: grid;
+        }
+
+        .smart-textarea-shell .smart-textarea {
+            padding-right: 3rem;
+        }
+
+        .smart-input-clear {
+            position: absolute;
+            top: 0.65rem;
+            right: 0.65rem;
+            z-index: 4;
+            display: grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            min-height: 0;
+            padding: 0;
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 1.2rem;
+            line-height: 1;
+            letter-spacing: 0;
+            text-align: center;
+            background: rgba(8, 13, 18, 0.76);
+            border: 1px solid var(--solver-border-soft);
+            border-radius: 999px;
+            box-shadow: none;
+        }
+
+        .smart-input-clear:hover {
+            color: #fff;
+            background: rgba(125, 211, 252, 0.18);
+            border-color: rgba(125, 211, 252, 0.52);
+        }
+
+        #smart-autocomplete {
+            position: static;
+            z-index: 5;
+            display: none;
+            box-sizing: border-box;
+            width: 100%;
+            max-height: min(8.75rem, 34vh);
+            overflow-y: auto;
+            background: rgba(8, 13, 18, 0.96);
+            border: 1px solid rgba(125, 211, 252, 0.42);
+            border-radius: 8px;
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.35);
+        }
+
+        #smart-autocomplete.is-open {
+            display: block;
+        }
+
+        .autocomplete-item {
+            display: grid;
+            grid-template-columns: minmax(7rem, max-content) 1fr;
+            gap: 0.75rem;
+            padding: 0.55rem 0.75rem;
+            color: rgba(255, 255, 255, 0.86);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            cursor: pointer;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: 0;
+        }
+
+        .autocomplete-item.is-active {
+            color: #061115;
+            background: var(--solver-accent);
+        }
+
+        .autocomplete-detail {
+            color: inherit;
+            opacity: 0.72;
+        }
+
+        body.is-article-visible #wrapper {
+            filter: none;
+        }
+
+        body.is-article-visible #header,
+        body.is-article-visible #footer {
+            transform: none;
+            filter: none;
+            opacity: 1;
+        }
+
+        body.is-article-visible #main {
+            pointer-events: auto;
+        }
+
+        #main {
+            position: fixed;
+            inset: 0;
+            z-index: 10010;
+            display: none;
+            place-items: center;
+            width: 100vw;
+            max-width: none;
+            padding: 1.25rem;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0);
+            transition: background-color 0.2s ease;
+        }
+
+        body.is-article-visible #main {
+            display: grid !important;
+            background: rgba(2, 6, 10, 0.72);
+            backdrop-filter: blur(6px);
+        }
+
+        #main article {
+            display: none;
+            position: relative;
+            width: min(44rem, calc(100vw - 2rem));
+            max-height: min(78vh, 44rem);
+            margin: 0;
+            overflow-y: auto;
+            padding: 3.5rem 2rem 2rem;
+            background: rgba(18, 23, 27, 0.97);
+            border: 1px solid var(--solver-border-soft);
+            border-radius: 12px;
+            box-shadow: 0 1.4rem 4rem rgba(0, 0, 0, 0.45);
+        }
+
+        body.is-article-visible #main article.active {
+            display: block !important;
+        }
+
+        #main article pre {
+            overflow-x: auto;
+            padding: 0.85rem;
+            background: rgba(0, 0, 0, 0.24);
+            border: 1px solid var(--solver-border-soft);
+            border-radius: 8px;
+        }
+
+        #main article .back {
+            display: none !important;
         }
 
         .sidebar {
@@ -425,13 +778,12 @@
             .top-right-buttons {
                 left: 0.75rem;
                 right: 0.75rem;
-                justify-content: center;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
             .top-right-buttons button {
-                min-width: 0;
-                flex: 1 1 6rem;
-                padding: 0 0.75rem;
+                width: 100%;
+                padding: 0 0.5rem;
             }
 
             #wrapper {
@@ -459,13 +811,17 @@
             }
 
             .solver-mode nav button,
-            .solver-mode nav a,
-            #py-console button {
+            .solver-mode nav a {
                 width: 100%;
             }
 
             .builder-grid-2,
-            .builder-grid-3 {
+            .builder-grid-3,
+            .builder-grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .result-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -497,8 +853,8 @@
 
         <div class="top-right-buttons">
             <button id="return-button" onclick="openLink('/index.html')">主站点</button>
-            <button id="settings-button" onclick="openLink('#settings')">设置</button>
-            <button id="developer-mode-button" onclick="openLink('#developer')">开发者</button>
+            <button type="button" id="settings-button" data-article-target="settings">偏好</button>
+            <button type="button" id="guide-button" data-article-target="quick_reference">指南</button>
         </div>
 
         <!-- Header -->
@@ -531,7 +887,6 @@
             <option value="smart_input">智能输入（推荐）</option>
             <option value="func_sol">解单未知数方程</option>
             <option value="mult_func_sol">解多未知数方程</option>
-            <option value="chem">化学</option>
             <option value="der">求导</option>
             <option value="matrix">算矩阵</option>
             <option value="simple_sol">化简</option>
@@ -548,13 +903,19 @@
         <div class="solver-panel">
             <div class="smart-layout">
                 <label class="solver-field-label" for="smart_inputer">智能输入</label>
-                <textarea id="smart_inputer" class="smart-textarea" spellcheck="false" placeholder="例如：solve x: x + 1 = 0&#10;solve x y: x + y = 3; x - y = 1&#10;matrix A = [[1, 2], [3, 4]]; calc A.det()"></textarea>
+                <div class="smart-input-wrap">
+                    <div class="smart-textarea-shell">
+                        <textarea id="smart_inputer" class="smart-textarea" spellcheck="false" placeholder="例如：solve x: x + 1 = 0&#10;solve x,y: x + y = 3; x - y = 1&#10;matrix A = [[1, 2], [3, 4]]; calc A.det()"></textarea>
+                        <button type="button" id="smart-input-clear" class="smart-input-clear" aria-label="清空智能输入" title="清空智能输入">×</button>
+                    </div>
+                    <div id="smart-autocomplete" role="listbox" aria-label="智能输入补全"></div>
+                </div>
                 <div class="solver-actions">
-                    <button py-click="run_smart_solver">计算</button>
-                    <button py-click="preview_smart_input">解析预览</button>
+                    <button data-py-action="run_smart_solver">计算</button>
+                    <button data-py-action="preview_smart_input">解析预览</button>
                     <button type="button" id="smart-template-button">插入模板</button>
                     <button type="button" id="visual-toggle-button" aria-expanded="false" aria-controls="visual-builder">可视化输入</button>
-                    <button py-click="clean_content">清除结果</button>
+                    <button data-py-action="clean_content">清除结果</button>
                 </div>
                 <div id="parse_preview" class="preview-card">解析预览会显示在这里。</div>
             </div>
@@ -566,11 +927,12 @@
                     <button type="button" id="builder-tab-integral" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-integral" data-builder-tab="integral">积分</button>
                     <button type="button" id="builder-tab-sum" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-sum" data-builder-tab="sum">求和</button>
                     <button type="button" id="builder-tab-expression" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-expression" data-builder-tab="expression">表达式</button>
+                    <button type="button" id="builder-tab-advanced" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-advanced" data-builder-tab="advanced">高级</button>
                 </div>
 
                 <div id="builder-pane-equation" class="builder-pane is-active" role="tabpanel" aria-labelledby="builder-tab-equation" data-builder-pane="equation">
-                    <label class="solver-field-label" for="builder-equation-vars">变量</label>
-                    <input id="builder-equation-vars" type="text" value="x y" />
+                    <label class="solver-field-label" for="builder-equation-vars">变量（逗号分隔）</label>
+                    <input id="builder-equation-vars" type="text" value="x,y" />
                     <label class="solver-field-label" for="builder-equations">方程，一行一个</label>
                     <textarea id="builder-equations" spellcheck="false">x + y = 3&#10;x - y = 1</textarea>
                     <div class="solver-actions">
@@ -588,8 +950,16 @@
                     <div id="builder-matrix-table" class="matrix-builder" aria-label="矩阵单元格"></div>
                     <label class="solver-field-label" for="builder-matrix-expression">矩阵表达式</label>
                     <input id="builder-matrix-expression" type="text" value="A.det()" />
-                    <label class="solver-field-label" for="builder-matrix-paste">快速粘贴矩阵</label>
-                    <textarea id="builder-matrix-paste" spellcheck="false" placeholder="支持 1 2; 3 4 或 1,2;3,4"></textarea>
+                    <div class="solver-actions">
+                        <button type="button" data-matrix-shortcut="det" data-matrix-name-input="builder-matrix-name" data-matrix-expression-input="builder-matrix-expression">行列式</button>
+                        <button type="button" data-matrix-shortcut="inv" data-matrix-name-input="builder-matrix-name" data-matrix-expression-input="builder-matrix-expression">逆矩阵</button>
+                        <button type="button" data-matrix-shortcut="T" data-matrix-name-input="builder-matrix-name" data-matrix-expression-input="builder-matrix-expression">转置</button>
+                        <button type="button" data-matrix-shortcut="rref" data-matrix-name-input="builder-matrix-name" data-matrix-expression-input="builder-matrix-expression">RREF</button>
+                        <button type="button" data-matrix-shortcut="eigenvals" data-matrix-name-input="builder-matrix-name" data-matrix-expression-input="builder-matrix-expression">特征值</button>
+                        <button type="button" data-matrix-shortcut="eigenvects" data-matrix-name-input="builder-matrix-name" data-matrix-expression-input="builder-matrix-expression">特征向量</button>
+                    </div>
+                    <label class="solver-field-label" for="builder-matrix-paste">快速粘贴矩阵（仅用于填表）</label>
+                    <textarea id="builder-matrix-paste" spellcheck="false" placeholder="粘贴 1 2; 3 4 或 1,2;3,4 后会转换为标准矩阵定义"></textarea>
                     <div class="solver-actions">
                         <button type="button" id="builder-matrix-apply-paste">从粘贴内容填表</button>
                         <button type="button" data-build-command="matrix">插入到智能输入</button>
@@ -634,12 +1004,44 @@
                         <option value="factor">因式分解</option>
                         <option value="trigsimp">三角化简</option>
                         <option value="expand_trig">三角展开</option>
+                        <option value="apart">部分分式</option>
+                        <option value="together">通分</option>
+                        <option value="cancel">约分</option>
                     </select>
                     <label class="solver-field-label" for="builder-expression-input">表达式</label>
                     <textarea id="builder-expression-input" spellcheck="false">x**2 - 1</textarea>
                     <div class="solver-actions">
                         <button type="button" data-build-command="expression">插入到智能输入</button>
                         <button type="button" data-build-command="expression" data-run-after-insert="true">插入并计算</button>
+                    </div>
+                </div>
+
+                <div id="builder-pane-advanced" class="builder-pane hidden" role="tabpanel" aria-labelledby="builder-tab-advanced" data-builder-pane="advanced">
+                    <div class="builder-grid builder-grid-4">
+                        <label>操作<select id="builder-advanced-op">
+                            <option value="limit">极限</option>
+                            <option value="series">级数展开</option>
+                            <option value="nsolve">数值求解</option>
+                            <option value="solveset">集合求解</option>
+                            <option value="solve_inequality">单变量不等式</option>
+                            <option value="reduce_inequalities">不等式组</option>
+                            <option value="roots">多项式根</option>
+                            <option value="factor_list">因式列表</option>
+                            <option value="laplace">Laplace</option>
+                            <option value="inverse_laplace">逆 Laplace</option>
+                            <option value="linsolve">线性方程组</option>
+                            <option value="nonlinsolve">非线性方程组</option>
+                            <option value="groebner">Groebner 基</option>
+                        </select></label>
+                        <label>变量<input id="builder-advanced-vars" type="text" value="x" /></label>
+                        <label>参数<input id="builder-advanced-param" type="text" value="0" /></label>
+                        <label>目标 / 阶数<input id="builder-advanced-target" type="text" value="s" /></label>
+                    </div>
+                    <label class="solver-field-label" for="builder-advanced-expression">表达式</label>
+                    <textarea id="builder-advanced-expression" spellcheck="false">sin(x)/x</textarea>
+                    <div class="solver-actions">
+                        <button type="button" data-build-command="advanced">插入到智能输入</button>
+                        <button type="button" data-build-command="advanced" data-run-after-insert="true">插入并计算</button>
                     </div>
                 </div>
             </div>
@@ -651,11 +1053,11 @@
         <input type="text" id="inputer" placeholder="请输入一个以 x 为未知数的方程 (例: (x + 2) * (x - 1) = 0)..." size="60">
         <nav>
             <ul>
-                <li><button py-click="runsrc">开始计算</button></li>
+                <li><button data-py-action="runsrc">开始计算</button></li>
                 <li><button onclick="renderLatex()">显示Latex</button></li>
                 <!-- <li><button onclick="renderLatex()">显示 <img src="./img/LaTeX.svg" style="justify-content: center; "></button></li> -->
-                <li><button py-click="clean_content">清除内容</button></li>
-                <li><button py-click="helper">我需要帮助</button></li>
+                <li><button data-py-action="clean_content">清除内容</button></li>
+                <li><button data-py-action="helper">我需要帮助</button></li>
                 <li><button onClick="window.location.reload()">刷新页面</button></li>
             </ul>
         </nav>
@@ -667,15 +1069,15 @@
     <section id="mult_func_sol" class="solver-mode hidden">
         <div class="solver-panel">
             <div class="textbox-container">
-                <input type="text" id="unknown_num" placeholder="请输入方程里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                <input type="text" id="unknown_num" placeholder="请输入方程里出现的未知数, 以逗号分隔，例如 x,y" size="80" class="textbox">
                 <textarea id="mul_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_mult">开始计算</button></li>
+                    <li><button data-py-action="runsrc_mult">开始计算</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
@@ -686,16 +1088,15 @@
     <section id="summation" class="solver-mode hidden">
         <div class="solver-panel">
             <div class="textbox-container">
-                <input type="text" id="sum_var" placeholder="请输入下面出现的所有未知数, 用空格分隔... " size="80" class="textbox">
                 <input type="text" id="sum_sub" placeholder="请输入求和符号下的未知数, 下界和上界, 用逗号分隔... " size="80" class="textbox">
                 <textarea id="sum_inputer" placeholder="请输入求和符号后的式子..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_sum">开始计算</button></li>
+                    <li><button data-py-action="runsrc_sum">开始计算</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
@@ -706,30 +1107,41 @@
 
     <section id="matrix" class="solver-mode hidden">
         <div class="solver-panel">
+            <div class="legacy-matrix-workspace">
+                <p class="matrix-format-note">推荐用表格生成矩阵定义；也可以直接写 A = [[1, 2], [3, 4]]，每个矩阵一行。</p>
+                <div class="builder-grid builder-grid-3">
+                    <label><span>矩阵名</span><input id="legacy-matrix-name" type="text" value="A" /></label>
+                    <label><span>行数</span><input id="legacy-matrix-rows" type="number" min="1" max="8" value="2" /></label>
+                    <label><span>列数</span><input id="legacy-matrix-cols" type="number" min="1" max="8" value="2" /></label>
+                </div>
+                <div id="legacy-matrix-table" class="matrix-builder" aria-label="传统矩阵单元格"></div>
+                <label class="solver-field-label" for="legacy-matrix-paste">快速粘贴矩阵（仅用于填表）</label>
+                <textarea id="legacy-matrix-paste" spellcheck="false" placeholder="粘贴 1 2; 3 4 或 1,2&#10;3,4 后会转换为标准矩阵定义"></textarea>
+                <div class="solver-actions">
+                    <button type="button" id="legacy-matrix-apply-paste">从粘贴内容填表</button>
+                    <button type="button" id="legacy-matrix-add">加入矩阵定义</button>
+                    <button type="button" id="legacy-matrix-clear">清空矩阵定义</button>
+                </div>
+            </div>
             <div class="textbox-container">
-                <input type="text" id="unknown_mat" placeholder="请定义矩阵的名称, 以空格分隔... " size="80" class="textbox">
-                <textarea id="mat_inputer" placeholder="请输入多个矩阵, 与上面的名称相对应, 格式为 '1,2;3,4#2,3;4,5#3,4;5,6' ( # 号用于分隔不同的矩阵, 分号用于分隔行) ..." rows="10" cols="10" class="textbox"></textarea>
-                <input type="text" id="mat_cal" placeholder="请输入矩阵所构成的式子, 只能使用上面定义的矩阵, 使用符号代替矩阵 ... " size="80" class="textbox">
+                <label class="legacy-field"><span>矩阵定义</span><textarea id="mat_inputer" class="textbox legacy-matrix-output" placeholder="例如：A = [[1, 2], [3, 4]]&#10;B = [[5, 6], [7, 8]]"></textarea></label>
+                <label class="legacy-field"><span>矩阵表达式</span><input type="text" id="mat_cal" placeholder="例如：A.det(), A.inv(), A.T, A + B, A * B" size="80" class="textbox"></label>
+                <div class="solver-actions">
+                    <button type="button" data-matrix-shortcut="det" data-matrix-name-input="legacy-matrix-name" data-matrix-expression-input="mat_cal">行列式</button>
+                    <button type="button" data-matrix-shortcut="inv" data-matrix-name-input="legacy-matrix-name" data-matrix-expression-input="mat_cal">逆矩阵</button>
+                    <button type="button" data-matrix-shortcut="T" data-matrix-name-input="legacy-matrix-name" data-matrix-expression-input="mat_cal">转置</button>
+                    <button type="button" data-matrix-shortcut="rref" data-matrix-name-input="legacy-matrix-name" data-matrix-expression-input="mat_cal">RREF</button>
+                    <button type="button" data-matrix-shortcut="eigenvals" data-matrix-name-input="legacy-matrix-name" data-matrix-expression-input="mat_cal">特征值</button>
+                    <button type="button" data-matrix-shortcut="eigenvects" data-matrix-name-input="legacy-matrix-name" data-matrix-expression-input="mat_cal">特征向量</button>
+                </div>
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_mat">开始计算</button></li>
+                    <li><button data-py-action="runsrc_mat">开始计算</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
-                </ul>
-            </nav>
-        </div>
-    </section>
-
-    <section id="chem" class="solver-mode hidden">
-        <div class="solver-panel">
-            <nav>
-                <ul>
-                    <li><a href="#chem_w">化学将展示一个外部的页面.</a></li>
-                    <li><a href="#chem_tool">预览化学工具箱的源代码</a></li>
-                    <li><a href="#chem" aria-disabled="true" style="pointer-events:none"><del>下载化学工具箱 (disabled) </del></a></li>
                 </ul>
             </nav>
         </div>
@@ -744,10 +1156,10 @@
             <textarea id="func_inputer" placeholder="请输入一个单参数函数, 以 x 为参数 (例: 4 / 3 * pi * x ** 3 )..." rows="10" cols="10"></textarea>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_der">开始计算</button></li>
+                    <li><button data-py-action="runsrc_der">开始计算</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
@@ -759,18 +1171,18 @@
             <div class="textbox-container">
 
                 <p><br />自然对数的底请用 'E', 正无穷请使用 'oo' 来代替哦qwq</p>
-                <input type="text" id="unknown_inte" placeholder="请输入未知数, 以空格分隔... " size="80" class="textbox">
+                <input type="text" id="unknown_inte" placeholder="请输入积分变量，例如 x" size="80" class="textbox">
                 <input type="text" id="ud_inte" placeholder="请输入下界和上界, 以逗号分隔, 形如 '-oo, oo'... " size="80" class="textbox">
                 
                 <textarea id="inte_inputer" placeholder="请输入一个函数..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_inte_ud">定积分</button></li>
-                    <li><button py-click="runsrc_inte">不定积分</button></li>
+                    <li><button data-py-action="runsrc_inte_ud">定积分</button></li>
+                    <li><button data-py-action="runsrc_inte">不定积分</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
@@ -782,21 +1194,20 @@
     <section id="simple_sol" class="solver-mode hidden">
         <div class="solver-panel">
             <div class="textbox-container">
-                <input type="text" id="unknown_simple" placeholder="请输入算式里出现的未知数, 以空格分隔... " size="80" class="textbox">
                 <textarea id="simple_inputer" placeholder="请输入一个式子..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_simplify">化简</button></li>
-                    <li><button py-click="runsrc_factor">多项式/有理函数化简</button></li>
-                    <li><button py-click="runsrc_expand">展开多项式</button></li>
-                    <li><button py-click="runsrc_trigsimp">三角函数化简</button></li>
-                    <li><button py-click="runsrc_expand_trig">三角函数展开</button></li>
+                    <li><button data-py-action="runsrc_simplify">化简</button></li>
+                    <li><button data-py-action="runsrc_factor">多项式/有理函数化简</button></li>
+                    <li><button data-py-action="runsrc_expand">展开多项式</button></li>
+                    <li><button data-py-action="runsrc_trigsimp">三角函数化简</button></li>
+                    <li><button data-py-action="runsrc_expand_trig">三角函数展开</button></li>
                 </ul>
                 <ul>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
@@ -807,20 +1218,20 @@
     <section id="latex_test" class="solver-mode hidden">
         <div class="solver-panel">
             <div class="textbox-container">
-                <input type="text" id="latex_test_num" placeholder="请输入方程里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                <input type="text" id="latex_test_num" placeholder="请输入方程里出现的未知数, 以逗号分隔，例如 x,y" size="80" class="textbox">
                 <br /><p>拥有很多bug, 请谨慎使用.</p> 
                 <div class="latex_container">
-                    <textarea id="latex_test_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." class="textbox2"></textarea>
+                    <textarea id="latex_test_inputer" placeholder="推荐一行一个 LaTeX 方程，例如：x+y=3&#10;x-y=1；也支持分号或 x=1, y=2 这种顶层方程列表。" class="textbox2"></textarea>
                     <div id="latex_preview"></div>
                 </div>
                 
             </div>
             <nav>
                 <ul>
-                    <li><button py-click="runsrc_latex_test">开始计算</button></li>
+                    <li><button data-py-action="runsrc_latex_test">开始计算</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
@@ -834,16 +1245,16 @@
                 <div class="textbox-container">
                     <p><br />你只需要输入左边的式子, 等式的右边为 0, 简化了工作流程.</p>
                     <p><a href="#domain_name">可能你不知道什么是「域」, 那么请点击这里.</a></p>
-                    <input type="text" id="unknown_high" placeholder="请输入式子里出现的未知数, 以空格分隔... " size="80" class="textbox">
+                    <input type="text" id="unknown_high" placeholder="请输入求解变量，例如 x" size="80" class="textbox">
                     <input type="text" id="domain_high" placeholder="请输入域 (为一个形如 'Reals' 的单词) ... " size="80" class="textbox">
                     <textarea id="high_inputer" placeholder="请输入式子..." rows="10" cols="10" class="textbox"></textarea>
                 </div>
                 <ul>
                     <!-- <li><a href="#domain_name">「域」是什么</a></li> -->
-                    <li><button py-click="runsrc_high">开始计算</button></li>
+                    <li><button data-py-action="runsrc_high">开始计算</button></li>
                     <li><button onclick="renderLatex()">显示Latex</button></li>
-                    <li><button py-click="clean_content">清除内容</button></li>
-                    <li><button py-click="helper">我需要帮助</button></li>
+                    <li><button data-py-action="clean_content">清除内容</button></li>
+                    <li><button data-py-action="helper">我需要帮助</button></li>
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
                 <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
@@ -853,11 +1264,39 @@
     
         <section class="results-panel" aria-live="polite">
             <h2 class="major">结果</h2>
-            <div id="output">请选择一种计算模式并输入内容。</div>
-            <div id="latexDiv">Latex 预览会显示在这里。</div>
-            <div id="copyable_output" class="copyable-output"></div>
-            <div class="solver-actions">
-                <button type="button" id="copy-result-button">复制结果</button>
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="result-card-title">摘要</div>
+                    <div id="output">请选择一种计算模式并输入内容。</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-card-title">Latex</div>
+                    <div id="latexDiv">Latex 预览会显示在这里。</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-card-title">小数近似</div>
+                    <div id="numeric_output">等待计算。</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-card-title">
+                        <span>可复制内容</span>
+                        <button type="button" id="copy-result-button">复制</button>
+                    </div>
+                    <div id="copyable_output" class="copyable-output"></div>
+                </div>
+                <div class="result-card result-card-wide">
+                    <div class="result-card-title">函数图像</div>
+                    <canvas id="plot_canvas" width="900" height="360"></canvas>
+                    <div id="plot_status">暂无可绘制图像。</div>
+                    <div id="plot_data"></div>
+                </div>
+                <div class="result-card result-card-wide">
+                    <div class="result-card-title">
+                        <span>历史记录</span>
+                        <button type="button" id="clear-history-button">清空</button>
+                    </div>
+                    <div id="history_list">暂无历史记录。</div>
+                </div>
             </div>
             <div id="latexCode"></div>
         </section>
@@ -865,51 +1304,43 @@
 
 
         <div id="main">
-            <article id="chem_w">
-                <h2 class="major">化学方程式</h2>
-                <a href="https://chemequations.com/zh/" target="_blank">页面仅预览,如遇尺寸问题请点击我</a>
-                <br />
-                <iframe src="https://chemequations.com/zh/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://chemequations.com/zh/">嵌入式页面,如加载失败请点击我</a></iframe>
-            </article>
-            
-            <article id="chem_tool">
-                <h2 class="major">化学工具箱</h2>
-                <br />
-                <p><a href="./bin/chem_solver.py" download>点击下载化学工具箱的源代码</a></p>
-                <p>requirements: sympy, pyscript, chempy</p>
-                <br />
-                <img src="./img/chem_solver.png" alt="化学工具箱界面截图" style="width: 100%; height: 100%; object-fit: cover;">
-            </article>
-
             <article id="settings">
-                <h2 class="major">设置</h2>
-                <h3 class="major">实验性功能</h3>
-                <div class="field half">
-                    <input type="radio" id="use_python_syntax" name="use_syntax" checked>
-                    <label for="use_python_syntax">使用 python 语法</label>
-                </div> <br />
-                <div class="field half">
-                    <input type="radio" id="use_Latex_syntax" name="use_syntax">
-                    <label for="use_Latex_syntax">使用 Latex 语法 (针对方程式) </label>
-                </div>
-                <br />
+                <h2 class="major">偏好</h2>
                 <div class="field half">
                     <input type="checkbox" id="remember_select" name="remember_select" checked>
-                    <label for="remember_select">在浏览器中记住我的选择. </label>
+                    <label for="remember_select">记住上次使用的计算模式</label>
                 </div>
+                <p>结果历史会保存在当前浏览器中，可以在结果区清空。</p>
             </article>
 
-            <article id="developer">
-                <h2 class="major">开发者</h2>
-                <p>你可以在下方执行任意 python3 代码. 这可能很危险. 请在浏览器控制台查看结果.</p>
-                <div id="py-console">
-                    <textarea id="console_inputer" placeholder="请输入..." rows="10" cols="10" class="textbox"></textarea>
-                    <button py-click="runsrc_console">执行</button>
-                    <div id="console_output"></div>
-                </div>
-                
-                    
-
+            <article id="quick_reference">
+                <h2 class="major">指南</h2>
+                <h3 class="major">智能输入</h3>
+                <pre><code>solve x,y: x + y = 3; x - y = 1
+help solve
+solve x: x**2 = 1 where x positive
+diff x: sin(x)
+integrate x from 0 to 1: x**2
+limit x to 0: sin(x)/x
+series x at 0 order 6: sin(x)
+nsolve x near 1: cos(x) - x
+solveset x in Reals: sin(x) = 0
+solve_inequality x: x**2 - 1 > 0
+laplace t,s: sin(t)
+inverse_laplace s,t: 1/(s**2 + 1)
+nonlinsolve x,y: x**2 + y**2 = 1; x - y = 0
+groebner x,y: x**2 + y**2 - 1; x - y
+matrix A = [[1, 2], [3, 4]]
+calc A.det()</code></pre>
+                <h3 class="major">变量条件</h3>
+                <pre><code>where x real
+where n integer
+where x positive
+where x nonnegative</code></pre>
+                <h3 class="major">快捷键</h3>
+                <pre><code>Ctrl/Command + Enter 计算
+Tab/Enter 接受智能输入补全
+Esc 关闭补全</code></pre>
             </article>
 
             <article id="domain_name">
@@ -957,8 +1388,76 @@
         
 
     
-    <script type="py" src="./function_solver.py"></script>
+    <script type="py" src="./function_solver.py?v=20260718-help-matrix-autocomplete-2"></script>
     <script>
+        function openArticleModal(articleId) {
+            const main = document.getElementById('main');
+            const target = document.getElementById(articleId);
+            if (!main || !target || target.parentElement !== main) return false;
+
+            main.querySelectorAll('article').forEach(function (article) {
+                const isTarget = article === target;
+                article.classList.toggle('active', isTarget);
+                article.style.display = isTarget ? 'block' : 'none';
+            });
+            main.style.display = 'grid';
+            document.body.classList.add('is-article-visible');
+            return true;
+        }
+
+        function closeArticleModal() {
+            const main = document.getElementById('main');
+            if (!main) return;
+            main.querySelectorAll('article').forEach(function (article) {
+                article.classList.remove('active');
+                article.style.display = 'none';
+            });
+            main.style.display = 'none';
+            document.body.classList.remove('is-article-visible');
+            if (window.location.hash && main.querySelector(window.location.hash)) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+        }
+
+        window.openArticleModal = openArticleModal;
+        window.closeArticleModal = closeArticleModal;
+
+        document.addEventListener('click', function (event) {
+            const articleButton = event.target.closest('[data-article-target]');
+            if (articleButton) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                openArticleModal(articleButton.dataset.articleTarget);
+                return;
+            }
+
+            const closeControl = event.target.closest('#main .close');
+            if (closeControl) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                closeArticleModal();
+                return;
+            }
+
+            const link = event.target.closest('a[href^="#"]');
+            if (!link) return;
+            const articleId = link.getAttribute('href').slice(1);
+            if (openArticleModal(articleId)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
+        document.getElementById('main')?.addEventListener('click', function (event) {
+            if (event.target === event.currentTarget) closeArticleModal();
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && document.body.classList.contains('is-article-visible')) {
+                closeArticleModal();
+            }
+        });
+
         const contentSelector = document.getElementById('cal-select');
         const contents = document.querySelectorAll('.solver-mode');
         const rememberSelect = document.getElementById('remember_select');
@@ -1002,11 +1501,21 @@
         }
 
         const smartInput = document.getElementById('smart_inputer');
+        const smartInputClear = document.getElementById('smart-input-clear');
         const visualBuilder = document.getElementById('visual-builder');
         const visualToggleButton = document.getElementById('visual-toggle-button');
 
         function normalizeBuilderLine(value) {
             return String(value || '').trim();
+        }
+
+        function normalizeMatrixName(value) {
+            const name = normalizeBuilderLine(value);
+            return /^[A-Za-z]\w*$/.test(name) ? name : 'A';
+        }
+
+        function escapeRegExp(value) {
+            return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
         function setSmartInput(command, append) {
@@ -1029,6 +1538,14 @@
 
         document.getElementById('smart-template-button')?.addEventListener('click', function () {
             setSmartInput('solve x: x + 1 = 0', false);
+        });
+
+        smartInputClear?.addEventListener('click', function () {
+            if (!smartInput) return;
+            smartInput.value = '';
+            closeAutocomplete();
+            document.getElementById('parse_preview').innerText = '解析预览会显示在这里。';
+            smartInput.focus();
         });
 
         visualToggleButton?.addEventListener('click', function () {
@@ -1084,10 +1601,20 @@
         }
 
         function parsePastedMatrix(text) {
-            return String(text || '')
-                .trim()
-                .split(';')
-                .map((row) => row.trim().split(/[\s,]+/).filter(Boolean));
+            const trimmed = String(text || '').trim();
+            if (!trimmed) return [];
+            const rowTexts = trimmed.startsWith('[[')
+                ? trimmed.replace(/^\s*\[\s*/, '').replace(/\s*\]\s*$/, '').split(/\]\s*,\s*\[/)
+                : trimmed.replace(/\r/g, '').split(/[;\n]+/);
+            return rowTexts
+                .map((row) => row.trim().replace(/^\[+/, '').replace(/\]+$/, ''))
+                .map((row) => {
+                    if (row.includes(',')) {
+                        return row.split(',').map(normalizeBuilderLine).filter(Boolean);
+                    }
+                    return row.split(/\s+/).map(normalizeBuilderLine).filter(Boolean);
+                })
+                .filter((row) => row.length);
         }
 
         function fillMatrixGridFromRows(rows) {
@@ -1103,6 +1630,10 @@
             });
         }
 
+        function matrixRowsToLiteral(rows) {
+            return '[' + rows.map((row) => '[' + row.join(', ') + ']').join(', ') + ']';
+        }
+
         document.getElementById('builder-matrix-rows')?.addEventListener('change', renderMatrixGrid);
         document.getElementById('builder-matrix-cols')?.addEventListener('change', renderMatrixGrid);
         document.getElementById('builder-matrix-apply-paste')?.addEventListener('click', function () {
@@ -1111,6 +1642,114 @@
         });
 
         renderMatrixGrid();
+
+        function renderLegacyMatrixGrid() {
+            const rowsInput = document.getElementById('legacy-matrix-rows');
+            const colsInput = document.getElementById('legacy-matrix-cols');
+            const table = document.getElementById('legacy-matrix-table');
+            if (!rowsInput || !colsInput || !table) return;
+
+            const rows = Math.max(1, Math.min(8, Number(rowsInput.value) || 1));
+            const cols = Math.max(1, Math.min(8, Number(colsInput.value) || 1));
+            rowsInput.value = String(rows);
+            colsInput.value = String(cols);
+            table.innerHTML = '';
+
+            for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+                const row = document.createElement('div');
+                row.className = 'matrix-row';
+                row.style.gridTemplateColumns = `repeat(${cols}, minmax(4.5rem, 1fr))`;
+                for (let colIndex = 0; colIndex < cols; colIndex += 1) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'matrix-cell';
+                    input.value = rowIndex === colIndex ? '1' : '0';
+                    input.dataset.row = String(rowIndex);
+                    input.dataset.col = String(colIndex);
+                    row.appendChild(input);
+                }
+                table.appendChild(row);
+            }
+        }
+
+        function fillLegacyMatrixGridFromRows(rows) {
+            if (!rows.length || !rows[0].length) return;
+            document.getElementById('legacy-matrix-rows').value = String(rows.length);
+            document.getElementById('legacy-matrix-cols').value = String(rows[0].length);
+            renderLegacyMatrixGrid();
+            rows.forEach(function (row, rowIndex) {
+                row.forEach(function (value, colIndex) {
+                    const cell = document.querySelector(`#legacy-matrix-table .matrix-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                    if (cell) cell.value = value;
+                });
+            });
+        }
+
+        function getMatrixRowsFromTable(tableId) {
+            return Array.from(document.querySelectorAll(`#${tableId} .matrix-row`)).map(function (row) {
+                return Array.from(row.querySelectorAll('.matrix-cell')).map(function (cell) {
+                    return normalizeBuilderLine(cell.value) || '0';
+                });
+            });
+        }
+
+        function upsertMatrixDefinition(currentText, name, definition) {
+            if (normalizeBuilderLine(currentText) && !/^\s*(?:matrix\s+)?[A-Za-z]\w*\s*[:=]/m.test(currentText)) {
+                return definition;
+            }
+            const lines = String(currentText || '').split(/\n+/);
+            const pattern = new RegExp(`^\\s*(?:matrix\\s+)?${escapeRegExp(name)}\\s*[:=]`);
+            let replaced = false;
+            const nextLines = lines.map(function (line) {
+                if (!replaced && pattern.test(line)) {
+                    replaced = true;
+                    return definition;
+                }
+                return line;
+            }).filter((line) => line.trim());
+            if (!replaced) nextLines.push(definition);
+            return nextLines.join('\n');
+        }
+
+        document.getElementById('legacy-matrix-rows')?.addEventListener('change', renderLegacyMatrixGrid);
+        document.getElementById('legacy-matrix-cols')?.addEventListener('change', renderLegacyMatrixGrid);
+        document.getElementById('legacy-matrix-apply-paste')?.addEventListener('click', function () {
+            const text = document.getElementById('legacy-matrix-paste').value;
+            fillLegacyMatrixGridFromRows(parsePastedMatrix(text));
+        });
+        document.getElementById('legacy-matrix-add')?.addEventListener('click', function () {
+            const name = normalizeMatrixName(document.getElementById('legacy-matrix-name').value);
+            const rows = getMatrixRowsFromTable('legacy-matrix-table');
+            const definition = `${name} = ${matrixRowsToLiteral(rows)}`;
+            const matrixInput = document.getElementById('mat_inputer');
+            const expressionInput = document.getElementById('mat_cal');
+            matrixInput.value = upsertMatrixDefinition(matrixInput.value, name, definition);
+            if (!normalizeBuilderLine(expressionInput.value)) {
+                expressionInput.value = `${name}.det()`;
+            }
+            matrixInput.focus();
+        });
+        document.getElementById('legacy-matrix-clear')?.addEventListener('click', function () {
+            document.getElementById('mat_inputer').value = '';
+        });
+
+        renderLegacyMatrixGrid();
+
+        function matrixShortcutExpression(name, operation) {
+            if (operation === 'T') return `${name}.T`;
+            return `${name}.${operation}()`;
+        }
+
+        document.querySelectorAll('[data-matrix-shortcut]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const nameInput = document.getElementById(button.dataset.matrixNameInput);
+                const expressionInput = document.getElementById(button.dataset.matrixExpressionInput);
+                if (!expressionInput) return;
+                const name = normalizeMatrixName(nameInput?.value || 'A');
+                expressionInput.value = matrixShortcutExpression(name, button.dataset.matrixShortcut);
+                expressionInput.focus();
+            });
+        });
 
         function buildEquationCommand() {
             const vars = normalizeBuilderLine(document.getElementById('builder-equation-vars').value);
@@ -1122,14 +1761,14 @@
         }
 
         function buildMatrixCommand() {
-            const name = normalizeBuilderLine(document.getElementById('builder-matrix-name').value) || 'A';
+            const name = normalizeMatrixName(document.getElementById('builder-matrix-name').value);
             const expression = normalizeBuilderLine(document.getElementById('builder-matrix-expression').value) || `${name}.det()`;
             const rows = Array.from(document.querySelectorAll('#builder-matrix-table .matrix-row')).map(function (row) {
                 return Array.from(row.querySelectorAll('.matrix-cell')).map(function (cell) {
                     return normalizeBuilderLine(cell.value) || '0';
                 });
             });
-            const matrixLiteral = '[' + rows.map((row) => '[' + row.join(', ') + ']').join(', ') + ']';
+            const matrixLiteral = matrixRowsToLiteral(rows);
             return `matrix ${name} = ${matrixLiteral}\ncalc ${expression}`;
         }
 
@@ -1159,13 +1798,67 @@
             return `${operation}: ${expression}`;
         }
 
+        function buildAdvancedCommand() {
+            const operation = document.getElementById('builder-advanced-op').value;
+            const variables = normalizeBuilderLine(document.getElementById('builder-advanced-vars').value) || 'x';
+            const parameter = normalizeBuilderLine(document.getElementById('builder-advanced-param').value);
+            const target = normalizeBuilderLine(document.getElementById('builder-advanced-target').value);
+            const expression = normalizeBuilderLine(document.getElementById('builder-advanced-expression').value);
+
+            if (operation === 'limit') {
+                return `limit ${variables} to ${parameter || '0'}: ${expression}`;
+            }
+            if (operation === 'series') {
+                return `series ${variables} at ${parameter || '0'} order ${target || '6'}: ${expression}`;
+            }
+            if (operation === 'nsolve') {
+                return `nsolve ${variables} near ${parameter || '1'}: ${expression}`;
+            }
+            if (operation === 'solveset') {
+                return `solveset ${variables} in ${parameter || 'Reals'}: ${expression}`;
+            }
+            if (operation === 'laplace') {
+                return `laplace ${variables},${target || 's'}: ${expression}`;
+            }
+            if (operation === 'inverse_laplace') {
+                return `inverse_laplace ${variables},${target || 't'}: ${expression}`;
+            }
+            return `${operation} ${variables}: ${expression}`;
+        }
+
+        const advancedBuilderPresets = {
+            limit: { variables: 'x', parameter: '0', target: '', expression: 'sin(x)/x' },
+            series: { variables: 'x', parameter: '0', target: '6', expression: 'sin(x)' },
+            nsolve: { variables: 'x', parameter: '1', target: '', expression: 'cos(x) - x' },
+            solveset: { variables: 'x', parameter: 'Reals', target: '', expression: 'sin(x) = 0' },
+            solve_inequality: { variables: 'x', parameter: '', target: '', expression: 'x**2 - 1 > 0' },
+            reduce_inequalities: { variables: 'x', parameter: '', target: '', expression: 'x**2 - 1 > 0\nx < 5' },
+            roots: { variables: 'x', parameter: '', target: '', expression: 'x**3 - 1' },
+            factor_list: { variables: 'x', parameter: '', target: '', expression: 'x**4 - 1' },
+            laplace: { variables: 't', parameter: '', target: 's', expression: 'sin(t)' },
+            inverse_laplace: { variables: 's', parameter: '', target: 't', expression: '1/(s**2 + 1)' },
+            linsolve: { variables: 'x,y', parameter: '', target: '', expression: 'x + y = 3\nx - y = 1' },
+            nonlinsolve: { variables: 'x,y', parameter: '', target: '', expression: 'x**2 + y**2 = 1\nx - y = 0' },
+            groebner: { variables: 'x,y', parameter: '', target: '', expression: 'x**2 + y**2 - 1\nx - y' }
+        };
+
+        document.getElementById('builder-advanced-op')?.addEventListener('change', function () {
+            const preset = advancedBuilderPresets[this.value];
+            if (!preset) return;
+            document.getElementById('builder-advanced-vars').value = preset.variables;
+            document.getElementById('builder-advanced-param').value = preset.parameter;
+            document.getElementById('builder-advanced-target').value = preset.target;
+            document.getElementById('builder-advanced-expression').value = preset.expression;
+        });
+
         function buildCommand(kind) {
             const builders = {
                 equation: buildEquationCommand,
                 matrix: buildMatrixCommand,
                 integral: buildIntegralCommand,
                 sum: buildSumCommand,
-                expression: buildExpressionCommand
+                expression: buildExpressionCommand,
+                advanced: buildAdvancedCommand
             };
             return builders[kind] ? builders[kind]() : '';
         }
@@ -1180,11 +1873,500 @@
             });
         });
 
+        function activeModeInputValue() {
+            const mode = contentSelector.value;
+            const selectors = {
+                smart_input: '#smart_inputer',
+                func_sol: '#inputer',
+                mult_func_sol: '#mul_inputer',
+                summation: '#sum_inputer',
+                matrix: '#mat_inputer',
+                der: '#func_inputer',
+                integrals: '#inte_inputer',
+                simple_sol: '#simple_inputer',
+                latex_test: '#latex_test_inputer',
+                func_high: '#high_inputer'
+            };
+            const input = document.querySelector(selectors[mode] || '#smart_inputer');
+            return input?.value || '';
+        }
+
+        function restoreModeInput(mode, value) {
+            contentSelector.value = mode;
+            showSelectedMode(mode);
+            const selectors = {
+                smart_input: '#smart_inputer',
+                func_sol: '#inputer',
+                mult_func_sol: '#mul_inputer',
+                summation: '#sum_inputer',
+                matrix: '#mat_inputer',
+                der: '#func_inputer',
+                integrals: '#inte_inputer',
+                simple_sol: '#simple_inputer',
+                latex_test: '#latex_test_inputer',
+                func_high: '#high_inputer'
+            };
+            const input = document.querySelector(selectors[mode] || '#smart_inputer');
+            if (input) {
+                input.value = value;
+                input.focus();
+            }
+        }
+
+        function readHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('easy-math-solver-history') || '[]');
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function writeHistory(items) {
+            localStorage.setItem('easy-math-solver-history', JSON.stringify(items.slice(0, 20)));
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history_list');
+            if (!list) return;
+            const items = readHistory();
+            if (!items.length) {
+                list.textContent = '暂无历史记录。';
+                return;
+            }
+            list.innerHTML = '';
+            items.forEach(function (item) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'history-item';
+                const mode = document.createElement('strong');
+                const result = document.createElement('span');
+                const input = document.createElement('small');
+                mode.textContent = item.mode;
+                result.textContent = item.result;
+                input.textContent = item.input;
+                button.append(mode, result, input);
+                button.addEventListener('click', function () {
+                    restoreModeInput(item.mode, item.input);
+                });
+                list.appendChild(button);
+            });
+        }
+
+        function scheduleHistoryRecord() {
+            window.clearTimeout(window.easyMathHistoryTimer);
+            window.easyMathHistoryTimer = window.setTimeout(function () {
+                if (document.getElementById('output')?.dataset.resultKind === 'help') return;
+                const result = normalizeBuilderLine(document.getElementById('output')?.innerText || '');
+                const input = normalizeBuilderLine(activeModeInputValue());
+                if (!result || !input || result === '请选择一种计算模式并输入内容。') return;
+                const mode = contentSelector.value;
+                const nextItem = {
+                    mode,
+                    input,
+                    result: result.slice(0, 180),
+                    time: new Date().toISOString()
+                };
+                const previous = readHistory().filter(function (item) {
+                    return !(item.mode === nextItem.mode && item.input === nextItem.input && item.result === nextItem.result);
+                });
+                writeHistory([nextItem].concat(previous));
+                renderHistory();
+            }, 250);
+        }
+
+        function drawPlot(payload) {
+            const canvas = document.getElementById('plot_canvas');
+            const status = document.getElementById('plot_status');
+            if (!canvas || !status) return;
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            if (!payload || !Array.isArray(payload.points) || payload.points.length < 2) {
+                status.textContent = '暂无可绘制图像。';
+                return;
+            }
+
+            const points = payload.points;
+            const xs = points.map((point) => point[0]);
+            const ys = points.map((point) => point[1]);
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            let minY = Math.min(...ys);
+            let maxY = Math.max(...ys);
+            if (minY === maxY) {
+                minY -= 1;
+                maxY += 1;
+            }
+            const pad = 28;
+            const width = canvas.width - pad * 2;
+            const height = canvas.height - pad * 2;
+            const dataWidth = maxX - minX || 1;
+            const dataHeight = maxY - minY || 1;
+            const pixelsPerUnit = Math.min(width / dataWidth, height / dataHeight);
+            const viewWidth = width / pixelsPerUnit;
+            const viewHeight = height / pixelsPerUnit;
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const viewMinX = centerX - viewWidth / 2;
+            const viewMaxX = centerX + viewWidth / 2;
+            const viewMinY = centerY - viewHeight / 2;
+            const viewMaxY = centerY + viewHeight / 2;
+            const xScale = (x) => pad + (x - viewMinX) * pixelsPerUnit;
+            const yScale = (y) => canvas.height - pad - (y - viewMinY) * pixelsPerUnit;
+
+            context.strokeStyle = 'rgba(255,255,255,0.18)';
+            context.lineWidth = 1;
+            context.beginPath();
+            if (viewMinY <= 0 && viewMaxY >= 0) {
+                const y0 = yScale(0);
+                context.moveTo(pad, y0);
+                context.lineTo(canvas.width - pad, y0);
+            }
+            if (viewMinX <= 0 && viewMaxX >= 0) {
+                const x0 = xScale(0);
+                context.moveTo(x0, pad);
+                context.lineTo(x0, canvas.height - pad);
+            }
+            context.stroke();
+
+            context.strokeStyle = '#7dd3fc';
+            context.lineWidth = 2;
+            context.beginPath();
+            points.forEach(function (point, index) {
+                const x = xScale(point[0]);
+                const y = yScale(point[1]);
+                if (index === 0) context.moveTo(x, y);
+                else context.lineTo(x, y);
+            });
+            context.stroke();
+            status.textContent = `${payload.title || '函数图像'}：${payload.variable || 'x'} ∈ [${minX}, ${maxX}]，x/y 等比例`;
+        }
+
+        function renderPlotFromData() {
+            const dataElement = document.getElementById('plot_data');
+            const text = dataElement?.innerText || '';
+            if (!text.trim()) {
+                drawPlot(null);
+                return;
+            }
+            try {
+                drawPlot(JSON.parse(text));
+            } catch (error) {
+                drawPlot(null);
+            }
+        }
+
+        function looksLikeRunnableCommand(line) {
+            return /^(help|solve|diff|integrate|sum|limit|series|nsolve|solveset|roots|solve_inequality|reduce_inequalities|factor_list|laplace|inverse_laplace|linsolve|nonlinsolve|groebner|matrix|calc|simplify|expand|factor|trigsimp|expand_trig|apart|together|cancel)\b/.test(line);
+        }
+
+        function insertHelpExample(command) {
+            setSmartInput(command, false);
+            closeAutocomplete();
+            smartInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            window.setTimeout(function () {
+                smartInput?.focus();
+            }, 250);
+        }
+
+        function renderHelpOutput(output) {
+            if (!output || output.dataset.helpRendered === 'true') return;
+            const text = output.innerText || output.textContent || '';
+            const lines = text.split(/\n/);
+            const container = document.createElement('div');
+            container.className = 'help-output';
+            let inExamples = false;
+
+            lines.forEach(function (line) {
+                const trimmed = line.trim();
+                if (trimmed === '示例：') {
+                    inExamples = true;
+                } else if (trimmed && !/^\s/.test(line)) {
+                    inExamples = false;
+                }
+
+                if (inExamples && /^\s/.test(line) && looksLikeRunnableCommand(trimmed)) {
+                    const row = document.createElement('div');
+                    row.className = 'help-example-line';
+                    const code = document.createElement('code');
+                    code.textContent = trimmed;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'help-insert-button';
+                    button.textContent = '↑';
+                    button.title = '插入到智能输入';
+                    button.setAttribute('aria-label', '插入示例到智能输入');
+                    button.addEventListener('click', function () {
+                        insertHelpExample(trimmed);
+                    });
+                    row.append(code, button);
+                    container.appendChild(row);
+                    return;
+                }
+
+                const lineElement = document.createElement('div');
+                lineElement.className = 'help-output-line';
+                lineElement.textContent = line || ' ';
+                container.appendChild(lineElement);
+            });
+
+            output.dataset.helpRendered = 'true';
+            output.replaceChildren(container);
+        }
+
+        function renderResultPresentation() {
+            const output = document.getElementById('output');
+            const resultsPanel = document.querySelector('.results-panel');
+            if (!output || !resultsPanel) return;
+            const isHelp = output.dataset.resultKind === 'help';
+            resultsPanel.classList.toggle('is-help-result', isHelp);
+            if (isHelp) {
+                renderHelpOutput(output);
+            } else {
+                output.dataset.helpRendered = 'false';
+            }
+        }
+
+        new MutationObserver(function () {
+            renderResultPresentation();
+            scheduleHistoryRecord();
+        }).observe(document.getElementById('output'), {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+        new MutationObserver(renderPlotFromData).observe(document.getElementById('plot_data'), {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+        document.getElementById('clear-history-button')?.addEventListener('click', function () {
+            writeHistory([]);
+            renderHistory();
+        });
+        renderHistory();
+        renderPlotFromData();
+
+        const commandCompletions = [
+            { label: 'help', insert: 'help ', detail: '查看命令用法' },
+            { label: 'solve', insert: 'solve ', detail: '解方程或方程组' },
+            { label: 'matrix', insert: 'matrix ', detail: '定义矩阵' },
+            { label: 'calc', insert: 'calc ', detail: '计算矩阵表达式' },
+            { label: 'diff', insert: 'diff ', detail: '求导' },
+            { label: 'integrate', insert: 'integrate ', detail: '积分' },
+            { label: 'sum', insert: 'sum ', detail: '求和' },
+            { label: 'limit', insert: 'limit ', detail: '极限' },
+            { label: 'series', insert: 'series ', detail: '泰勒/幂级数展开' },
+            { label: 'nsolve', insert: 'nsolve ', detail: '数值求解' },
+            { label: 'solveset', insert: 'solveset ', detail: '集合求解' },
+            { label: 'roots', insert: 'roots ', detail: '多项式根和重数' },
+            { label: 'solve_inequality', insert: 'solve_inequality ', detail: '单变量不等式' },
+            { label: 'reduce_inequalities', insert: 'reduce_inequalities ', detail: '不等式组化简' },
+            { label: 'factor_list', insert: 'factor_list ', detail: '因式和重数' },
+            { label: 'laplace', insert: 'laplace ', detail: 'Laplace 变换' },
+            { label: 'inverse_laplace', insert: 'inverse_laplace ', detail: '逆 Laplace 变换' },
+            { label: 'linsolve', insert: 'linsolve ', detail: '线性方程组解集' },
+            { label: 'nonlinsolve', insert: 'nonlinsolve ', detail: '非线性方程组解集' },
+            { label: 'groebner', insert: 'groebner ', detail: '多项式系统 Groebner 基' },
+            { label: 'simplify', insert: 'simplify: ', detail: '化简表达式' },
+            { label: 'expand', insert: 'expand: ', detail: '展开多项式' },
+            { label: 'factor', insert: 'factor: ', detail: '因式分解' },
+            { label: 'trigsimp', insert: 'trigsimp: ', detail: '三角化简' },
+            { label: 'expand_trig', insert: 'expand_trig: ', detail: '三角展开' },
+            { label: 'apart', insert: 'apart: ', detail: '部分分式展开' },
+            { label: 'together', insert: 'together: ', detail: '通分合并' },
+            { label: 'cancel', insert: 'cancel: ', detail: '有理式约分' }
+        ];
+        const matrixMethodCompletions = [
+            { method: 'det', suffix: 'det()', detail: '行列式' },
+            { method: 'inv', suffix: 'inv()', detail: '逆矩阵' },
+            { method: 'T', suffix: 'T', detail: '转置' },
+            { method: 'transpose', suffix: 'transpose()', detail: '转置' },
+            { method: 'rref', suffix: 'rref()', detail: '行最简形' },
+            { method: 'eigenvals', suffix: 'eigenvals()', detail: '特征值' },
+            { method: 'eigenvects', suffix: 'eigenvects()', detail: '特征向量' }
+        ];
+        const autocompleteBox = document.getElementById('smart-autocomplete');
+        let activeCompletionIndex = 0;
+        let activeCompletionMatches = [];
+
+        function definedMatrixNames() {
+            if (!smartInput) return [];
+            const names = new Set();
+            const pattern = /^\s*matrix\s+([A-Za-z]\w*)\s*=/gm;
+            let match;
+            while ((match = pattern.exec(smartInput.value)) !== null) {
+                names.add(match[1]);
+            }
+            return Array.from(names);
+        }
+
+        function commandTokenAtCursor() {
+            if (!smartInput) return null;
+            const cursor = smartInput.selectionStart || 0;
+            const before = smartInput.value.slice(0, cursor);
+            const lineStart = Math.max(before.lastIndexOf('\n') + 1, 0);
+            const linePrefix = before.slice(lineStart);
+            const matrixMatch = linePrefix.match(/([A-Za-z]\w*)\.([A-Za-z_]*)$/);
+            if (matrixMatch) {
+                return {
+                    context: 'matrix-method',
+                    matrixName: matrixMatch[1],
+                    token: matrixMatch[2],
+                    start: lineStart + linePrefix.length - matrixMatch[2].length,
+                    end: cursor
+                };
+            }
+            const helpMatch = linePrefix.match(/^\s*help\s+([A-Za-z_]*)$/);
+            if (helpMatch) {
+                return {
+                    context: 'help',
+                    token: helpMatch[1],
+                    start: lineStart + linePrefix.length - helpMatch[1].length,
+                    end: cursor
+                };
+            }
+            const match = linePrefix.match(/^\s*([A-Za-z_][A-Za-z_]*)$/);
+            if (!match) return null;
+            return {
+                context: 'command',
+                token: match[1],
+                start: lineStart + linePrefix.indexOf(match[1]),
+                end: cursor
+            };
+        }
+
+        function closeAutocomplete() {
+            activeCompletionMatches = [];
+            activeCompletionIndex = 0;
+            autocompleteBox?.classList.remove('is-open');
+            if (autocompleteBox) autocompleteBox.innerHTML = '';
+        }
+
+        function renderAutocomplete(matches) {
+            if (!autocompleteBox) return;
+            autocompleteBox.innerHTML = '';
+            matches.forEach(function (match, index) {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item' + (index === activeCompletionIndex ? ' is-active' : '');
+                item.setAttribute('role', 'option');
+                const label = document.createElement('strong');
+                const detail = document.createElement('span');
+                label.textContent = match.label;
+                detail.className = 'autocomplete-detail';
+                detail.textContent = match.detail;
+                item.append(label, detail);
+                item.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    activeCompletionIndex = index;
+                    acceptAutocomplete();
+                });
+                autocompleteBox.appendChild(item);
+            });
+            autocompleteBox.classList.toggle('is-open', matches.length > 0);
+        }
+
+        function updateAutocomplete() {
+            const tokenInfo = commandTokenAtCursor();
+            if (!tokenInfo || (tokenInfo.token.length < 1 && !['help', 'matrix-method'].includes(tokenInfo.context))) {
+                closeAutocomplete();
+                return;
+            }
+            const token = tokenInfo.token.toLowerCase();
+            let source;
+            if (tokenInfo.context === 'help') {
+                source = commandCompletions
+                    .filter((item) => item.label !== 'help' && item.label !== 'calc')
+                    .map((item) => ({ label: item.label, insert: item.label, detail: item.detail }))
+                    .concat(matrixMethodCompletions.map((item) => ({
+                        label: item.method,
+                        insert: item.method,
+                        detail: item.detail
+                    })));
+            } else if (tokenInfo.context === 'matrix-method') {
+                if (!definedMatrixNames().includes(tokenInfo.matrixName)) {
+                    closeAutocomplete();
+                    return;
+                }
+                source = matrixMethodCompletions.map((item) => ({
+                    label: tokenInfo.matrixName + '.' + item.suffix,
+                    insert: item.suffix,
+                    detail: item.detail
+                }));
+            } else {
+                source = commandCompletions;
+            }
+            const exact = tokenInfo.context !== 'matrix-method' && source.some((item) => item.label === token);
+            const matches = source.filter((item) => {
+                const labelForMatch = tokenInfo.context === 'matrix-method'
+                    ? item.insert.replace(/\(\)$/, '').toLowerCase()
+                    : item.label.toLowerCase();
+                if (!labelForMatch.startsWith(token)) return false;
+                if (tokenInfo.context === 'matrix-method') {
+                    return item.insert.toLowerCase() !== token;
+                }
+                return labelForMatch !== token;
+            });
+            if (exact || !matches.length) {
+                closeAutocomplete();
+                return;
+            }
+            activeCompletionMatches = matches;
+            activeCompletionIndex = Math.min(activeCompletionIndex, matches.length - 1);
+            renderAutocomplete(matches);
+        }
+
+        function acceptAutocomplete() {
+            const tokenInfo = commandTokenAtCursor();
+            const completion = activeCompletionMatches[activeCompletionIndex];
+            if (!tokenInfo || !completion || !smartInput) return false;
+            smartInput.value = smartInput.value.slice(0, tokenInfo.start) + completion.insert + smartInput.value.slice(tokenInfo.end);
+            const cursor = tokenInfo.start + completion.insert.length;
+            smartInput.setSelectionRange(cursor, cursor);
+            closeAutocomplete();
+            return true;
+        }
+
+        function moveAutocomplete(delta) {
+            if (!activeCompletionMatches.length) return false;
+            activeCompletionIndex = (activeCompletionIndex + delta + activeCompletionMatches.length) % activeCompletionMatches.length;
+            renderAutocomplete(activeCompletionMatches);
+            return true;
+        }
+
         smartInput?.addEventListener('keydown', function (event) {
+            if (activeCompletionMatches.length) {
+                if (event.key === 'Tab' || event.key === 'Enter') {
+                    event.preventDefault();
+                    acceptAutocomplete();
+                    return;
+                }
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    moveAutocomplete(1);
+                    return;
+                }
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    moveAutocomplete(-1);
+                    return;
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeAutocomplete();
+                    return;
+                }
+            }
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
                 event.preventDefault();
                 clickPyButtonByText('计算');
             }
+        });
+        smartInput?.addEventListener('input', updateAutocomplete);
+        smartInput?.addEventListener('keyup', function (event) {
+            if (!['ArrowDown', 'ArrowUp', 'Tab', 'Enter', 'Escape'].includes(event.key)) updateAutocomplete();
+        });
+        smartInput?.addEventListener('blur', function () {
+            window.setTimeout(closeAutocomplete, 120);
         });
 
         document.getElementById('latex_test_inputer').addEventListener('input', function() {
