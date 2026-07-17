@@ -1,10 +1,12 @@
 <!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Easy Math Solver 是一个基于 PyScript 和 SymPy 的浏览器数学工具。" />
     <!-- <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.2/core.css"/> -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/main.css" />
-	<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/assets/css/noscript.css" /></noscript>
+    <link rel="stylesheet" href="/assets/css/main.css" />
+	<noscript><link rel="stylesheet" href="/assets/css/noscript.css" /></noscript>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.6.2/core.js"></script>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.6.2/xterm.css">
@@ -12,19 +14,37 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <title>Easy Math Solver</title>
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            window.setTimeout(function () {
+                document.body.classList.remove("is-preload");
+            }, 100);
+        });
+
         function renderLatex() {
-            var latexCode = document.getElementById("latexCode").innerText;
-            console.log(latexCode);
+            var latexCode = document.getElementById("latexCode").innerText.trim();
             var outputDiv = document.getElementById("latexDiv");
-            outputDiv.innerHTML = ""; 
-            var latexDiv = document.createElement("latexOut");
+            outputDiv.innerHTML = "";
+
+            if (!latexCode) {
+                outputDiv.textContent = "暂无可渲染的 Latex 内容。";
+                return;
+            }
+
+            var latexDiv = document.createElement("div");
+            latexDiv.className = "latex-output";
             latexDiv.textContent = latexCode;
-            MathJax.texReset();
-            MathJax.typesetClear();
+            outputDiv.appendChild(latexDiv);
+
+            if (!window.MathJax || !MathJax.typesetPromise) {
+                outputDiv.textContent = latexCode;
+                return;
+            }
+
+            if (MathJax.texReset) MathJax.texReset();
+            if (MathJax.typesetClear) MathJax.typesetClear([latexDiv]);
             MathJax.typesetPromise([latexDiv]).catch(function (err) {
                 outputDiv.textContent = err.message;
             });
-            outputDiv.appendChild(latexDiv);
         }
     </script>
     <!-- hitokoto -->
@@ -40,7 +60,7 @@
             })
             .catch(error => {
                 console.error("Error fetching the Hitokoto:", error);
-                container.textContent = "Failed to load the Hitokoto.";
+                container.textContent = "把复杂的计算留给浏览器，把思路留给自己。";
             });
     });
 
@@ -49,37 +69,300 @@
         }
     </script>
     <style>
+        :root {
+            --solver-surface: rgba(18, 23, 27, 0.78);
+            --solver-surface-strong: rgba(24, 31, 36, 0.92);
+            --solver-border: rgba(255, 255, 255, 0.2);
+            --solver-border-soft: rgba(255, 255, 255, 0.12);
+            --solver-text-muted: rgba(255, 255, 255, 0.72);
+            --solver-accent: #7dd3fc;
+            --solver-accent-strong: #2dd4bf;
+            --solver-radius: 12px;
+        }
+
         .hidden {
-            display: none;
+            display: none !important;
         }
+
+        body.is-preload #header > * {
+            opacity: 1;
+        }
+
+        #header,
+        #header *,
+        .top-right-buttons,
+        .top-right-buttons *,
+        .solver-mode,
+        .solver-mode *,
+        .results-panel,
+        .results-panel * {
+            box-sizing: border-box;
+        }
+
         .top-right-buttons {
-            position: absolute;
-            top: 10px;
-            right: 10px;
+            position: fixed;
+            top: 0.75rem;
+            right: 0.75rem;
             display: flex;
-            gap: 10px;
+            gap: 0.6rem;
+            z-index: 10002;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
+
         .top-right-buttons button {
             cursor: pointer;
+            min-width: 5.5rem;
+            height: 2.75rem;
+            padding: 0 1rem;
+            line-height: 1;
+            background: rgba(18, 23, 27, 0.72);
+            border-color: var(--solver-border);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.16);
         }
+
+        .top-right-buttons button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        #wrapper {
+            gap: 1rem;
+            padding-top: 5rem;
+        }
+
+        #header {
+            max-width: min(58rem, calc(100vw - 2rem));
+        }
+
+        #header .content {
+            width: 100%;
+        }
+
+        #header .content .inner {
+            padding: 2.25rem 2rem;
+        }
+
+        #header .content p {
+            text-transform: none;
+            letter-spacing: 0.08rem;
+        }
+
+        #cal-select {
+            width: min(28rem, calc(100vw - 2rem));
+            min-height: 3rem;
+            margin-top: 1.5rem;
+            color: #fff;
+            background-color: rgba(18, 23, 27, 0.9);
+            border-color: var(--solver-border);
+            border-radius: var(--solver-radius);
+            letter-spacing: 0.04rem;
+        }
+
+        #cal-select:focus {
+            border-color: var(--solver-accent);
+            box-shadow: 0 0 0 0.15rem rgba(125, 211, 252, 0.18);
+        }
+
+        .mode-label {
+            display: block;
+            margin-top: 1.25rem;
+            color: var(--solver-text-muted);
+            font-size: 0.8rem;
+            letter-spacing: 0.12rem;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .solver-mode {
+            position: relative;
+            z-index: 2;
+            width: min(56rem, calc(100vw - 2rem));
+            margin: 0.75rem auto 0;
+            padding: 1.35rem;
+            background: var(--solver-surface);
+            border: 1px solid var(--solver-border-soft);
+            border-radius: var(--solver-radius);
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.22);
+            backdrop-filter: blur(8px);
+        }
+
+        .solver-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .textbox-container,
+        .input-stack {
+            display: grid;
+            gap: 0.85rem;
+            width: 100%;
+        }
+
+        .solver-mode input[type="text"],
+        .solver-mode textarea,
+        #console_inputer {
+            width: 100%;
+            max-width: 100%;
+            min-height: 3rem;
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.045);
+            border-color: var(--solver-border-soft);
+            border-radius: 8px;
+            letter-spacing: 0;
+        }
+
+        .solver-mode textarea,
+        #console_inputer {
+            min-height: 10rem;
+            resize: vertical;
+        }
+
+        .solver-mode input[type="text"]:focus,
+        .solver-mode textarea:focus,
+        #console_inputer:focus {
+            border-color: var(--solver-accent);
+            box-shadow: 0 0 0 0.15rem rgba(125, 211, 252, 0.16);
+        }
+
+        .solver-mode nav ul {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            border: 0;
+        }
+
+        .solver-mode nav ul li {
+            padding-left: 0;
+            border: 0;
+        }
+
+        .solver-mode nav button,
+        .solver-mode nav a,
+        #py-console button {
+            min-height: 2.65rem;
+            padding: 0 1rem;
+            border-radius: 8px;
+            letter-spacing: 0.08rem;
+            background-color: rgba(255, 255, 255, 0.055);
+            border-color: var(--solver-border-soft);
+        }
+
+        .solver-mode nav button:hover,
+        .solver-mode nav a:hover,
+        #py-console button:hover {
+            background-color: rgba(125, 211, 252, 0.14);
+            border-color: rgba(125, 211, 252, 0.55);
+        }
+
+        .solver-mode nav button:disabled {
+            color: rgba(255, 255, 255, 0.35);
+            border-color: rgba(255, 255, 255, 0.08);
+            cursor: wait;
+        }
+
+        .solver-hint {
+            margin: 0.25rem 0 0;
+            color: var(--solver-text-muted);
+        }
+
+        .solver-field-label { display: block; margin: 0 0 0.45rem; color: var(--solver-text-muted); font-size: 0.78rem; letter-spacing: 0.08rem; text-transform: uppercase; }
+        .smart-layout { display: grid; gap: 0.9rem; }
+        .smart-textarea { min-height: 12rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+        .solver-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+        .solver-actions button { min-height: 2.65rem; padding: 0 1rem; border-radius: 8px; }
+        .preview-card { min-height: 3rem; padding: 0.9rem 1rem; white-space: pre-wrap; word-break: break-word; background: rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; }
+        .visual-builder { display: grid; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--solver-border-soft); }
+        .builder-tabs { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+        .builder-tab.is-active { color: #061115; background: var(--solver-accent); border-color: var(--solver-accent); }
+        .builder-pane { display: grid; gap: 0.85rem; }
+        .builder-grid { display: grid; gap: 0.85rem; }
+        .builder-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .builder-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .builder-grid label { display: grid; gap: 0.4rem; color: var(--solver-text-muted); }
+        .matrix-builder { display: grid; gap: 0.45rem; overflow-x: auto; }
+        .matrix-row { display: grid; gap: 0.45rem; }
+        .matrix-cell { min-width: 4.5rem; text-align: center; }
+
         .latex_container {
             display: flex;
-            justify-content: center;
-            align-items: center;
+            gap: 1rem;
+            align-items: stretch;
             width: 100%;
-            margin-top: 20px;
+            margin-top: 0.75rem;
         }
-        .textbox2, #latex_preview {
+
+        .textbox2,
+        #latex_preview {
             width: 50%;
-            height: 300px;
-            margin: 0 10px;
-            padding: 10px;
+            min-height: 300px;
+            margin: 0;
+            padding: 1rem;
             box-sizing: border-box;
-            border: 1px solid #ccc;
+            border: 1px solid var(--solver-border-soft);
+            border-radius: 8px;
         }
+
         .textbox2 {
             resize: none;
         }
+
+        #latex_preview {
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.045);
+        }
+
+        .results-panel {
+            position: relative;
+            z-index: 2;
+            width: min(56rem, calc(100vw - 2rem));
+            margin: 1rem auto 0;
+            padding: 1.25rem;
+            background: var(--solver-surface-strong);
+            border: 1px solid var(--solver-border-soft);
+            border-radius: var(--solver-radius);
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.18);
+        }
+
+        .results-panel h2 {
+            margin-bottom: 0.9rem;
+            font-size: 0.95rem;
+            letter-spacing: 0.16rem;
+        }
+
+        #output,
+        #latexDiv,
+        #console_output {
+            min-height: 3rem;
+            padding: 0.9rem 1rem;
+            margin-bottom: 0.85rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+        }
+
+        #latexCode {
+            display: none;
+        }
+
+        .latex-output {
+            overflow-x: auto;
+        }
+
+        #py-console {
+            display: grid;
+            gap: 1rem;
+        }
+
         .sidebar {
             position: fixed;
             top: 50%;
@@ -92,11 +375,13 @@
             transition: width 0.5s;
             transform: translateY(-50%);
         }
+
         .sidebar iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
+
         .sidebar-button {
             position: fixed;
             top: 50%;
@@ -112,13 +397,78 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         .sidebar-button:hover {
             background-color: #0056b3;
         }
+
         .sidebar-button:after {
             content: '转换 Latex';
             color: white;
             font-size: 20px;
+        }
+
+        @media screen and (max-width: 736px) {
+            .top-right-buttons {
+                left: 0.75rem;
+                right: 0.75rem;
+                justify-content: center;
+            }
+
+            .top-right-buttons button {
+                min-width: 0;
+                flex: 1 1 6rem;
+                padding: 0 0.75rem;
+            }
+
+            #wrapper {
+                padding-top: 5.75rem;
+            }
+
+            #header .content .inner {
+                padding: 1.75rem 1rem;
+            }
+
+            #header .content p {
+                letter-spacing: 0.04rem;
+            }
+
+            .solver-mode,
+            .results-panel {
+                width: calc(100% - 1rem);
+                max-width: 100%;
+                padding: 1rem;
+            }
+
+            .solver-mode nav ul {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .solver-mode nav button,
+            .solver-mode nav a,
+            #py-console button {
+                width: 100%;
+            }
+
+            .builder-grid-2,
+            .builder-grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .solver-actions button {
+                width: 100%;
+            }
+
+            .latex_container {
+                flex-direction: column;
+            }
+
+            .textbox2,
+            #latex_preview {
+                width: 100%;
+                min-height: 220px;
+            }
         }
     </style>
 </head>
@@ -133,8 +483,8 @@
         <div class="sidebar-button" id="sidebarButton"></div> -->
 
         <div class="top-right-buttons">
-            <button id="return-button" onclick="openLink('../../../index.html')">主站点</button>
-            <button id="settings-button" onclick="openLink('#settings')" disabled>设置</button>
+            <button id="return-button" onclick="openLink('/index.html')">主站点</button>
+            <button id="settings-button" onclick="openLink('#settings')">设置</button>
             <button id="developer-mode-button" onclick="openLink('#developer')">开发者</button>
         </div>
 
@@ -149,13 +499,13 @@
                 <p>author: xyx.</p>
                 <p id="hitokoto-container">Loading Hitokoto...</p>
                 <p class="copyright"> 本应用程序已稳定运行了
-                    <strong><script language= "JavaScript" type= "text/javascript" >
+                    <strong><script>
                     var urodz = new Date ( "3/23/2024" );
                     var now = new Date ();
                     var ile = now.getTime() - urodz.getTime();
                     var dni = Math. floor (ile / (1000 * 60 * 60 * 24));
                     document.write(+dni)
-                    </script><noscript><b><p style="color:red;text-align:center;">您的浏览器不支持JavaScript, 点击下载最新的<a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p></b></noscript>
+                    </script><noscript><span style="color:#fca5a5;">无法计算运行天数</span></noscript>
                     </strong>天
                 </p>
                 <p>如果按钮或输入框点不动则脚本正在渲染, 请等待脚本渲染. 手机 / 平板「极大概率」不支持.</p>
@@ -163,27 +513,128 @@
             </div>
         </div>
 
+        <label class="mode-label" for="cal-select">选择计算模式</label>
         <select name="cal" id="cal-select">
-            <option value="">请选择一项...</option>
+            <option value="smart_input">智能输入（推荐）</option>
             <option value="func_sol">解单未知数方程</option>
-            <!-- <option value="func_high">解方程_2</option> -->
             <option value="mult_func_sol">解多未知数方程</option>
             <option value="chem">化学</option>
-            <option value="der" >求导</option>
+            <option value="der">求导</option>
             <option value="matrix">算矩阵</option>
             <option value="simple_sol">化简</option>
             <option value="integrals">积分</option>
             <option value="summation">求和</option>
-            <option value="latex_test">Latex输入测试 (beta) </option>
+            <option value="latex_test">Latex输入测试 (beta)</option>
             <option value="develop" disabled>开发中...</option>
         </select>
     </header>
     
     
     
+    <section id="smart_input" class="solver-mode">
+        <div class="solver-panel">
+            <div class="smart-layout">
+                <label class="solver-field-label" for="smart_inputer">智能输入</label>
+                <textarea id="smart_inputer" class="smart-textarea" spellcheck="false" placeholder="例如：solve x: x + 1 = 0&#10;solve x y: x + y = 3; x - y = 1&#10;matrix A = [[1, 2], [3, 4]]; calc A.det()"></textarea>
+                <div class="solver-actions">
+                    <button py-click="run_smart_solver">计算</button>
+                    <button py-click="preview_smart_input">解析预览</button>
+                    <button type="button" id="smart-template-button">插入模板</button>
+                    <button type="button" id="visual-toggle-button" aria-expanded="false" aria-controls="visual-builder">可视化输入</button>
+                    <button py-click="clean_content">清除结果</button>
+                </div>
+                <div id="parse_preview" class="preview-card">解析预览会显示在这里。</div>
+            </div>
 
-    <section id="func_sol" class="content hidden">
-        <header id="header">
+            <div id="visual-builder" class="visual-builder hidden" aria-label="可视化输入面板">
+                <div class="builder-tabs" role="tablist" aria-label="可视化输入类型">
+                    <button type="button" class="builder-tab is-active" data-builder-tab="equation">方程组</button>
+                    <button type="button" class="builder-tab" data-builder-tab="matrix">矩阵</button>
+                    <button type="button" class="builder-tab" data-builder-tab="integral">积分</button>
+                    <button type="button" class="builder-tab" data-builder-tab="sum">求和</button>
+                    <button type="button" class="builder-tab" data-builder-tab="expression">表达式</button>
+                </div>
+
+                <div class="builder-pane is-active" data-builder-pane="equation">
+                    <label class="solver-field-label" for="builder-equation-vars">变量</label>
+                    <input id="builder-equation-vars" type="text" value="x y" />
+                    <label class="solver-field-label" for="builder-equations">方程，一行一个</label>
+                    <textarea id="builder-equations" spellcheck="false">x + y = 3&#10;x - y = 1</textarea>
+                    <div class="solver-actions">
+                        <button type="button" data-build-command="equation">插入到智能输入</button>
+                        <button type="button" data-build-command="equation" data-run-after-insert="true">插入并计算</button>
+                    </div>
+                </div>
+
+                <div class="builder-pane hidden" data-builder-pane="matrix">
+                    <div class="builder-grid builder-grid-3">
+                        <label>矩阵名<input id="builder-matrix-name" type="text" value="A" /></label>
+                        <label>行数<input id="builder-matrix-rows" type="number" min="1" max="8" value="2" /></label>
+                        <label>列数<input id="builder-matrix-cols" type="number" min="1" max="8" value="2" /></label>
+                    </div>
+                    <div id="builder-matrix-table" class="matrix-builder" aria-label="矩阵单元格"></div>
+                    <label class="solver-field-label" for="builder-matrix-expression">矩阵表达式</label>
+                    <input id="builder-matrix-expression" type="text" value="A.det()" />
+                    <label class="solver-field-label" for="builder-matrix-paste">快速粘贴矩阵</label>
+                    <textarea id="builder-matrix-paste" spellcheck="false" placeholder="支持 1 2; 3 4 或 1,2;3,4"></textarea>
+                    <div class="solver-actions">
+                        <button type="button" id="builder-matrix-apply-paste">从粘贴内容填表</button>
+                        <button type="button" data-build-command="matrix">插入到智能输入</button>
+                        <button type="button" data-build-command="matrix" data-run-after-insert="true">插入并计算</button>
+                    </div>
+                </div>
+
+                <div class="builder-pane hidden" data-builder-pane="integral">
+                    <div class="builder-grid builder-grid-2">
+                        <label>变量<input id="builder-integral-var" type="text" value="x" /></label>
+                        <label>类型<select id="builder-integral-type"><option value="indefinite">不定积分</option><option value="definite">定积分</option></select></label>
+                        <label>下界<input id="builder-integral-lower" type="text" value="0" /></label>
+                        <label>上界<input id="builder-integral-upper" type="text" value="1" /></label>
+                    </div>
+                    <label class="solver-field-label" for="builder-integral-expression">被积函数</label>
+                    <textarea id="builder-integral-expression" spellcheck="false">x**2</textarea>
+                    <div class="solver-actions">
+                        <button type="button" data-build-command="integral">插入到智能输入</button>
+                        <button type="button" data-build-command="integral" data-run-after-insert="true">插入并计算</button>
+                    </div>
+                </div>
+
+                <div class="builder-pane hidden" data-builder-pane="sum">
+                    <div class="builder-grid builder-grid-3">
+                        <label>变量<input id="builder-sum-var" type="text" value="n" /></label>
+                        <label>下界<input id="builder-sum-lower" type="text" value="1" /></label>
+                        <label>上界<input id="builder-sum-upper" type="text" value="10" /></label>
+                    </div>
+                    <label class="solver-field-label" for="builder-sum-expression">表达式</label>
+                    <textarea id="builder-sum-expression" spellcheck="false">n**2</textarea>
+                    <div class="solver-actions">
+                        <button type="button" data-build-command="sum">插入到智能输入</button>
+                        <button type="button" data-build-command="sum" data-run-after-insert="true">插入并计算</button>
+                    </div>
+                </div>
+
+                <div class="builder-pane hidden" data-builder-pane="expression">
+                    <label class="solver-field-label" for="builder-expression-op">操作</label>
+                    <select id="builder-expression-op">
+                        <option value="simplify">化简</option>
+                        <option value="expand">展开</option>
+                        <option value="factor">因式分解</option>
+                        <option value="trigsimp">三角化简</option>
+                        <option value="expand_trig">三角展开</option>
+                    </select>
+                    <label class="solver-field-label" for="builder-expression-input">表达式</label>
+                    <textarea id="builder-expression-input" spellcheck="false">x**2 - 1</textarea>
+                    <div class="solver-actions">
+                        <button type="button" data-build-command="expression">插入到智能输入</button>
+                        <button type="button" data-build-command="expression" data-run-after-insert="true">插入并计算</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="func_sol" class="solver-mode hidden">
+        <div class="solver-panel">
         <input type="text" id="inputer" placeholder="请输入一个以 x 为未知数的方程 (例: (x + 2) * (x - 1) = 0)..." size="60">
         <nav>
             <ul>
@@ -196,15 +647,15 @@
             </ul>
         </nav>
         
-    </header>
+    </div>
         <p><br />解将显示在下面, 以[中括号]括起来, 以逗号分隔.</p>
     </section>
 
-    <section id="mult_func_sol" class="content hidden">
-        <header id="header">
-            <div id="textboxContainer">
+    <section id="mult_func_sol" class="solver-mode hidden">
+        <div class="solver-panel">
+            <div class="textbox-container">
                 <input type="text" id="unknown_num" placeholder="请输入方程里出现的未知数, 以空格分隔... " size="80" class="textbox">
-                <textarea type="text" id="mul_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." rows="10" cols="10" class="textbox"></textarea>
+                <textarea id="mul_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
@@ -215,16 +666,16 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
         <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
     </section>
 
-    <section id="summation" class="content hidden">
-        <header id="header">
-            <div id="textboxContainer">
+    <section id="summation" class="solver-mode hidden">
+        <div class="solver-panel">
+            <div class="textbox-container">
                 <input type="text" id="sum_var" placeholder="请输入下面出现的所有未知数, 用空格分隔... " size="80" class="textbox">
                 <input type="text" id="sum_sub" placeholder="请输入求和符号下的未知数, 下界和上界, 用逗号分隔... " size="80" class="textbox">
-                <textarea type="text" id="sum_inputer" placeholder="请输入求和符号后的式子..." rows="10" cols="10" class="textbox"></textarea>
+                <textarea id="sum_inputer" placeholder="请输入求和符号后的式子..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
@@ -235,16 +686,16 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
         <p><br />解将显示在下面.</p>
     </section>
     
 
-    <section id="matrix" class="content hidden">
-        <header id="header">
-            <div id="textboxContainer">
+    <section id="matrix" class="solver-mode hidden">
+        <div class="solver-panel">
+            <div class="textbox-container">
                 <input type="text" id="unknown_mat" placeholder="请定义矩阵的名称, 以空格分隔... " size="80" class="textbox">
-                <textarea type="text" id="mat_inputer" placeholder="请输入多个矩阵, 与上面的名称相对应, 格式为 '1,2;3,4#2,3;4,5#3,4;5,6' ( # 号用于分隔不同的矩阵, 分号用于分隔行) ..." rows="10" cols="10" class="textbox"></textarea>
+                <textarea id="mat_inputer" placeholder="请输入多个矩阵, 与上面的名称相对应, 格式为 '1,2;3,4#2,3;4,5#3,4;5,6' ( # 号用于分隔不同的矩阵, 分号用于分隔行) ..." rows="10" cols="10" class="textbox"></textarea>
                 <input type="text" id="mat_cal" placeholder="请输入矩阵所构成的式子, 只能使用上面定义的矩阵, 使用符号代替矩阵 ... " size="80" class="textbox">
             </div>
             <nav>
@@ -256,28 +707,28 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
     </section>
 
-    <section id="chem" class="content hidden">
-        <header id="header">
+    <section id="chem" class="solver-mode hidden">
+        <div class="solver-panel">
             <nav>
                 <ul>
                     <li><a href="#chem_w">化学将展示一个外部的页面.</a></li>
                     <li><a href="#chem_tool">预览化学工具箱的源代码</a></li>
-                    <li><a href="" style="pointer-events:none"><del>下载化学工具箱 (disabled) </del></a></li>
+                    <li><a href="#chem" aria-disabled="true" style="pointer-events:none"><del>下载化学工具箱 (disabled) </del></a></li>
                 </ul>
             </nav>
-        </header>
+        </div>
     </section>
 
     
 
     
 
-    <section id="der" class="content hidden">
-        <header id="header">
-            <textarea type="text" id="func_inputer" placeholder="请输入一个单参数函数, 以 x 为参数 (例: 4 / 3 * pi * x ** 3 )..." rows="10" cols="10"></textarea>
+    <section id="der" class="solver-mode hidden">
+        <div class="solver-panel">
+            <textarea id="func_inputer" placeholder="请输入一个单参数函数, 以 x 为参数 (例: 4 / 3 * pi * x ** 3 )..." rows="10" cols="10"></textarea>
             <nav>
                 <ul>
                     <li><button py-click="runsrc_der">开始计算</button></li>
@@ -287,18 +738,18 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
     </section>
 
-    <section id="integrals" class="content hidden">
-        <header id="header">
-            <div id="textboxContainer">
+    <section id="integrals" class="solver-mode hidden">
+        <div class="solver-panel">
+            <div class="textbox-container">
 
                 <p><br />自然对数的底请用 'E', 正无穷请使用 'oo' 来代替哦qwq</p>
                 <input type="text" id="unknown_inte" placeholder="请输入未知数, 以空格分隔... " size="80" class="textbox">
                 <input type="text" id="ud_inte" placeholder="请输入下界和上界, 以逗号分隔, 形如 '-oo, oo'... " size="80" class="textbox">
                 
-                <textarea type="text" id="inte_inputer" placeholder="请输入一个函数..." rows="10" cols="10" class="textbox"></textarea>
+                <textarea id="inte_inputer" placeholder="请输入一个函数..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
@@ -310,16 +761,16 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
         <p><br />解将显示在下面.</p>
     </section>
     
 
-    <section id="simple_sol" class="content hidden">
-        <header id="header">
-            <div id="textboxContainer">
+    <section id="simple_sol" class="solver-mode hidden">
+        <div class="solver-panel">
+            <div class="textbox-container">
                 <input type="text" id="unknown_simple" placeholder="请输入算式里出现的未知数, 以空格分隔... " size="80" class="textbox">
-                <textarea type="text" id="simple_inputer" placeholder="请输入一个式子..." rows="10" cols="10" class="textbox"></textarea>
+                <textarea id="simple_inputer" placeholder="请输入一个式子..." rows="10" cols="10" class="textbox"></textarea>
             </div>
             <nav>
                 <ul>
@@ -336,17 +787,17 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
         <p><br />解将显示在下面.</p>
     </section>
 
-    <section id="latex_test" class="content hidden">
-        <header id="header">
-            <div id="textboxContainer">
+    <section id="latex_test" class="solver-mode hidden">
+        <div class="solver-panel">
+            <div class="textbox-container">
                 <input type="text" id="latex_test_num" placeholder="请输入方程里出现的未知数, 以空格分隔... " size="80" class="textbox">
                 <br /><p>拥有很多bug, 请谨慎使用.</p> 
                 <div class="latex_container">
-                    <textarea type="text" id="latex_test_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." class="textbox2"></textarea>
+                    <textarea id="latex_test_inputer" placeholder="请输入多个方程, 用逗号分隔 (例: (x + 2) * (y - 1) = 0)..." class="textbox2"></textarea>
                     <div id="latex_preview"></div>
                 </div>
                 
@@ -360,19 +811,19 @@
                     <li><button onClick="window.location.reload()">刷新页面</button></li>
                 </ul>
             </nav>
-        </header>
+        </div>
         <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
     </section>
 
-    <section id="func_high" class="content hidden">
-        <header id="header">
+    <section id="func_high" class="solver-mode hidden">
+        <div class="solver-panel">
             <nav>
-                <div id="textboxContainer">
+                <div class="textbox-container">
                     <p><br />你只需要输入左边的式子, 等式的右边为 0, 简化了工作流程.</p>
                     <p><a href="#domain_name">可能你不知道什么是「域」, 那么请点击这里.</a></p>
                     <input type="text" id="unknown_high" placeholder="请输入式子里出现的未知数, 以空格分隔... " size="80" class="textbox">
                     <input type="text" id="domain_high" placeholder="请输入域 (为一个形如 'Reals' 的单词) ... " size="80" class="textbox">
-                    <textarea type="text" id="high_inputer" placeholder="请输入式子..." rows="10" cols="10" class="textbox"></textarea>
+                    <textarea id="high_inputer" placeholder="请输入式子..." rows="10" cols="10" class="textbox"></textarea>
                 </div>
                 <ul>
                     <!-- <li><a href="#domain_name">「域」是什么</a></li> -->
@@ -384,13 +835,15 @@
                 </ul>
                 <p><br />解将显示在下面, 以{大括号}括起来, 或者用[中括号]括起来, 以逗号分隔.</p>
             </nav>
-        </header>
+        </div>
     </section>
     
-
-        <div id="output"></div>
-        <div id="latexDiv"></div>
-        <div id="latexCode"></div>
+        <section class="results-panel" aria-live="polite">
+            <h2 class="major">结果</h2>
+            <div id="output">请选择一种计算模式并输入内容。</div>
+            <div id="latexDiv">Latex 预览会显示在这里。</div>
+            <div id="latexCode"></div>
+        </section>
 
 
 
@@ -408,12 +861,12 @@
                 <p><a href="./bin/chem_solver.py" download>点击下载化学工具箱的源代码</a></p>
                 <p>requirements: sympy, pyscript, chempy</p>
                 <br />
-                <img src="./img/chem_solver.png" style="width: 100%; height: 100%; object-fit: cover;">
+                <img src="./img/chem_solver.png" alt="化学工具箱界面截图" style="width: 100%; height: 100%; object-fit: cover;">
             </article>
 
             <article id="settings">
                 <h2 class="major">设置</h2>
-                <h3 class="major">实验性功能</h2>
+                <h3 class="major">实验性功能</h3>
                 <div class="field half">
                     <input type="radio" id="use_python_syntax" name="use_syntax" checked>
                     <label for="use_python_syntax">使用 python 语法</label>
@@ -433,7 +886,7 @@
                 <h2 class="major">开发者</h2>
                 <p>你可以在下方执行任意 python3 代码. 这可能很危险. 请在浏览器控制台查看结果.</p>
                 <div id="py-console">
-                    <textarea type="text" id="console_inputer" placeholder="请输入..." rows="10" cols="10" class="textbox"></textarea>
+                    <textarea id="console_inputer" placeholder="请输入..." rows="10" cols="10" class="textbox"></textarea>
                     <button py-click="runsrc_console">执行</button>
                     <div id="console_output"></div>
                 </div>
@@ -467,20 +920,22 @@
         const sidebar = document.getElementById('sidebar');
         const sidebarButton = document.getElementById('sidebarButton');
         const iframe = document.getElementById('sidebarIframe');
-    
-        sidebarButton.addEventListener('mouseenter', () => {
-            sidebar.style.width = '300px';
-        });
-    
-        sidebar.addEventListener('mouseleave', () => {
-            sidebar.style.width = '0';
-        });
-    
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'colorChange') {
-                document.body.style.backgroundColor = event.data.color;
-            }
-        });
+
+        if (sidebar && sidebarButton && iframe) {
+            sidebarButton.addEventListener('mouseenter', () => {
+                sidebar.style.width = '300px';
+            });
+
+            sidebar.addEventListener('mouseleave', () => {
+                sidebar.style.width = '0';
+            });
+
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'colorChange') {
+                    document.body.style.backgroundColor = event.data.color;
+                }
+            });
+        }
     </script>
         
 
@@ -488,22 +943,49 @@
     <script type="py" src="./function_solver.py"></script>
     <script>
         const contentSelector = document.getElementById('cal-select');
-        const contents = document.querySelectorAll('.content');
-        contentSelector.addEventListener('change', function() {
+        const contents = document.querySelectorAll('.solver-mode');
+        const rememberSelect = document.getElementById('remember_select');
+
+        function showSelectedMode(value) {
             contents.forEach(function(content) {
-            if (content.id === contentSelector.value) {
-                content.classList.remove('hidden');
-            } else {
-                content.classList.add('hidden');
-            }
+                if (content.id === value) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
             });
+
+            if (value) {
+                document.body.classList.add('has-active-mode');
+            } else {
+                document.body.classList.remove('has-active-mode');
+            }
+        }
+
+        contentSelector.addEventListener('change', function() {
+            showSelectedMode(contentSelector.value);
+
+            if (!rememberSelect || rememberSelect.checked) {
+                localStorage.setItem('easy-math-solver-mode', contentSelector.value);
+            }
         });
+
+        const savedMode = localStorage.getItem('easy-math-solver-mode');
+        if (savedMode && contentSelector.querySelector('option[value="' + savedMode + '"]')) {
+            contentSelector.value = savedMode;
+            showSelectedMode(savedMode);
+        } else {
+            contentSelector.value = 'smart_input';
+            showSelectedMode('smart_input');
+        }
 
         document.getElementById('latex_test_inputer').addEventListener('input', function() {
             const input = document.getElementById('latex_test_inputer').value;
             const output = document.getElementById('latex_preview');
             output.innerHTML = '$$ ' + input + ' $$';
-            MathJax.typeset();
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise([output]);
+            }
         });
     </script>
     <script src="/assets/js/jquery.min.js"></script>
@@ -519,6 +1001,5 @@
             "./whl_pack/latex2sympy2-1.9.1-py3-none-any.whl"
         ]
     </py-config>
-
-    </div>
 </body>
+</html>
