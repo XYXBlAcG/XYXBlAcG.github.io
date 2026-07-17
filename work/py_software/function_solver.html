@@ -537,8 +537,8 @@
                 <label class="solver-field-label" for="smart_inputer">智能输入</label>
                 <textarea id="smart_inputer" class="smart-textarea" spellcheck="false" placeholder="例如：solve x: x + 1 = 0&#10;solve x y: x + y = 3; x - y = 1&#10;matrix A = [[1, 2], [3, 4]]; calc A.det()"></textarea>
                 <div class="solver-actions">
-                    <button py-click="run_smart_solver">计算</button>
-                    <button py-click="preview_smart_input">解析预览</button>
+                    <button py-click="run_smart_solver" disabled title="智能计算将在后续任务启用">计算</button>
+                    <button py-click="preview_smart_input" disabled title="解析预览将在后续任务启用">解析预览</button>
                     <button type="button" id="smart-template-button">插入模板</button>
                     <button type="button" id="visual-toggle-button" aria-expanded="false" aria-controls="visual-builder">可视化输入</button>
                     <button py-click="clean_content">清除结果</button>
@@ -548,14 +548,14 @@
 
             <div id="visual-builder" class="visual-builder hidden" aria-label="可视化输入面板">
                 <div class="builder-tabs" role="tablist" aria-label="可视化输入类型">
-                    <button type="button" class="builder-tab is-active" data-builder-tab="equation">方程组</button>
-                    <button type="button" class="builder-tab" data-builder-tab="matrix">矩阵</button>
-                    <button type="button" class="builder-tab" data-builder-tab="integral">积分</button>
-                    <button type="button" class="builder-tab" data-builder-tab="sum">求和</button>
-                    <button type="button" class="builder-tab" data-builder-tab="expression">表达式</button>
+                    <button type="button" id="builder-tab-equation" class="builder-tab is-active" role="tab" aria-selected="true" aria-controls="builder-pane-equation" data-builder-tab="equation">方程组</button>
+                    <button type="button" id="builder-tab-matrix" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-matrix" data-builder-tab="matrix">矩阵</button>
+                    <button type="button" id="builder-tab-integral" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-integral" data-builder-tab="integral">积分</button>
+                    <button type="button" id="builder-tab-sum" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-sum" data-builder-tab="sum">求和</button>
+                    <button type="button" id="builder-tab-expression" class="builder-tab" role="tab" aria-selected="false" aria-controls="builder-pane-expression" data-builder-tab="expression">表达式</button>
                 </div>
 
-                <div class="builder-pane is-active" data-builder-pane="equation">
+                <div id="builder-pane-equation" class="builder-pane is-active" role="tabpanel" aria-labelledby="builder-tab-equation" data-builder-pane="equation">
                     <label class="solver-field-label" for="builder-equation-vars">变量</label>
                     <input id="builder-equation-vars" type="text" value="x y" />
                     <label class="solver-field-label" for="builder-equations">方程，一行一个</label>
@@ -566,7 +566,7 @@
                     </div>
                 </div>
 
-                <div class="builder-pane hidden" data-builder-pane="matrix">
+                <div id="builder-pane-matrix" class="builder-pane hidden" role="tabpanel" aria-labelledby="builder-tab-matrix" data-builder-pane="matrix">
                     <div class="builder-grid builder-grid-3">
                         <label>矩阵名<input id="builder-matrix-name" type="text" value="A" /></label>
                         <label>行数<input id="builder-matrix-rows" type="number" min="1" max="8" value="2" /></label>
@@ -584,7 +584,7 @@
                     </div>
                 </div>
 
-                <div class="builder-pane hidden" data-builder-pane="integral">
+                <div id="builder-pane-integral" class="builder-pane hidden" role="tabpanel" aria-labelledby="builder-tab-integral" data-builder-pane="integral">
                     <div class="builder-grid builder-grid-2">
                         <label>变量<input id="builder-integral-var" type="text" value="x" /></label>
                         <label>类型<select id="builder-integral-type"><option value="indefinite">不定积分</option><option value="definite">定积分</option></select></label>
@@ -599,7 +599,7 @@
                     </div>
                 </div>
 
-                <div class="builder-pane hidden" data-builder-pane="sum">
+                <div id="builder-pane-sum" class="builder-pane hidden" role="tabpanel" aria-labelledby="builder-tab-sum" data-builder-pane="sum">
                     <div class="builder-grid builder-grid-3">
                         <label>变量<input id="builder-sum-var" type="text" value="n" /></label>
                         <label>下界<input id="builder-sum-lower" type="text" value="1" /></label>
@@ -613,7 +613,7 @@
                     </div>
                 </div>
 
-                <div class="builder-pane hidden" data-builder-pane="expression">
+                <div id="builder-pane-expression" class="builder-pane hidden" role="tabpanel" aria-labelledby="builder-tab-expression" data-builder-pane="expression">
                     <label class="solver-field-label" for="builder-expression-op">操作</label>
                     <select id="builder-expression-op">
                         <option value="simplify">化简</option>
@@ -971,7 +971,12 @@
         });
 
         const savedMode = localStorage.getItem('easy-math-solver-mode');
-        if (savedMode && contentSelector.querySelector('option[value="' + savedMode + '"]')) {
+        const validSavedMode = Array.from(contentSelector.options).some(function(option) {
+            const modeSection = document.getElementById(option.value);
+            return option.value === savedMode && !option.disabled && modeSection && modeSection.classList.contains('solver-mode');
+        });
+
+        if (validSavedMode) {
             contentSelector.value = savedMode;
             showSelectedMode(savedMode);
         } else {
