@@ -139,6 +139,13 @@ def parse_equation_text(equation_text):
     return Eq(sympify(left.strip()), sympify(right.strip()))
 
 
+def symbols_as_list(names):
+    parsed = symbols(" ".join(names) if isinstance(names, list) else names)
+    if isinstance(parsed, tuple):
+        return list(parsed)
+    return [parsed]
+
+
 def parse_matrix_cell(item):
     if isinstance(item, bool):
         raise ValueError("矩阵元素必须是数字或简单变量名")
@@ -296,6 +303,106 @@ def format_task_preview(task):
     if task.get("matrices"):
         lines.append("矩阵：" + ", ".join(task["matrices"].keys()))
     return "\n".join(lines)
+
+
+def solve_task(task):
+    symbol_values = symbols_as_list(task["variables"])
+    equations = [parse_equation_text(equation) for equation in task["equations"]]
+    if len(symbol_values) == 1 and len(equations) == 1:
+        return solve(equations[0], symbol_values[0])
+    return solve(equations, symbol_values, dict=True)
+
+
+def calculus_task(task):
+    variable = symbols(task["variable"])
+    expression = sympify(task["expression"])
+    if task["type"] == "diff":
+        return diff(expression, variable)
+    if task["type"] == "integrate":
+        if task.get("bounds"):
+            lower, upper = task["bounds"]
+            return integrate(expression, (variable, sympify(lower), sympify(upper)))
+        return integrate(expression, variable)
+    if task["type"] == "sum":
+        return summation(expression, (variable, sympify(task["lower"]), sympify(task["upper"])))
+    raise ValueError("不支持的微积分任务")
+
+
+def expression_task(task):
+    expression = sympify(task["expression"])
+    operation = task["operation"]
+    operations = {
+        "simplify": simplify,
+        "expand": expand,
+        "factor": factor,
+        "trigsimp": trigsimp,
+        "expand_trig": expand_trig
+    }
+    return operations[operation](expression)
+
+
+def matrix_task(task):
+    matrix_values = {
+        name: Matrix(value)
+        for name, value in task["matrices"].items()
+    }
+    allowed_names = {
+        "__builtins__": {},
+        "Matrix": Matrix,
+        "eye": eye,
+        "zeros": zeros,
+        "ones": ones
+    }
+    return eval(task["expression"], allowed_names, matrix_values)
+
+
+def dispatch_task(task):
+    task_type = task["type"]
+    if task_type == "solve":
+        return solve_task(task)
+    if task_type in ["diff", "integrate", "sum"]:
+        return calculus_task(task)
+    if task_type == "expression":
+        return expression_task(task)
+    if task_type == "matrix":
+        return matrix_task(task)
+    raise ValueError("不支持的任务类型：" + task_type)
+
+
+def run_solver(raw_input, mode=None):
+    try:
+        task = parse_input(raw_input, mode)
+        value = dispatch_task(task)
+        return make_result(task["type"], value)
+    except Exception as exc:
+        return make_error("solver_error", str(exc))
+
+
+def set_result_output(result):
+    output_div = document.querySelector("#output")
+    latex_code = document.querySelector("#latexCode")
+    latex_div = document.querySelector("#latexDiv")
+
+    output_div.innerText = result["plain"]
+    latex_code.innerText = result["latex"]
+    if latex_div:
+        latex_div.innerText = "点击“显示Latex”查看渲染结果。" if result["latex"] else result["plain"]
+
+
+def run_smart_solver(content):
+    input_text = document.querySelector("#smart_inputer")
+    result = run_solver(input_text.value)
+    set_result_output(result)
+
+
+def preview_smart_input(content):
+    input_text = document.querySelector("#smart_inputer")
+    preview_div = document.querySelector("#parse_preview")
+    try:
+        task = parse_input(input_text.value)
+        preview_div.innerText = format_task_preview(task)
+    except Exception as exc:
+        preview_div.innerText = "解析失败：" + str(exc)
 
 
 def helper(content):
