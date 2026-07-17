@@ -143,29 +143,84 @@ def symbols_as_list(names):
     return [parsed]
 
 
-def parse_matrix_cell(item):
-    if isinstance(item, bool):
-        raise ValueError("矩阵元素必须是数字或简单变量名")
-    if isinstance(item, (int, float, complex)):
-        return item
-    if isinstance(item, str):
-        if not re.match(r"^[A-Za-z_]\w*$", item):
-            raise ValueError("矩阵字符串元素只能是简单变量名")
-        return sympify(item)
-    raise ValueError("矩阵元素必须是数字或简单变量名")
+MATRIX_CELL_ERROR = "矩阵元素只支持数字、变量名和简单算术表达式"
+MATRIX_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_]\w*$")
+
+
+def matrix_identifier(name):
+    if not MATRIX_IDENTIFIER_PATTERN.match(name):
+        raise ValueError(MATRIX_CELL_ERROR)
+    return symbols(name)
+
+
+def parse_matrix_power_exponent(node):
+    sign = 1
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+        sign = -1 if isinstance(node.op, ast.USub) else 1
+        node = node.operand
+    if not isinstance(node, ast.Constant) or isinstance(node.value, bool) or not isinstance(node.value, int):
+        raise ValueError("矩阵元素幂次必须是不超过 8 的整数")
+    exponent = sign * node.value
+    if abs(exponent) > 8:
+        raise ValueError("矩阵元素幂次必须是不超过 8 的整数")
+    return exponent
+
+
+def parse_matrix_cell(node):
+    if isinstance(node, ast.Constant):
+        if isinstance(node.value, bool):
+            raise ValueError(MATRIX_CELL_ERROR)
+        if isinstance(node.value, (int, float, complex)):
+            return node.value
+        if isinstance(node.value, str):
+            return matrix_identifier(node.value)
+        raise ValueError(MATRIX_CELL_ERROR)
+
+    if isinstance(node, ast.Name):
+        return matrix_identifier(node.id)
+
+    if isinstance(node, ast.UnaryOp):
+        value = parse_matrix_cell(node.operand)
+        if isinstance(node.op, ast.UAdd):
+            return +value
+        if isinstance(node.op, ast.USub):
+            return -value
+        raise ValueError(MATRIX_CELL_ERROR)
+
+    if isinstance(node, ast.BinOp):
+        left = parse_matrix_cell(node.left)
+        if isinstance(node.op, ast.Pow):
+            return left ** parse_matrix_power_exponent(node.right)
+        right = parse_matrix_cell(node.right)
+        if isinstance(node.op, ast.Add):
+            return left + right
+        if isinstance(node.op, ast.Sub):
+            return left - right
+        if isinstance(node.op, ast.Mult):
+            return left * right
+        if isinstance(node.op, ast.Div):
+            return left / right
+        raise ValueError(MATRIX_CELL_ERROR)
+
+    raise ValueError(MATRIX_CELL_ERROR)
 
 
 def parse_matrix_literal(text):
     try:
-        data = ast.literal_eval(text)
-    except Exception as exc:
+        parsed = ast.parse(text, mode="eval")
+    except SyntaxError as exc:
         raise ValueError("矩阵必须是 [[1, 2], [3, 4]] 这样的列表格式") from exc
-    if not isinstance(data, list) or not data or not all(isinstance(row, list) for row in data):
+
+    data = parsed.body
+    if not isinstance(data, (ast.List, ast.Tuple)) or not data.elts:
         raise ValueError("矩阵必须是二维列表")
-    row_length = len(data[0])
-    if row_length == 0 or any(len(row) != row_length for row in data):
+    if not all(isinstance(row, (ast.List, ast.Tuple)) for row in data.elts):
+        raise ValueError("矩阵必须是二维列表")
+
+    row_length = len(data.elts[0].elts)
+    if row_length == 0 or any(len(row.elts) != row_length for row in data.elts):
         raise ValueError("矩阵每一行的列数必须一致")
-    return [[parse_matrix_cell(item) for item in row] for row in data]
+    return [[parse_matrix_cell(item) for item in row.elts] for row in data.elts]
 
 
 def parse_solve(command):
@@ -689,15 +744,11 @@ def runsrc_high(content):
     input_var = document.querySelector("#unknown_high")
     input_domain = document.querySelector("#domain_high")
     input_equ = document.querySelector("#high_inputer")
-    output_div = document.querySelector("#output")
-    answer = high_solver(input_var.value, input_equ.value, input_domain.value)
-    output_div.innerText = answer
-    # print("answer = ", type(answer))
-    if(type(answer) == list):
-        go_latex(answer)
-    else:
-        output_div = document.querySelector("#latexCode")
-        output_div.innerText += '$$' + latex(answer) + '$$'
+    try:
+        answer = high_solver(input_var.value, input_equ.value, input_domain.value)
+        set_result_output(make_result("high", answer))
+    except Exception as exc:
+        set_result_output(make_error("high", str(exc)))
 
 def runsrc_chem_e(content):
     pass
@@ -752,9 +803,8 @@ def runsrc_console(content):
 def runsrc_latex_test(content):
     input_var = document.querySelector("#latex_test_num")
     input_equ = document.querySelector("#latex_test_inputer")
-    output_div = document.querySelector("#output")
-    answer = mult_func_solve(input_var.value, input_equ.value.split(','), 1)
-    output_div.innerText = answer
-    # print("answer = ", type(answer))
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    try:
+        answer = mult_func_solve(input_var.value, input_equ.value.split(','), 1)
+        set_result_output(make_result("latex_test", answer))
+    except Exception as exc:
+        set_result_output(make_error("latex_test", str(exc)))
