@@ -42,10 +42,7 @@ def go_latex(content):
 
 def runsrc(content):
     input_text = document.querySelector("#inputer")
-    output_div = document.querySelector("#output")
-    answer = solve_equation(input_text.value)
-    output_div.innerText = answer
-    go_latex(answer)
+    run_legacy_command("solve x: " + input_text.value)
 
 def modifier(input_str):
     input_text = document.querySelector(input_str)
@@ -448,6 +445,12 @@ def run_solver(raw_input, mode=None):
         return make_error("solver_error", str(exc))
 
 
+def run_legacy_command(command):
+    result = run_solver(command)
+    set_result_output(result)
+    return result
+
+
 def set_result_output(result):
     output_div = document.querySelector("#output")
     latex_code = document.querySelector("#latexCode")
@@ -541,14 +544,8 @@ def mult_func_solve(variables, equations, beta = 0):
 def runsrc_mult(content):
     input_var = document.querySelector("#unknown_num")
     input_equ = document.querySelector("#mul_inputer")
-    output_div = document.querySelector("#output")
-    answer = mult_func_solve(input_var.value, input_equ.value.split(','))
-    output_div.innerText = answer
-    # print("answer = ", type(answer))
-    if(type(answer) == list):
-        go_latex(answer)
-    else:
-        go_latex(list(answer.values()))
+    equations = "\n  ".join([item.strip() for item in input_equ.value.replace(",", "\n").splitlines() if item.strip()])
+    run_legacy_command("solve " + input_var.value + ":\n  " + equations)
 
 def define_mat():
     # matrix_names = input("请输入你想定义的矩阵的名称（以空格分隔）：").split()
@@ -561,21 +558,24 @@ def define_mat():
         matrices.append((name, Matrix(matrix_values)))
     return matrices
 
+def legacy_matrix_to_command(names_text, matrix_text, expression_text):
+    names = names_text.split()
+    matrix_inputs = matrix_text.split("#")
+    lines = []
+    for name, input_data in zip(names, matrix_inputs):
+        rows = []
+        for row in input_data.split(";"):
+            values = [value.strip() for value in row.split(",") if value.strip()]
+            rows.append("[" + ", ".join(values) + "]")
+        lines.append("matrix " + name + " = [" + ", ".join(rows) + "]")
+    lines.append("calc " + expression_text)
+    return "\n".join(lines)
+
 def runsrc_mat(content):
-    output_div = document.querySelector("#output")
-    matrices = define_mat()
-    symbols_list = symbols(' '.join([mat[0] for mat in matrices]))
-    symbols_dict = {**{'Matrix': Matrix}, **{mat[0]: mat[1] for mat in matrices}}
-    # expr_input = input(f"请输入一个式子，使用 a * b 之类的格式：")
-    lhs = document.querySelector("#mat_cal").value
-    lhs_matrix = eval(lhs, globals(), symbols_dict)
-    print("得到的矩阵为: ", lhs_matrix)
-    output_div.innerText = lhs_matrix
-    result_latex = latex(lhs_matrix)
-    print("LaTeX 格式：")
-    print(result_latex)
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + result_latex + '$$'
+    names = document.querySelector("#unknown_mat").value
+    matrices = document.querySelector("#mat_inputer").value
+    expression = document.querySelector("#mat_cal").value
+    run_legacy_command(legacy_matrix_to_command(names, matrices, expression))
 
 def der_diff(content):
     x = symbols('x')
@@ -585,12 +585,7 @@ def der_diff(content):
 
 def runsrc_der(content):
     input_a = document.querySelector("#func_inputer")
-    output_div = document.querySelector("#output")
-    answer = der_diff(input_a.value)
-    output_div.innerText = answer
-    print(type(answer))
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("diff x: " + input_a.value)
 
 def solve_simplify(variables, equations):
     try:
@@ -601,13 +596,8 @@ def solve_simplify(variables, equations):
         return "化简时出现错误, 输入可能非法."
 
 def runsrc_simplify(content):
-    input_var = document.querySelector("#unknown_simple")
     input_equ = document.querySelector("#simple_inputer")
-    output_div = document.querySelector("#output")
-    answer = solve_simplify(input_var.value, input_equ.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("simplify: " + input_equ.value)
 
 def solve_factor(variables, equations):
     try:
@@ -618,13 +608,8 @@ def solve_factor(variables, equations):
         return "化简时出现错误, 输入可能非法."
 
 def runsrc_factor(content):
-    input_var = document.querySelector("#unknown_simple")
     input_equ = document.querySelector("#simple_inputer")
-    output_div = document.querySelector("#output")
-    answer = solve_factor(input_var.value, input_equ.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("factor: " + input_equ.value)
 
 def solve_expand(variables, equations):
     try:
@@ -635,13 +620,8 @@ def solve_expand(variables, equations):
         return "展开时出现错误, 输入可能非法."
 
 def runsrc_expand(content):
-    input_var = document.querySelector("#unknown_simple")
     input_equ = document.querySelector("#simple_inputer")
-    output_div = document.querySelector("#output")
-    answer = solve_expand(input_var.value, input_equ.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("expand: " + input_equ.value)
 
 def solve_trigsimp(variables, equations):
     try:
@@ -652,13 +632,8 @@ def solve_trigsimp(variables, equations):
         return "化简时出现错误, 输入可能非法."
 
 def runsrc_trigsimp(content):
-    input_var = document.querySelector("#unknown_simple")
     input_equ = document.querySelector("#simple_inputer")
-    output_div = document.querySelector("#output")
-    answer = solve_trigsimp(input_var.value, input_equ.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("trigsimp: " + input_equ.value)
 
 def solve_expand_trig(variables, equations):
     try:
@@ -669,13 +644,8 @@ def solve_expand_trig(variables, equations):
         return "展开时出现错误, 输入可能非法."
 
 def runsrc_expand_trig(content):
-    input_var = document.querySelector("#unknown_simple")
     input_equ = document.querySelector("#simple_inputer")
-    output_div = document.querySelector("#output")
-    answer = solve_expand_trig(input_var.value, input_equ.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("expand_trig: " + input_equ.value)
 
 def high_solver(variables, equations, domains):
     # try:
@@ -729,11 +699,11 @@ def runsrc_inte_ud(content):
     input_var = document.querySelector("#unknown_inte")
     input_domain = document.querySelector("#ud_inte")
     input_equ = document.querySelector("#inte_inputer")
-    output_div = document.querySelector("#output")
-    answer = inte_ud(input_var.value, input_equ.value, input_domain.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    bounds = [item.strip() for item in input_domain.value.split(",", 1)]
+    if len(bounds) < 2 or not bounds[0] or not bounds[1]:
+        set_result_output(make_error("legacy_input_error", "定积分上下界格式应为 0,1"))
+        return
+    run_legacy_command("integrate " + input_var.value + " from " + bounds[0] + " to " + bounds[1] + ": " + input_equ.value)
 
 def inte_(var, equ):
     symbols_list = symbols(var)
@@ -742,11 +712,7 @@ def inte_(var, equ):
 def runsrc_inte(content):
     input_var = document.querySelector("#unknown_inte")
     input_equ = document.querySelector("#inte_inputer")
-    output_div = document.querySelector("#output")
-    answer = inte_(input_var.value, input_equ.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    run_legacy_command("integrate " + input_var.value + ": " + input_equ.value)
 
 def sum_(equ, var, vars):
     tovar = tuple(var.split(','))
@@ -756,13 +722,12 @@ def sum_(equ, var, vars):
 
 def runsrc_sum(content):
     input_var = document.querySelector("#sum_sub")
-    input_vars = document.querySelector("#sum_var")
     input_equ = document.querySelector("#sum_inputer")
-    output_div = document.querySelector("#output")
-    answer = sum_(input_equ.value, input_var.value, input_vars.value)
-    output_div.innerText = answer
-    output_div = document.querySelector("#latexCode")
-    output_div.innerText += '$$' + latex(answer) + '$$'
+    parts = [item.strip() for item in input_var.value.split(",")]
+    if len(parts) < 3 or not parts[0] or not parts[1] or not parts[2]:
+        set_result_output(make_error("legacy_input_error", "求和下标格式应为 n,1,10"))
+        return
+    run_legacy_command("sum " + parts[0] + " from " + parts[1] + " to " + parts[2] + ": " + input_equ.value)
 
 def runsrc_console(content):
     input_text = document.querySelector("#console_inputer")
