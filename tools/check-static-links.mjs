@@ -3,14 +3,28 @@ import path from 'node:path';
 
 const root = process.cwd();
 const htmlFiles = [];
-const ignoredPrefixes = ['http:', 'https:', 'mailto:', 'tel:', 'javascript:', '#'];
+const ignoredDirectoryNames = new Set(['.git', 'node_modules']);
+const ignoredDirectoryPaths = new Set([
+  'work/py_software/pyscript-main',
+  'work/py_software/vendor/pyscript-main',
+]);
 const attrs = ['href', 'src', 'data-src'];
+const uriSchemePattern = /^[a-z][a-z0-9+.-]*:/i;
+
+function normalizePath(value) {
+  return value.split(path.sep).join('/');
+}
+
+function shouldIgnoreDirectory(dir) {
+  const relative = normalizePath(path.relative(root, dir));
+  return ignoredDirectoryNames.has(path.basename(dir)) || ignoredDirectoryPaths.has(relative);
+}
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === '.git' || entry.name === 'node_modules') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (shouldIgnoreDirectory(full)) continue;
       walk(full);
     } else if (entry.isFile() && entry.name.endsWith('.html')) {
       htmlFiles.push(full);
@@ -25,7 +39,7 @@ function stripQueryAndHash(value) {
 function shouldIgnore(value) {
   const trimmed = value.trim();
   if (!trimmed) return true;
-  return ignoredPrefixes.some((prefix) => trimmed.startsWith(prefix));
+  return trimmed.startsWith('#') || uriSchemePattern.test(trimmed);
 }
 
 function resolveTarget(file, rawValue) {
@@ -43,10 +57,10 @@ function targetExists(target) {
 }
 
 function collectLinks(file) {
-  const html = fs.readFileSync(file, 'utf8');
+  const html = fs.readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
   const links = [];
   for (const attr of attrs) {
-    const pattern = new RegExp(`${attr}=["']([^"']+)["']`, 'gi');
+    const pattern = new RegExp(`(?:^|\\s)${attr}\\s*=\\s*["']([^"']+)["']`, 'gi');
     let match;
     while ((match = pattern.exec(html)) !== null) {
       links.push({ attr, value: match[1] });
