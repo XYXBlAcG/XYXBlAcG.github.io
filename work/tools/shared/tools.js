@@ -45,14 +45,75 @@ export async function copyText(text, statusElement) {
   }
 }
 
-export function installCardFilter(input, cards) {
-  input.addEventListener('input', () => {
-    const query = input.value.trim().toLowerCase();
-    cards.forEach((card) => {
-      const haystack = `${card.dataset.search || ''} ${card.textContent || ''}`.toLowerCase();
-      card.hidden = query.length > 0 && !haystack.includes(query);
-    });
+function findSectionTitle(section) {
+  let current = section.previousElementSibling;
+  while (current) {
+    if (current.classList.contains('tool-section-title')) {
+      return current;
+    }
+    current = current.previousElementSibling;
+  }
+  return null;
+}
+
+function updateFilterSections(cards) {
+  const sections = new Set(Array.from(cards).map((card) => card.closest('.tool-grid')).filter(Boolean));
+  sections.forEach((section) => {
+    const visibleCount = Array.from(section.querySelectorAll('[data-tool-card]')).filter((card) => !card.hidden).length;
+    const isVisible = visibleCount > 0;
+    section.hidden = !isVisible;
+    section.style.display = isVisible ? '' : 'none';
+
+    const title = findSectionTitle(section);
+    if (title) {
+      title.hidden = !isVisible;
+      title.style.display = isVisible ? '' : 'none';
+    }
   });
+}
+
+export function installCardFilter(input, cards, options = {}) {
+  if (!input) {
+    return;
+  }
+
+  const cardList = Array.from(cards);
+  const labels = {
+    all: 'Showing all tools.',
+    results: (count) => `${count} tool${count === 1 ? '' : 's'} found.`,
+    empty: 'No matching tools.',
+    ...options.labels,
+  };
+
+  function applyFilter() {
+    const query = input.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    cardList.forEach((card) => {
+      const haystack = `${card.dataset.search || ''} ${card.textContent || ''}`.toLowerCase();
+      const isVisible = query.length === 0 || haystack.includes(query);
+      card.hidden = !isVisible;
+      card.style.display = isVisible ? '' : 'none';
+      if (isVisible) {
+        visibleCount += 1;
+      }
+    });
+
+    updateFilterSections(cardList);
+
+    if (options.status) {
+      if (!query) {
+        setStatus(options.status, labels.all);
+      } else if (visibleCount === 0) {
+        setStatus(options.status, labels.empty);
+      } else {
+        setStatus(options.status, labels.results(visibleCount));
+      }
+    }
+  }
+
+  input.addEventListener('input', applyFilter);
+  applyFilter();
 }
 
 export function downloadText(filename, content) {

@@ -1,60 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX Real-time Renderer</title>
+    <title>实时 LaTeX 渲染器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./latex-renderer.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 80%;
-            margin-top: 20px;
-        }
-        textarea, #output {
-            width: 50%;
-            height: 300px;
-            margin: 0 10px;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-        }
-        textarea {
-            resize: none;
-        }
-    </style>
 </head>
 <body>
-    <div>
-        <label>
-            <input type="radio" name="display" value="show" checked> Show Output
-        </label>
-        <label>
-            <input type="radio" name="display" value="hide"> Hide Output
-        </label>
-    </div>
-    <div class="container">
-        <textarea id="input" placeholder="Type your LaTeX code here..."></textarea>
-        <div id="output"></div>
-    </div>
+    <main class="latex-shell">
+        <nav class="latex-topbar" aria-label="页面导航">
+            <a href="../../../tools/">返回工具中心</a>
+            <a href="../../">返回软件目录</a>
+        </nav>
+
+        <header class="latex-header">
+            <p class="latex-kicker">公式实时预览</p>
+            <h1>实时 LaTeX 渲染器</h1>
+            <p>在左侧输入 LaTeX，右侧会实时显示渲染结果。</p>
+        </header>
+
+        <section class="latex-options" aria-label="预览显示设置">
+            <label>
+                <input type="radio" name="display" value="show" checked> 显示预览
+            </label>
+            <label>
+                <input type="radio" name="display" value="hide"> 隐藏预览
+            </label>
+        </section>
+
+        <section class="latex-grid" aria-label="LaTeX 输入和预览">
+            <label class="latex-panel">
+                <span>输入</span>
+                <textarea id="input" placeholder="例如：\\[x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\\]"></textarea>
+            </label>
+            <section class="latex-panel">
+                <span>预览</span>
+                <div id="output" aria-live="polite"></div>
+            </section>
+        </section>
+    </main>
 
     <script>
         document.getElementById('input').addEventListener('input', function() {
             const input = document.getElementById('input').value;
             const output = document.getElementById('output');
             output.innerHTML = input;
-            MathJax.typeset();
+            if (window.MathJax) {
+                MathJax.typesetPromise([output]);
+            }
         });
 
         document.querySelectorAll('input[name="display"]').forEach((elem) => {
@@ -67,8 +64,6 @@
                 }
             });
         });
-
-        // Set initial display state based on default checked radio button
         document.querySelector('input[name="display"]:checked').dispatchEvent(new Event('change'));
     </script>
 </body>

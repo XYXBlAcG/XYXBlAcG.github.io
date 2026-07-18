@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tools Hub</title>
+  <title>工具中心</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
@@ -11,94 +11,92 @@
 </head>
 <body>
   <main class="tool-shell">
-    <nav class="tool-topbar" aria-label="Tools navigation">
-      <a class="tool-back" href="../../index.html#work">Back to Work</a>
-      <a class="tool-back" href="../py_software/">Python Tools</a>
+    <nav class="tool-topbar" aria-label="工具导航">
+      <a class="tool-back" href="../../index.html#work">返回作品区</a>
+      <a class="tool-back" href="../py_software/">返回软件目录</a>
     </nav>
 
     <header>
-      <h1 class="tool-title">Tools Hub</h1>
-      <p class="tool-subtitle">A compact catalog for math, text, file, learning, and small utility tools.</p>
+      <h1 class="tool-title">工具中心</h1>
+      <p class="tool-subtitle">集中打开本站常用的小工具，包括数学、文本、换算、文件处理和学习工具。</p>
     </header>
 
-    <section class="tool-panel tool-stack" aria-label="Tool search">
+    <section class="tool-panel tool-stack" aria-label="工具筛选">
       <label class="tool-field">
-        <span>Filter tools</span>
-        <input id="tool-filter" class="tool-input" type="search" placeholder="math, text, latex, unit, pdf, word..." />
+        <span>筛选工具</span>
+        <input id="tool-filter" class="tool-input" type="search" placeholder="数学、文本、单位、文件、PDF、单词..." />
       </label>
+      <div id="tool-filter-status" class="tool-status" role="status" aria-live="polite"></div>
     </section>
 
-    <h2 class="tool-section-title">Featured</h2>
-    <section class="tool-grid" aria-label="Featured tools">
-      <a class="tool-card" href="../py_software/apps/math-solver/" data-tool-card data-search="math solver equation matrix sympy calculus latex">
-        <h3>Math Solver</h3>
-        <p>Equation solving, calculus, matrix operations, transforms, LaTeX input, and plots.</p>
-        <span class="tool-tags"><span class="tool-tag">Math</span><span class="tool-tag">PyScript</span></span>
+    <h2 class="tool-section-title">精选工具</h2>
+    <section class="tool-grid" aria-label="精选工具">
+      <a class="tool-card" href="../py_software/apps/math-solver/" data-tool-card data-search="数学 求解器 方程 矩阵 微积分 函数 图像 latex sympy math solver equation matrix calculus">
+        <h3>数学求解器</h3>
+        <p>支持方程、矩阵、微积分、函数图像和 LaTeX 输入的数学工作台。</p>
+        <span class="tool-tags"><span class="tool-tag">数学</span><span class="tool-tag">浏览器运行</span></span>
       </a>
-      <a class="tool-card" href="./text-toolkit/" data-tool-card data-search="text toolkit json base64 url sort dedupe line">
-        <h3>Text Toolkit</h3>
-        <p>Clean, sort, dedupe, transform, encode, decode, and format text.</p>
-        <span class="tool-tags"><span class="tool-tag">Text</span><span class="tool-tag">JSON</span></span>
+      <a class="tool-card" href="./text-toolkit/" data-tool-card data-search="文本 工具箱 json base64 url 排序 去重 行号 编码 解码 text toolkit">
+        <h3>文本工具箱</h3>
+        <p>清理、排序、去重、转换、编码、解码和格式化文本。</p>
+        <span class="tool-tags"><span class="tool-tag">文本</span><span class="tool-tag">数据格式</span></span>
       </a>
-      <a class="tool-card" href="./unit-converter/" data-tool-card data-search="unit converter length mass temperature speed data angle base">
-        <h3>Unit Converter</h3>
-        <p>Convert common units, data sizes, angles, temperatures, speeds, and number bases.</p>
-        <span class="tool-tags"><span class="tool-tag">Units</span><span class="tool-tag">Everyday</span></span>
-      </a>
-    </section>
-
-    <h2 class="tool-section-title">Math and Science</h2>
-    <section class="tool-grid" aria-label="Math and science tools">
-      <a class="tool-card" href="../py_software/apps/latex-converter/" data-tool-card data-search="latex to sympy latex sympy converter formula math">
-        <h3>LaTeX to SymPy</h3>
-        <p>Convert LaTeX math input into SymPy expression syntax.</p>
-        <span class="tool-tags"><span class="tool-tag">LaTeX</span></span>
-      </a>
-      <a class="tool-card" href="../py_software/apps/latex-renderer/" data-tool-card data-search="real-time latex real time latex latex realtime renderer mathjax preview">
-        <h3>Real-time LaTeX</h3>
-        <p>Preview LaTeX snippets as rendered math while typing.</p>
-        <span class="tool-tags"><span class="tool-tag">Preview</span></span>
-      </a>
-      <a class="tool-card" href="../py_software/apps/chem-solver/" data-tool-card data-search="chem solver chem chemistry solver equation balance chempy">
-        <h3>Chem Solver</h3>
-        <p>Chemistry experiments and equation balancing utilities.</p>
-        <span class="tool-tags"><span class="tool-tag">Chem</span></span>
+      <a class="tool-card" href="./unit-converter/" data-tool-card data-search="单位 换算 长度 质量 温度 速度 数据 角度 进制 unit converter">
+        <h3>单位换算器</h3>
+        <p>换算常用单位、数据大小、角度、温度、速度和数字进制。</p>
+        <span class="tool-tags"><span class="tool-tag">单位</span><span class="tool-tag">日常</span></span>
       </a>
     </section>
 
-    <h2 class="tool-section-title">Productivity and Learning</h2>
-    <section class="tool-grid" aria-label="Productivity and learning tools">
-      <a class="tool-card" href="../filesorter/preview.html" data-tool-card data-search="filesorter file organize folder extension time">
-        <h3>Filesorter</h3>
-        <p>Organize files by extension and time rules.</p>
-        <span class="tool-tags"><span class="tool-tag">Files</span></span>
+    <h2 class="tool-section-title">数学与预览</h2>
+    <section class="tool-grid" aria-label="数学与预览工具">
+      <a class="tool-card" href="../py_software/apps/latex-renderer/" data-tool-card data-search="实时 latex 渲染 预览 公式 数学 mathjax real time renderer preview">
+        <h3>实时 LaTeX 渲染器</h3>
+        <p>输入 LaTeX 片段时实时预览渲染后的数学公式。</p>
+        <span class="tool-tags"><span class="tool-tag">预览</span><span class="tool-tag">公式</span></span>
       </a>
-      <a class="tool-card" href="../zip2pdf/preview.html" data-tool-card data-search="zip2pdf zip pdf convert images archive">
-        <h3>Zip2PDF</h3>
-        <p>Convert image archives into PDF files.</p>
+    </section>
+
+    <h2 class="tool-section-title">效率与学习</h2>
+    <section class="tool-grid" aria-label="效率与学习工具">
+      <a class="tool-card" href="../filesorter/preview.html" data-tool-card data-search="文件 整理 扩展名 时间 文件夹 filesorter organize folder extension">
+        <h3>文件整理器</h3>
+        <p>按扩展名和时间规则整理文件。</p>
+        <span class="tool-tags"><span class="tool-tag">文件</span></span>
+      </a>
+      <a class="tool-card" href="../zip2pdf/preview.html" data-tool-card data-search="压缩包 pdf 图片 转换 zip zip2pdf archive convert images">
+        <h3>压缩包转 PDF</h3>
+        <p>把图片压缩包转换成 PDF 文件。</p>
         <span class="tool-tags"><span class="tool-tag">PDF</span></span>
       </a>
-      <a class="tool-card" href="../kana_player/main.html" data-tool-card data-search="kana player player kana japanese hiragana katakana learning game">
-        <h3>Kana Player</h3>
-        <p>A kana flip-card learning game.</p>
-        <span class="tool-tags"><span class="tool-tag">Learning</span></span>
+      <a class="tool-card" href="../kana_player/main.html" data-tool-card data-search="假名 日语 平假名 片假名 学习 游戏 kana japanese hiragana katakana">
+        <h3>假名练习</h3>
+        <p>用于练习日语假名的翻卡学习游戏。</p>
+        <span class="tool-tags"><span class="tool-tag">学习</span></span>
       </a>
-      <a class="tool-card" href="../wordmemo/preview.html" data-tool-card data-search="wordmemo vocabulary memory word learning">
-        <h3>WordMemo</h3>
-        <p>A lightweight word memorization tool.</p>
-        <span class="tool-tags"><span class="tool-tag">Words</span></span>
+      <a class="tool-card" href="../wordmemo/preview.html" data-tool-card data-search="单词 记忆 词汇 学习 wordmemo vocabulary memory">
+        <h3>单词记忆</h3>
+        <p>轻量的单词记忆工具。</p>
+        <span class="tool-tags"><span class="tool-tag">单词</span></span>
       </a>
-      <a class="tool-card" href="../../star/index.html" data-tool-card data-search="star visual small demo">
-        <h3>Star</h3>
-        <p>A small visual page.</p>
-        <span class="tool-tags"><span class="tool-tag">Demo</span></span>
+      <a class="tool-card" href="../../star/index.html" data-tool-card data-search="星星 视觉 演示 star visual demo">
+        <h3>星星页面</h3>
+        <p>一个小型视觉页面。</p>
+        <span class="tool-tags"><span class="tool-tag">演示</span></span>
       </a>
     </section>
   </main>
 
   <script type="module">
-    import { installCardFilter } from './shared/tools.js';
-    installCardFilter(document.getElementById('tool-filter'), document.querySelectorAll('[data-tool-card]'));
+    import { installCardFilter } from './shared/tools.js?v=20260718-filter-cn-1';
+    installCardFilter(document.getElementById('tool-filter'), document.querySelectorAll('[data-tool-card]'), {
+      status: document.getElementById('tool-filter-status'),
+      labels: {
+        all: '显示全部工具。',
+        results: (count) => `找到 ${count} 个工具。`,
+        empty: '没有找到匹配的工具。'
+      }
+    });
   </script>
 </body>
 </html>
