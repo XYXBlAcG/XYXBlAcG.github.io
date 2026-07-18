@@ -30,11 +30,11 @@
         <label class="cli-prompt-label" for="cli-input">xyx@site</label>
         <span class="cli-path">/cli</span>
         <span class="cli-symbol">$</span>
-        <input id="cli-input" type="text" spellcheck="false" autofocus aria-label="命令输入" aria-describedby="cli-help-line" />
+        <input id="cli-input" type="text" spellcheck="false" autofocus aria-label="命令输入" aria-describedby="cli-help-line" aria-controls="cli-autocomplete" aria-expanded="false" aria-autocomplete="list" />
         <button type="submit" class="cli-run-button">运行</button>
       </form>
       <div id="cli-autocomplete" class="cli-autocomplete" role="listbox" aria-label="命令补全"></div>
-      <p id="cli-help-line" class="cli-help-line">CLI 外壳已就绪，交互命令将在下一步启用。</p>
+      <p id="cli-help-line" class="cli-help-line">输入 help 查看命令；Tab 补全；↑ ↓ 浏览历史；Ctrl+L 清屏。</p>
     </section>
   </main>
 </body>
