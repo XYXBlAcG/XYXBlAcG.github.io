@@ -32,7 +32,7 @@ function updateStats() {
   const lineCount = text.length === 0 ? 0 : lines(text).length;
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const charCount = Array.from(text).length;
-  stats.textContent = `${charCount} chars · ${words} words · ${lineCount} lines`;
+  stats.textContent = `${charCount} 个字符 · ${words} 个词 · ${lineCount} 行`;
 }
 
 function runAction(action) {
@@ -59,10 +59,10 @@ function runAction(action) {
     };
 
     output.value = transforms[action]();
-    setStatus(status, 'Done.');
+    setStatus(status, '已完成。');
   } catch (error) {
     output.value = '';
-    setStatus(status, error.message, true);
+    setStatus(status, `处理失败：${error.message}`, true);
   }
 }
 
@@ -79,19 +79,19 @@ document.getElementById('swap-text').addEventListener('click', () => {
   input.value = output.value;
   output.value = currentInput;
   updateStats();
-  setStatus(status, 'Swapped.');
+  setStatus(status, '已交换。');
 });
 
 document.getElementById('download-output').addEventListener('click', () => {
   downloadText('text-toolkit-output.txt', output.value);
-  setStatus(status, 'Downloaded.');
+  setStatus(status, '已下载。');
 });
 
 document.getElementById('clear-text').addEventListener('click', () => {
   input.value = '';
   output.value = '';
   updateStats();
-  setStatus(status, 'Cleared.');
+  setStatus(status, '已清空。');
 });
 
 input.addEventListener('input', updateStats);

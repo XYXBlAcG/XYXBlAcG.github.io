@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Unit Converter</title>
+  <title>单位换算器</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
@@ -11,36 +11,36 @@
 </head>
 <body>
   <main class="tool-shell">
-    <nav class="tool-topbar" aria-label="Unit Converter navigation">
-      <a class="tool-back" href="../">Back to Tools Hub</a>
-      <a class="tool-back" href="../../../index.html#work">Back to Work</a>
+    <nav class="tool-topbar" aria-label="单位换算器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
     </nav>
 
     <header>
-      <h1 class="tool-title">Unit Converter</h1>
-      <p class="tool-subtitle">Convert practical units, data sizes, angles, temperatures, and number bases.</p>
+      <h1 class="tool-title">单位换算器</h1>
+      <p class="tool-subtitle">换算常用单位、数据大小、角度、温度、速度和数字进制。</p>
     </header>
 
-    <section class="tool-panel tool-stack" aria-label="Converter controls">
+    <section class="tool-panel tool-stack" aria-label="换算控制">
       <div class="tool-form-grid">
         <label class="tool-field">
-          <span>Category</span>
+          <span>类别</span>
           <select id="category" class="tool-select"></select>
         </label>
         <label class="tool-field">
-          <span>From</span>
+          <span>原单位</span>
           <select id="from-unit" class="tool-select"></select>
         </label>
         <label class="tool-field">
-          <span>Value</span>
+          <span>数值</span>
           <input id="value" class="tool-input" type="text" value="1" inputmode="decimal" />
         </label>
       </div>
       <div id="status" class="tool-status" role="status" aria-live="polite"></div>
     </section>
 
-    <section class="tool-panel tool-stack" aria-label="Conversion results">
-      <h2>Results</h2>
+    <section class="tool-panel tool-stack" aria-label="换算结果">
+      <h2>换算结果</h2>
       <div id="results" class="tool-results"></div>
     </section>
   </main>

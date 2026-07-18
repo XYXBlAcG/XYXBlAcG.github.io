@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>摘要校验工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="摘要校验工具导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">摘要校验工具</h1>
+      <p class="tool-subtitle">计算文本或文件的常用摘要，用于校验下载内容或比对数据。</p>
+    </header>
+
+    <section class="tool-split" aria-label="摘要输入">
+      <section class="tool-panel tool-stack">
+        <h2>文本输入</h2>
+        <textarea id="text-input" class="tool-textarea" spellcheck="false">你好，工具中心</textarea>
+      </section>
+      <section class="tool-panel tool-stack">
+        <h2>文件输入</h2>
+        <label class="tool-field">
+          <span>选择文件后会优先计算文件摘要</span>
+          <input id="file-input" class="tool-input tool-file" type="file" />
+        </label>
+        <div class="tool-actions">
+          <button id="clear-file" class="tool-button">改用文本</button>
+          <button id="copy-results" class="tool-button">复制结果</button>
+        </div>
+        <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="摘要结果">
+      <h2>摘要结果</h2>
+      <div id="results" class="tool-results"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./hash-tool.js"></script>
+</body>
+</html>

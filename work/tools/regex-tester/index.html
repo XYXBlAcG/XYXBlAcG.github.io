@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>正则表达式测试器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="正则表达式测试器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">正则表达式测试器</h1>
+      <p class="tool-subtitle">实时查看匹配结果、捕获组和高亮文本。</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="正则设置">
+      <div class="tool-form-grid">
+        <label class="tool-field">
+          <span>表达式</span>
+          <input id="pattern" class="tool-input" type="text" value="1[3-9]\\d{9}" />
+        </label>
+        <label class="tool-field">
+          <span>标志</span>
+          <input id="flags" class="tool-input" type="text" value="gi" />
+        </label>
+      </div>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-split even" aria-label="测试区域">
+      <label class="tool-field">
+        <span>测试文本</span>
+        <textarea id="sample" class="tool-textarea" spellcheck="false">请联系 13800138000，备用号码是 15900001111。</textarea>
+      </label>
+      <section class="tool-panel tool-stack">
+        <h2>高亮预览</h2>
+        <div id="highlight" class="tool-preview"></div>
+      </section>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="匹配详情">
+      <h2>匹配详情</h2>
+      <div id="matches" class="tool-results"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./regex-tester.js"></script>
+</body>
+</html>

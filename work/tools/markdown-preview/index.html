@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>标记文本预览器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="标记文本预览器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">标记文本预览器</h1>
+      <p class="tool-subtitle">实时预览标题、列表、引用、代码块、链接和强调文本。</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="预览操作">
+      <div class="tool-actions">
+        <button id="copy-html" class="tool-button">复制网页片段</button>
+        <button id="download-html" class="tool-button">下载网页片段</button>
+      </div>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-split even" aria-label="标记文本输入和预览">
+      <label class="tool-field">
+        <span>输入</span>
+        <textarea id="source" class="tool-textarea" spellcheck="false"># 工具说明
+
+这是一个 **实时预览** 示例。
+
+- 支持列表
+- 支持 `行内代码`
+
+> 引用内容会单独显示。</textarea>
+      </label>
+      <section class="tool-panel tool-stack">
+        <h2>预览</h2>
+        <div id="preview" class="tool-preview tool-markdown-preview"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./markdown-preview.js"></script>
+</body>
+</html>

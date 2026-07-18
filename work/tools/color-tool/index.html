@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>配色检查器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="配色检查器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">配色检查器</h1>
+      <p class="tool-subtitle">转换颜色格式，并检查前景色和背景色的可读性对比。</p>
+    </header>
+
+    <section class="tool-split" aria-label="颜色输入">
+      <section class="tool-panel tool-stack">
+        <h2>颜色转换</h2>
+        <div class="tool-form-grid compact">
+          <label class="tool-field">
+            <span>颜色值</span>
+            <input id="color-text" class="tool-input" type="text" value="#72d2c8" />
+          </label>
+          <label class="tool-field">
+            <span>选择颜色</span>
+            <input id="color-picker" class="tool-input" type="color" value="#72d2c8" />
+          </label>
+        </div>
+        <div id="swatch" class="tool-swatch"></div>
+      </section>
+      <section class="tool-panel tool-stack">
+        <h2>对比检查</h2>
+        <div class="tool-form-grid compact">
+          <label class="tool-field">
+            <span>文字颜色</span>
+            <input id="foreground" class="tool-input" type="color" value="#f4f7fb" />
+          </label>
+          <label class="tool-field">
+            <span>背景颜色</span>
+            <input id="background" class="tool-input" type="color" value="#101418" />
+          </label>
+        </div>
+        <div id="contrast-demo" class="tool-color-pair">示例文字</div>
+      </section>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="颜色结果">
+      <h2>结果</h2>
+      <div id="results" class="tool-results"></div>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./color-tool.js"></script>
+</body>
+</html>

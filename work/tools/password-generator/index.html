@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>密码生成器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="密码生成器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">密码生成器</h1>
+      <p class="tool-subtitle">生成随机密码或中文短语口令，所有内容只在本地浏览器中产生。</p>
+    </header>
+
+    <section class="tool-split" aria-label="密码生成设置">
+      <section class="tool-panel tool-stack">
+        <h2>生成设置</h2>
+        <label class="tool-field">
+          <span>模式</span>
+          <select id="mode" class="tool-select">
+            <option value="password">随机密码</option>
+            <option value="phrase">短语口令</option>
+          </select>
+        </label>
+        <label class="tool-field">
+          <span>长度或词数：<span id="length-value">18</span></span>
+          <input id="length" class="tool-input" type="range" min="8" max="40" value="18" />
+        </label>
+        <div class="tool-chip-list" aria-label="字符选项">
+          <label class="tool-check"><input id="lowercase" type="checkbox" checked /> 小写字母</label>
+          <label class="tool-check"><input id="uppercase" type="checkbox" checked /> 大写字母</label>
+          <label class="tool-check"><input id="numbers" type="checkbox" checked /> 数字</label>
+          <label class="tool-check"><input id="symbols" type="checkbox" checked /> 符号</label>
+        </div>
+        <div class="tool-actions">
+          <button id="generate" class="tool-button primary">生成</button>
+          <button id="copy" class="tool-button">复制</button>
+        </div>
+        <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="tool-panel tool-stack">
+        <h2>生成结果</h2>
+        <textarea id="result" class="tool-textarea" spellcheck="false" readonly></textarea>
+        <div id="strength" class="tool-status"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./password-generator.js"></script>
+</body>
+</html>

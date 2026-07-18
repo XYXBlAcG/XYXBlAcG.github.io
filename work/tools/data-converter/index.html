@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>数据转换器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="数据转换器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">数据转换器</h1>
+      <p class="tool-subtitle">格式化结构化数据，在对象数组和逗号分隔表之间转换。</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="数据操作">
+      <div class="tool-actions">
+        <button class="tool-button primary" data-action="format-json">格式化对象数据</button>
+        <button class="tool-button" data-action="minify-json">压缩对象数据</button>
+        <button class="tool-button" data-action="json-to-csv">对象转表格文本</button>
+        <button class="tool-button" data-action="csv-to-json">表格文本转对象</button>
+        <button id="copy-output" class="tool-button">复制输出</button>
+      </div>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-split even" aria-label="数据输入输出">
+      <label class="tool-field">
+        <span>输入</span>
+        <textarea id="input" class="tool-textarea" spellcheck="false">[{"姓名":"小林","分数":92},{"姓名":"小周","分数":88}]</textarea>
+      </label>
+      <label class="tool-field">
+        <span>输出</span>
+        <textarea id="output" class="tool-textarea" spellcheck="false" readonly></textarea>
+      </label>
+    </section>
+  </main>
+
+  <script type="module" src="./data-converter.js"></script>
+</body>
+</html>

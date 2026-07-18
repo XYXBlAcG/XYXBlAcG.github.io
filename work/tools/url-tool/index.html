@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>链接解析器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="链接解析器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">链接解析器</h1>
+      <p class="tool-subtitle">拆解链接组成、编辑查询参数，并重新生成链接。</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="链接输入">
+      <label class="tool-field">
+        <span>链接</span>
+        <input id="url-input" class="tool-input" type="text" value="https://example.com/search?q=工具&sort=new#result" />
+      </label>
+      <div class="tool-actions">
+        <button id="add-param" class="tool-button">添加参数</button>
+        <button id="copy-url" class="tool-button">复制生成链接</button>
+      </div>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-split" aria-label="链接详情">
+      <section class="tool-panel tool-stack">
+        <h2>组成部分</h2>
+        <div id="parts" class="tool-results"></div>
+      </section>
+      <section class="tool-panel tool-stack">
+        <h2>查询参数</h2>
+        <div class="tool-preview">
+          <table class="tool-table">
+            <thead>
+              <tr><th>名称</th><th>值</th><th>操作</th></tr>
+            </thead>
+            <tbody id="params"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="生成链接">
+      <h2>生成链接</h2>
+      <textarea id="generated-url" class="tool-textarea" readonly></textarea>
+    </section>
+  </main>
+
+  <script type="module" src="./url-tool.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文本对比器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="文本对比器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">文本对比器</h1>
+      <p class="tool-subtitle">按行比较两段文本，也可以先格式化结构化文本再对比。</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="对比设置">
+      <label class="tool-check"><input id="normalize-json" type="checkbox" /> 对比前格式化结构化文本</label>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-split even" aria-label="待对比文本">
+      <label class="tool-field">
+        <span>旧文本</span>
+        <textarea id="left" class="tool-textarea" spellcheck="false">第一行
+第二行
+共同内容</textarea>
+      </label>
+      <label class="tool-field">
+        <span>新文本</span>
+        <textarea id="right" class="tool-textarea" spellcheck="false">第一行
+新的第二行
+共同内容</textarea>
+      </label>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="对比结果">
+      <h2>对比结果</h2>
+      <div id="summary" class="tool-status"></div>
+      <div id="diff" class="tool-preview"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./diff-tool.js"></script>
+</body>
+</html>

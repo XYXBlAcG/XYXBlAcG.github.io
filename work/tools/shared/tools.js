@@ -13,7 +13,7 @@ function copyTextFallback(text) {
     !document.body ||
     typeof document.execCommand !== 'function'
   ) {
-    throw new Error('Clipboard API unavailable');
+    throw new Error('剪贴板接口不可用');
   }
 
   const textarea = document.createElement('textarea');
@@ -28,7 +28,7 @@ function copyTextFallback(text) {
   textarea.remove();
 
   if (!copied) {
-    throw new Error('Clipboard copy was not accepted');
+    throw new Error('浏览器拒绝复制请求');
   }
 }
 
@@ -39,9 +39,9 @@ export async function copyText(text, statusElement) {
     } else {
       copyTextFallback(text);
     }
-    setStatus(statusElement, 'Copied.');
+    setStatus(statusElement, '已复制。');
   } catch (error) {
-    setStatus(statusElement, `Copy failed: ${error.message}`, true);
+    setStatus(statusElement, `复制失败：${error.message}`, true);
   }
 }
 
@@ -79,9 +79,9 @@ export function installCardFilter(input, cards, options = {}) {
 
   const cardList = Array.from(cards);
   const labels = {
-    all: 'Showing all tools.',
-    results: (count) => `${count} tool${count === 1 ? '' : 's'} found.`,
-    empty: 'No matching tools.',
+    all: '显示全部工具。',
+    results: (count) => `找到 ${count} 个工具。`,
+    empty: '没有找到匹配的工具。',
     ...options.labels,
   };
 

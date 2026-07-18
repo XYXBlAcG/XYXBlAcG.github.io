@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>图片处理器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="图片处理器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">图片处理器</h1>
+      <p class="tool-subtitle">本地调整图片尺寸、质量和输出格式，不上传文件。</p>
+    </header>
+
+    <section class="tool-split" aria-label="图片处理">
+      <section class="tool-panel tool-stack">
+        <h2>设置</h2>
+        <label class="tool-field">
+          <span>选择图片</span>
+          <input id="image-file" class="tool-input tool-file" type="file" accept="image/*" />
+        </label>
+        <div class="tool-form-grid compact">
+          <label class="tool-field">
+            <span>宽度</span>
+            <input id="width" class="tool-input" type="number" min="1" />
+          </label>
+          <label class="tool-field">
+            <span>高度</span>
+            <input id="height" class="tool-input" type="number" min="1" />
+          </label>
+          <label class="tool-field">
+            <span>格式</span>
+            <select id="format" class="tool-select">
+              <option value="image/webp">网页图片</option>
+              <option value="image/jpeg">照片格式</option>
+              <option value="image/png">无损格式</option>
+            </select>
+          </label>
+        </div>
+        <label class="tool-field">
+          <span>质量：<span id="quality-value">0.82</span></span>
+          <input id="quality" class="tool-input" type="range" min="0.2" max="1" step="0.01" value="0.82" />
+        </label>
+        <label class="tool-check"><input id="keep-ratio" type="checkbox" checked /> 保持宽高比例</label>
+        <div class="tool-actions">
+          <button id="process" class="tool-button primary">生成图片</button>
+          <button id="download" class="tool-button">下载图片</button>
+        </div>
+        <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="tool-panel tool-stack">
+        <h2>预览</h2>
+        <div class="tool-image-frame">
+          <img id="preview" alt="处理后的图片预览" hidden />
+        </div>
+        <div id="meta" class="tool-status"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./image-utilities.js"></script>
+</body>
+</html>

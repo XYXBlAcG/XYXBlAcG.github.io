@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>二维码工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="二维码工具导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">二维码工具</h1>
+      <p class="tool-subtitle">生成文本、链接或无线网络二维码，也可以从图片中解码。</p>
+    </header>
+
+    <section class="tool-split" aria-label="二维码生成">
+      <section class="tool-panel tool-stack">
+        <h2>生成二维码</h2>
+        <label class="tool-field">
+          <span>内容类型</span>
+          <select id="qr-type" class="tool-select">
+            <option value="text">普通文本</option>
+            <option value="link">网页链接</option>
+            <option value="wifi">无线网络</option>
+          </select>
+        </label>
+        <label class="tool-field" data-panel="text">
+          <span>内容</span>
+          <textarea id="qr-text" class="tool-textarea" spellcheck="false">欢迎使用工具中心</textarea>
+        </label>
+        <div class="tool-form-grid compact is-hidden" data-panel="wifi">
+          <label class="tool-field">
+            <span>网络名称</span>
+            <input id="wifi-ssid" class="tool-input" type="text" />
+          </label>
+          <label class="tool-field">
+            <span>密码</span>
+            <input id="wifi-password" class="tool-input" type="text" />
+          </label>
+          <label class="tool-field">
+            <span>加密方式</span>
+            <select id="wifi-auth" class="tool-select">
+              <option value="WPA">WPA/WPA2</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">无密码</option>
+            </select>
+          </label>
+        </div>
+        <div class="tool-form-grid compact">
+          <label class="tool-field">
+            <span>尺寸</span>
+            <input id="qr-size" class="tool-input" type="number" min="160" max="800" value="280" />
+          </label>
+          <label class="tool-field">
+            <span>纠错等级</span>
+            <select id="qr-level" class="tool-select">
+              <option value="M">中</option>
+              <option value="L">低</option>
+              <option value="Q">较高</option>
+              <option value="H">高</option>
+            </select>
+          </label>
+        </div>
+        <div class="tool-actions">
+          <button id="generate-qr" class="tool-button primary">生成</button>
+          <button id="download-qr" class="tool-button">下载图片</button>
+        </div>
+        <div id="generate-status" class="tool-status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="tool-panel tool-stack">
+        <h2>二维码预览</h2>
+        <div class="tool-canvas-wrap">
+          <canvas id="qr-canvas" width="280" height="280" aria-label="二维码画布"></canvas>
+        </div>
+      </section>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="二维码解码">
+      <h2>解码图片</h2>
+      <div class="tool-form-grid">
+        <label class="tool-field">
+          <span>上传二维码图片</span>
+          <input id="decode-file" class="tool-input tool-file" type="file" accept="image/*" />
+        </label>
+        <label class="tool-field">
+          <span>解码结果</span>
+          <input id="decoded-text" class="tool-input" type="text" readonly />
+        </label>
+      </div>
+      <div class="tool-actions">
+        <button id="copy-decoded" class="tool-button">复制解码结果</button>
+      </div>
+      <div id="decode-status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./qr-tool.js"></script>
+</body>
+</html>

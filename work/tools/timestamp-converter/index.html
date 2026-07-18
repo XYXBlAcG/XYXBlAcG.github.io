@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>时间转换器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="时间转换器导航">
+      <a class="tool-back" href="../">返回工具中心</a>
+      <a class="tool-back" href="../../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">时间转换器</h1>
+      <p class="tool-subtitle">在时间戳、标准时间文本、本地时间和常用时区之间快速换算。</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="时间输入">
+      <div class="tool-form-grid">
+        <label class="tool-field">
+          <span>时间戳或时间文本</span>
+          <input id="time-source" class="tool-input" type="text" />
+        </label>
+        <label class="tool-field">
+          <span>数字时间戳单位</span>
+          <select id="time-unit" class="tool-select">
+            <option value="seconds">秒</option>
+            <option value="milliseconds">毫秒</option>
+          </select>
+        </label>
+        <label class="tool-field">
+          <span>重点时区</span>
+          <select id="time-zone" class="tool-select">
+            <option value="local">浏览器本地时区</option>
+            <option value="UTC">协调世界时</option>
+            <option value="Asia/Shanghai">中国标准时间</option>
+            <option value="America/New_York">美国东部时间</option>
+            <option value="America/Los_Angeles">美国太平洋时间</option>
+            <option value="Europe/London">英国时间</option>
+            <option value="Asia/Tokyo">日本时间</option>
+          </select>
+        </label>
+      </div>
+      <div class="tool-actions">
+        <button id="use-now" class="tool-button primary">使用当前时间</button>
+        <button id="copy-iso" class="tool-button">复制标准时间文本</button>
+      </div>
+      <div id="status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="转换结果">
+      <h2>转换结果</h2>
+      <div id="results" class="tool-results"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./timestamp-converter.js"></script>
+</body>
+</html>

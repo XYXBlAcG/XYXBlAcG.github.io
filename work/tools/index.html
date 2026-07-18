@@ -18,13 +18,13 @@
 
     <header>
       <h1 class="tool-title">工具中心</h1>
-      <p class="tool-subtitle">集中打开本站常用的小工具，包括数学、文本、换算、文件处理和学习工具。</p>
+      <p class="tool-subtitle">集中打开本站常用的小工具，包括数学、文本、换算、二维码、时间、图片和学习工具。</p>
     </header>
 
     <section class="tool-panel tool-stack" aria-label="工具筛选">
       <label class="tool-field">
         <span>筛选工具</span>
-        <input id="tool-filter" class="tool-input" type="search" placeholder="数学、文本、单位、文件、PDF、单词..." />
+        <input id="tool-filter" class="tool-input" type="search" placeholder="数学、文本、二维码、时间、颜色、图片、链接..." />
       </label>
       <div id="tool-filter-status" class="tool-status" role="status" aria-live="polite"></div>
     </section>
@@ -46,6 +46,64 @@
         <p>换算常用单位、数据大小、角度、温度、速度和数字进制。</p>
         <span class="tool-tags"><span class="tool-tag">单位</span><span class="tool-tag">日常</span></span>
       </a>
+      <a class="tool-card" href="./qr-tool/" data-tool-card data-search="二维码 生成 解码 图片 链接 wifi qr qrcode barcode">
+        <h3>二维码工具</h3>
+        <p>生成文本、链接和无线网络二维码，也能从图片里读取内容。</p>
+        <span class="tool-tags"><span class="tool-tag">二维码</span><span class="tool-tag">图片</span></span>
+      </a>
+    </section>
+
+    <h2 class="tool-section-title">文本与数据</h2>
+    <section class="tool-grid" aria-label="文本与数据工具">
+      <a class="tool-card" href="./regex-tester/" data-tool-card data-search="正则 表达式 测试 匹配 捕获 高亮 regex pattern">
+        <h3>正则表达式测试器</h3>
+        <p>实时高亮匹配内容，并查看捕获组和匹配数量。</p>
+        <span class="tool-tags"><span class="tool-tag">文本</span><span class="tool-tag">匹配</span></span>
+      </a>
+      <a class="tool-card" href="./markdown-preview/" data-tool-card data-search="标记 文本 预览 markdown html preview">
+        <h3>标记文本预览器</h3>
+        <p>预览标题、列表、引用、代码块和强调文本，并导出网页片段。</p>
+        <span class="tool-tags"><span class="tool-tag">预览</span><span class="tool-tag">写作</span></span>
+      </a>
+      <a class="tool-card" href="./data-converter/" data-tool-card data-search="数据 转换 json csv 表格 格式化 压缩 data converter">
+        <h3>数据转换器</h3>
+        <p>格式化对象数据，并在对象数组和逗号分隔表之间转换。</p>
+        <span class="tool-tags"><span class="tool-tag">数据</span><span class="tool-tag">表格</span></span>
+      </a>
+      <a class="tool-card" href="./diff-tool/" data-tool-card data-search="文本 对比 差异 diff json compare">
+        <h3>文本对比器</h3>
+        <p>按行比较两段文本，支持先格式化结构化文本再对比。</p>
+        <span class="tool-tags"><span class="tool-tag">文本</span><span class="tool-tag">对比</span></span>
+      </a>
+    </section>
+
+    <h2 class="tool-section-title">日常与开发</h2>
+    <section class="tool-grid" aria-label="日常与开发工具">
+      <a class="tool-card" href="./timestamp-converter/" data-tool-card data-search="时间 时间戳 时区 unix iso 日期 timestamp timezone date">
+        <h3>时间转换器</h3>
+        <p>在时间戳、标准时间文本、本地时间和常用时区之间换算。</p>
+        <span class="tool-tags"><span class="tool-tag">时间</span><span class="tool-tag">时区</span></span>
+      </a>
+      <a class="tool-card" href="./hash-tool/" data-tool-card data-search="摘要 校验 哈希 md5 sha 文件 文本 checksum hash">
+        <h3>摘要校验工具</h3>
+        <p>计算文本或文件的常用摘要，适合校验下载内容或比对数据。</p>
+        <span class="tool-tags"><span class="tool-tag">校验</span><span class="tool-tag">文件</span></span>
+      </a>
+      <a class="tool-card" href="./color-tool/" data-tool-card data-search="颜色 配色 对比 色值 hex rgb hsl contrast color">
+        <h3>配色检查器</h3>
+        <p>转换颜色格式，并检查前景色和背景色的可读性对比。</p>
+        <span class="tool-tags"><span class="tool-tag">颜色</span><span class="tool-tag">可读性</span></span>
+      </a>
+      <a class="tool-card" href="./password-generator/" data-tool-card data-search="密码 口令 随机 安全 passphrase password generator">
+        <h3>密码生成器</h3>
+        <p>生成随机密码或中文短语口令，所有内容只在本地浏览器产生。</p>
+        <span class="tool-tags"><span class="tool-tag">安全</span><span class="tool-tag">随机</span></span>
+      </a>
+      <a class="tool-card" href="./url-tool/" data-tool-card data-search="链接 解析 参数 查询 url query parser">
+        <h3>链接解析器</h3>
+        <p>拆解链接组成、编辑查询参数，并重新生成链接。</p>
+        <span class="tool-tags"><span class="tool-tag">链接</span><span class="tool-tag">参数</span></span>
+      </a>
     </section>
 
     <h2 class="tool-section-title">数学与预览</h2>
@@ -57,8 +115,13 @@
       </a>
     </section>
 
-    <h2 class="tool-section-title">效率与学习</h2>
-    <section class="tool-grid" aria-label="效率与学习工具">
+    <h2 class="tool-section-title">图像与文件</h2>
+    <section class="tool-grid" aria-label="图像与文件工具">
+      <a class="tool-card" href="./image-utilities/" data-tool-card data-search="图片 处理 压缩 缩放 格式 转换 webp jpg png image resize compress">
+        <h3>图片处理器</h3>
+        <p>本地调整图片尺寸、质量和输出格式，不上传文件。</p>
+        <span class="tool-tags"><span class="tool-tag">图片</span><span class="tool-tag">本地</span></span>
+      </a>
       <a class="tool-card" href="../filesorter/preview.html" data-tool-card data-search="文件 整理 扩展名 时间 文件夹 filesorter organize folder extension">
         <h3>文件整理器</h3>
         <p>按扩展名和时间规则整理文件。</p>
@@ -69,6 +132,10 @@
         <p>把图片压缩包转换成 PDF 文件。</p>
         <span class="tool-tags"><span class="tool-tag">PDF</span></span>
       </a>
+    </section>
+
+    <h2 class="tool-section-title">效率与学习</h2>
+    <section class="tool-grid" aria-label="效率与学习工具">
       <a class="tool-card" href="../kana_player/main.html" data-tool-card data-search="假名 日语 平假名 片假名 学习 游戏 kana japanese hiragana katakana">
         <h3>假名练习</h3>
         <p>用于练习日语假名的翻卡学习游戏。</p>
