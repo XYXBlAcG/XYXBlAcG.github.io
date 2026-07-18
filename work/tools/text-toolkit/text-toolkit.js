@@ -10,22 +10,29 @@ function lines(text) {
 }
 
 function titleCase(text) {
-  return text.toLowerCase().replace(/\b[\p{L}\p{N}]/gu, (match) => match.toUpperCase());
+  return text
+    .toLocaleLowerCase()
+    .replace(/(^|[^\p{L}\p{N}])(\p{L})/gu, (match, boundary, letter) => `${boundary}${letter.toLocaleUpperCase()}`);
 }
 
 function encodeBase64(text) {
-  return btoa(unescape(encodeURIComponent(text)));
+  const bytes = new TextEncoder().encode(text);
+  const binary = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+  return btoa(binary);
 }
 
 function decodeBase64(text) {
-  return decodeURIComponent(escape(atob(text.trim())));
+  const binary = atob(text.trim());
+  const bytes = Uint8Array.from(binary, (char) => char.codePointAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
 }
 
 function updateStats() {
   const text = input.value;
   const lineCount = text.length === 0 ? 0 : lines(text).length;
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  stats.textContent = `${text.length} chars · ${words} words · ${lineCount} lines`;
+  const charCount = Array.from(text).length;
+  stats.textContent = `${charCount} chars · ${words} words · ${lineCount} lines`;
 }
 
 function runAction(action) {
@@ -39,7 +46,7 @@ function runAction(action) {
       dedupe: () => Array.from(new Set(lines(text))).join('\n'),
       'sort-asc': () => lines(text).slice().sort((a, b) => a.localeCompare(b)).join('\n'),
       'sort-desc': () => lines(text).slice().sort((a, b) => b.localeCompare(a)).join('\n'),
-      'line-numbers': () => lines(text).map((line, index) => `${index + 1}. ${line}`).join('\n'),
+      'line-numbers': () => (text.length === 0 ? '' : lines(text).map((line, index) => `${index + 1}. ${line}`).join('\n')),
       upper: () => text.toUpperCase(),
       lower: () => text.toLowerCase(),
       title: () => titleCase(text),
@@ -54,6 +61,7 @@ function runAction(action) {
     output.value = transforms[action]();
     setStatus(status, 'Done.');
   } catch (error) {
+    output.value = '';
     setStatus(status, error.message, true);
   }
 }
