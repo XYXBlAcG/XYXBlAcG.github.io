@@ -28,6 +28,17 @@ body {
     url("../../../images/bg.jpg") center / cover fixed;
 }
 
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    linear-gradient(135deg, rgba(114, 210, 200, 0.1), transparent 36%),
+    linear-gradient(180deg, rgba(244, 201, 93, 0.08), transparent 42%);
+  pointer-events: none;
+}
+
 a {
   color: inherit;
 }
@@ -47,7 +58,7 @@ textarea {
 .tool-shell {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 40px 0 56px;
+  padding: 48px 0 64px;
 }
 
 .tool-topbar {
@@ -55,7 +66,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 34px;
 }
 
 .tool-back {
@@ -95,22 +106,29 @@ textarea {
   letter-spacing: 0;
 }
 
+.tool-shell > header {
+  margin-bottom: 34px;
+}
+
 .tool-subtitle {
   max-width: 720px;
-  margin: 12px 0 0;
+  margin: 16px 0 0;
   color: var(--muted);
   font-size: 1.05rem;
+  line-height: 1.7;
 }
 
 .tool-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
 .tool-card,
 .tool-panel {
-  background: var(--panel);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.055)),
+    var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 18px 42px var(--shadow);
@@ -121,7 +139,7 @@ textarea {
   display: grid;
   gap: 12px;
   min-height: 190px;
-  padding: 18px;
+  padding: 20px;
   text-decoration: none;
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
@@ -162,7 +180,7 @@ textarea {
 }
 
 .tool-panel {
-  padding: 18px;
+  padding: 20px;
 }
 
 .tool-stack {
@@ -272,6 +290,12 @@ textarea {
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
+.tool-button.compact {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.86rem;
+}
+
 .tool-button:hover {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.12);
@@ -297,11 +321,17 @@ textarea {
 }
 
 .tool-section-title {
-  margin: 24px 0 12px;
+  margin: 40px 0 14px;
   color: var(--muted);
   font-size: 0.85rem;
   letter-spacing: 0.08rem;
   text-transform: uppercase;
+}
+
+.tool-panel + .tool-section-title,
+.tool-grid + .tool-section-title,
+.tool-split + .tool-section-title {
+  margin-top: 46px;
 }
 
 .tool-results {
@@ -311,7 +341,8 @@ textarea {
 
 .tool-result-row {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr);
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr) auto;
+  align-items: center;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -319,6 +350,14 @@ textarea {
 
 .tool-result-row strong {
   color: var(--accent-strong);
+}
+
+.tool-result-row span {
+  overflow-wrap: anywhere;
+}
+
+.tool-result-row > :nth-child(2):last-child {
+  grid-column: 2 / -1;
 }
 
 .tool-table {

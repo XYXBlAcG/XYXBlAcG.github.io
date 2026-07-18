@@ -1,4 +1,4 @@
-import { setStatus } from '../shared/tools.js';
+import { copyText, setStatus } from '../shared/tools.js';
 
 const categorySelect = document.getElementById('category');
 const fromSelect = document.getElementById('from-unit');
@@ -219,8 +219,15 @@ function renderResults() {
       const label = document.createElement('strong');
       label.textContent = unit;
       const result = document.createElement('span');
-      result.textContent = typeof value === 'number' ? formatNumber(value) : value;
-      row.append(label, result);
+      const displayValue = typeof value === 'number' ? formatNumber(value) : value;
+      result.textContent = displayValue;
+      const copyButton = document.createElement('button');
+      copyButton.type = 'button';
+      copyButton.className = 'tool-button compact';
+      copyButton.textContent = '复制';
+      copyButton.setAttribute('aria-label', `复制${unit}换算结果`);
+      copyButton.addEventListener('click', () => copyText(displayValue, status));
+      row.append(label, result, copyButton);
       results.appendChild(row);
     });
     setStatus(status, '已更新换算结果。');
