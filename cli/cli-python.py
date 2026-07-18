@@ -8,49 +8,92 @@ from types import MappingProxyType
 from js import window
 
 
+class SafeFunction:
+    __slots__ = ("_function",)
+
+    def __init__(self, function):
+        object.__setattr__(self, "_function", function)
+
+    def __call__(self, *args, **kwargs):
+        return object.__getattribute__(self, "_function")(*args, **kwargs)
+
+    def __getattribute__(self, name):
+        raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        raise AttributeError(name)
+
+    def __delattr__(self, name):
+        raise AttributeError(name)
+
+
+def _safe_print(*values, sep=" ", end="\n", flush=False):
+    if sep is None:
+        sep = " "
+    if end is None:
+        end = "\n"
+    if not isinstance(sep, str):
+        raise TypeError("sep must be None or a string")
+    if not isinstance(end, str):
+        raise TypeError("end must be None or a string")
+
+    print(sep.join(str(value) for value in values), end=end, flush=bool(flush))
+
+
+def _safe(function):
+    return SafeFunction(function)
+
+
 ALLOWED_BUILTINS = MappingProxyType(
     {
-        "abs": abs,
-        "all": all,
-        "any": any,
-        "bin": bin,
+        "abs": _safe(abs),
+        "all": _safe(all),
+        "any": _safe(any),
+        "bin": _safe(bin),
         "bool": bool,
         "dict": dict,
-        "divmod": divmod,
+        "divmod": _safe(divmod),
         "enumerate": enumerate,
         "filter": filter,
         "float": float,
-        "format": format,
-        "hex": hex,
+        "format": _safe(format),
+        "hex": _safe(hex),
         "int": int,
-        "len": len,
+        "len": _safe(len),
         "list": list,
         "map": map,
-        "max": max,
-        "min": min,
-        "oct": oct,
-        "pow": pow,
-        "print": print,
+        "max": _safe(max),
+        "min": _safe(min),
+        "oct": _safe(oct),
+        "pow": _safe(pow),
+        "print": _safe(_safe_print),
         "range": range,
-        "round": round,
+        "round": _safe(round),
         "set": set,
-        "sorted": sorted,
+        "sorted": _safe(sorted),
         "str": str,
-        "sum": sum,
+        "sum": _safe(sum),
         "tuple": tuple,
         "zip": zip,
     }
 )
 
 
+def _validate_tree(tree):
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr.startswith("__"):
+            raise ValueError("不允许访问双下划线属性。")
+
+
 def _run_python(code):
     stdout = io.StringIO()
     stderr = io.StringIO()
-    namespace = {"__builtins__": ALLOWED_BUILTINS}
+    namespace = {"__builtins__": ALLOWED_BUILTINS, "__name__": "__main__"}
     result = ""
 
     try:
         tree = ast.parse(code, mode="exec")
+        _validate_tree(tree)
         last_expr = tree.body[-1] if tree.body else None
 
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
