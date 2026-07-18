@@ -40,8 +40,12 @@ function readHistory() {
   }
 }
 
-function getPythonBridgeError() {
+function getPythonMalformedResult() {
   return { ok: false, stdout: '', stderr: 'Python 运行时返回了无法解析的数据。', result: '' };
+}
+
+function getPythonCallFailure() {
+  return { ok: false, stdout: '', stderr: 'Python 运行时调用失败。', result: '' };
 }
 
 function isPythonBridgeResult(value) {
@@ -168,12 +172,20 @@ function initializeCli({
       return { ok: false, stdout: '', stderr: 'Python 运行时尚未加载完成。', result: '' };
     }
 
+    let raw;
     try {
-      const raw = await window.siteCliRunPython(code);
+      raw = await window.siteCliRunPython(code);
+    } catch (error) {
+      console.warn('Site CLI Python bridge call failed.', error);
+      return getPythonCallFailure();
+    }
+
+    try {
       const result = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      return isPythonBridgeResult(result) ? result : getPythonBridgeError();
-    } catch {
-      return getPythonBridgeError();
+      return isPythonBridgeResult(result) ? result : getPythonMalformedResult();
+    } catch (error) {
+      console.warn('Site CLI Python bridge returned malformed data.', error);
+      return getPythonMalformedResult();
     }
   }
 
@@ -276,6 +288,15 @@ function initializeCli({
   window.setInterval(updateClock, 1000);
   updateClock();
   appendLine('欢迎使用 Site CLI。输入 help 查看命令。', 'is-system');
+
+  window.setTimeout(() => {
+    if (typeof window.siteCliRunPython !== 'function') {
+      pythonStatus.textContent = 'Python 不可用';
+      pythonStatus.dataset.state = 'error';
+      window.dispatchEvent(new Event('site-cli-python-error'));
+    }
+  }, 15000);
+
   input.focus();
 }
 
