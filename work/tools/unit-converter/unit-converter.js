@@ -180,6 +180,10 @@ function renderUnitOptions() {
     option.textContent = unit;
     fromSelect.appendChild(option);
   });
+
+  if (category.base && category.units[category.base] !== undefined) {
+    fromSelect.value = category.base;
+  }
 }
 
 function renderResults() {
