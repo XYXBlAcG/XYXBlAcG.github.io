@@ -275,15 +275,24 @@ function initializeCli({
     clock.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
   }
 
-  window.addEventListener('site-cli-python-ready', () => {
+  function setPythonReady() {
+    if (pythonStatus.dataset.state === 'ready') return;
     pythonStatus.textContent = 'Python 就绪';
     pythonStatus.dataset.state = 'ready';
-  });
+  }
 
-  window.addEventListener('site-cli-python-error', () => {
+  function setPythonError() {
+    if (pythonStatus.dataset.state === 'error') return;
     pythonStatus.textContent = 'Python 不可用';
     pythonStatus.dataset.state = 'error';
-  });
+  }
+
+  window.addEventListener('site-cli-python-ready', setPythonReady);
+  window.addEventListener('site-cli-python-error', setPythonError);
+
+  if (typeof window.siteCliRunPython === 'function') {
+    setPythonReady();
+  }
 
   window.setInterval(updateClock, 1000);
   updateClock();
@@ -291,8 +300,7 @@ function initializeCli({
 
   window.setTimeout(() => {
     if (typeof window.siteCliRunPython !== 'function') {
-      pythonStatus.textContent = 'Python 不可用';
-      pythonStatus.dataset.state = 'error';
+      setPythonError();
       window.dispatchEvent(new Event('site-cli-python-error'));
     }
   }, 15000);

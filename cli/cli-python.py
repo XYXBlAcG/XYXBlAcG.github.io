@@ -3,12 +3,13 @@ import contextlib
 import io
 import json
 import traceback
+from types import MappingProxyType
 
 from js import window
 
 
-SAFE_GLOBALS = {
-    "__builtins__": {
+ALLOWED_BUILTINS = MappingProxyType(
+    {
         "abs": abs,
         "all": all,
         "any": any,
@@ -39,13 +40,13 @@ SAFE_GLOBALS = {
         "tuple": tuple,
         "zip": zip,
     }
-}
+)
 
 
 def _run_python(code):
     stdout = io.StringIO()
     stderr = io.StringIO()
-    namespace = {}
+    namespace = {"__builtins__": ALLOWED_BUILTINS}
     result = ""
 
     try:
@@ -55,16 +56,16 @@ def _run_python(code):
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             if isinstance(last_expr, ast.Expr):
                 exec_tree = ast.Module(body=tree.body[:-1], type_ignores=[])
-                exec(compile(exec_tree, "<site-cli>", "exec"), SAFE_GLOBALS, namespace)
+                exec(compile(exec_tree, "<site-cli>", "exec"), namespace, namespace)
                 value = eval(
                     compile(ast.Expression(last_expr.value), "<site-cli>", "eval"),
-                    SAFE_GLOBALS,
+                    namespace,
                     namespace,
                 )
                 if value is not None:
                     result = repr(value)
             else:
-                exec(compile(tree, "<site-cli>", "exec"), SAFE_GLOBALS, namespace)
+                exec(compile(tree, "<site-cli>", "exec"), namespace, namespace)
 
         return {
             "ok": True,
@@ -76,7 +77,7 @@ def _run_python(code):
         return {
             "ok": False,
             "stdout": stdout.getvalue(),
-            "stderr": traceback.format_exc(limit=4),
+            "stderr": stderr.getvalue() + traceback.format_exc(limit=4),
             "result": "",
         }
 
