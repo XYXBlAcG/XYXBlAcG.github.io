@@ -61,6 +61,7 @@ textarea {
 }
 
 .tool-back:focus-visible,
+.tool-card:focus-visible,
 .tool-button:focus-visible,
 .tool-input:focus-visible,
 .tool-select:focus-visible,
@@ -112,6 +113,7 @@ textarea {
 }
 
 .tool-card h2,
+.tool-card h3,
 .tool-panel h2 {
   margin: 0;
   font-size: 1.2rem;

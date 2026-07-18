@@ -1,4 +1,8 @@
 export function setStatus(element, message, isError = false) {
+  if (!element) {
+    return;
+  }
+
   element.textContent = message;
   element.classList.toggle('error', isError);
 }
@@ -45,7 +49,7 @@ export function installCardFilter(input, cards) {
   input.addEventListener('input', () => {
     const query = input.value.trim().toLowerCase();
     cards.forEach((card) => {
-      const haystack = (card.dataset.search || card.textContent || '').toLowerCase();
+      const haystack = `${card.dataset.search || ''} ${card.textContent || ''}`.toLowerCase();
       card.hidden = query.length > 0 && !haystack.includes(query);
     });
   });
