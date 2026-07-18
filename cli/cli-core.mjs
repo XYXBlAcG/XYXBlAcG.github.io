@@ -48,7 +48,7 @@ export function parseCommand(input) {
 export function resolveRoute(value) {
   const query = String(value || '').trim();
   if (!query) return null;
-  if (query.startsWith('/') || query.startsWith('#')) {
+  if (query.startsWith('#') || /^\/(?!\/)/.test(query)) {
     return { key: query, label: query, path: query, aliases: [] };
   }
   const normalized = query.toLowerCase();
@@ -87,9 +87,13 @@ export function getCompletions(input) {
 
   if (['open', 'go', 'cd', 'copy'].includes(parsed.name)) {
     const token = trailingSpace ? '' : parsed.rest.toLowerCase();
-    return ROUTES
+    const completions = ROUTES
       .filter((route) => route.key.startsWith(token) || route.aliases.some((alias) => alias.startsWith(token)))
       .map((route) => ({ type: 'route', value: route.key, insert: parsed.name + ' ' + route.key, detail: route.label + ' -> ' + route.path }));
+    if (parsed.name === 'copy' && 'url'.startsWith(token) && token !== 'url') {
+      completions.unshift({ type: 'value', value: 'url', insert: 'copy url', detail: '当前页面 URL' });
+    }
+    return completions;
   }
 
   if (parsed.name === 'help') {
@@ -104,6 +108,15 @@ export function getCompletions(input) {
 
 function lines(items) {
   return items.join('\n');
+}
+
+function outputMessage(result) {
+  return [result?.stdout, result?.result, result?.stderr].filter(Boolean).join('\n');
+}
+
+function failureMessage(prefix, error) {
+  const detail = error?.message || (error ? String(error) : '');
+  return detail ? `${prefix}：${detail}` : prefix;
 }
 
 export function createExecutor(adapter) {
@@ -150,17 +163,35 @@ export function createExecutor(adapter) {
     }
 
     if (parsed.name === 'copy') {
-      const text = parsed.rest === 'url' || !parsed.rest
-        ? adapter.getCurrentUrl()
-        : (resolveRoute(parsed.rest)?.path || parsed.rest);
-      const ok = await adapter.copy(text);
-      return { type: ok ? 'copy' : 'error', message: ok ? `已复制：${text}` : '复制失败，请检查浏览器权限。' };
+      let text;
+      if (parsed.rest.toLowerCase() === 'url') {
+        text = adapter.getCurrentUrl();
+      } else {
+        const route = resolveRoute(parsed.rest);
+        if (!route) return { type: 'error', message: `找不到路径：${parsed.rest || '请使用 copy url 或 copy <route>'}` };
+        text = route.path;
+      }
+
+      try {
+        const ok = await adapter.copy(text);
+        return { type: ok ? 'copy' : 'error', message: ok ? `已复制：${text}` : '复制失败，请检查浏览器权限。' };
+      } catch (error) {
+        return { type: 'error', message: failureMessage('复制失败', error) };
+      }
     }
 
     if (parsed.name === 'py' || parsed.name === 'python') {
       if (!parsed.rest) return { type: 'error', message: '请输入 Python 代码，例如：py 1 + 2' };
-      const result = await adapter.runPython(parsed.rest);
-      return { type: 'python', message: [result.stdout, result.result, result.stderr].filter(Boolean).join('\n') || 'Python 执行完成。', result };
+      try {
+        const result = await adapter.runPython(parsed.rest);
+        const message = outputMessage(result);
+        if (result?.ok === false) {
+          return { type: 'error', message: message || 'Python 执行失败。', result };
+        }
+        return { type: 'python', message: message || 'Python 执行完成。', result };
+      } catch (error) {
+        return { type: 'error', message: failureMessage('Python 执行失败', error) };
+      }
     }
 
     if (parsed.name === 'about') {
