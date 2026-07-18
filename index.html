@@ -8,10 +8,12 @@
 	<head>
 		<title>XYX's Website</title>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link href="favico.ico" type="image/x-icon" />
-		<link rel="stylesheet" href="/assets/css/main.css" />
-		<script async src="//finicounter.eu.org/finicounter.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" href="/favico.ico" type="image/x-icon" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300italic,600italic,300,600&amp;display=swap" rel="stylesheet" />
+		<link rel="stylesheet" href="/assets/css/main.css?v=20260718-2" />
 		<noscript><link rel="stylesheet" href="/assets/css/noscript.css" /></noscript>
 	</head>
 	<body class="is-preload">
@@ -32,30 +34,25 @@
 						</div>
 						<nav>
 							<ul>
-								<li><a href="#intro_cn">Intro</a></li>
-								<li><a href="#work">Work</a></li>
-								<li><a href="#blog">Blog</a></li>
-								<li><a href="#link">Link</a></li>
-								<!-- <li><a href="#elements">Elements</a></li> -->
+								<li><a href="#intro_cn">介绍</a></li>
+								<li><a href="#work">作品</a></li>
+								<li><a href="#blog">博客</a></li>
+								<li><a href="#link">链接</a></li>
 							</ul>
 						</nav>
 					</header>
 
 				<!-- Main -->
 					<div id="main">
-						
-						<!-- temp -->
-						<!-- <article id="theidyouwantthere">
-							<h2 class="major">Title</h2>
-							<span class="image main"><img src="" alt="" /></span>
-							<p>The content you want there...</p>
-						</article> -->
 
 						<!-- Intro -->
 
 							<article id="intro_cn">
 								<h2 class="major">介绍</h2>
-								<span class="image main"><img src="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/images/pic01.jpg" alt="" /></span>
+								<picture class="image main">
+									<source srcset="images/pic01-1200.webp" type="image/webp" />
+									<img src="images/pic01-1200.jpg" alt="站点介绍配图" width="800" height="1200" loading="lazy" decoding="async" />
+								</picture>
 								<p>你好! 这里是 XYX 的个人网站! 虽然这个世界上有很多叫 XYX 的人也不妨我这么直接!</p>
 								<p>这个网站完全静态, 只要微软不死 Github 不死那么这个网站就会永远存在! </p>
 								<p>这个网站主要分享一些个 (A) 人 (I) 写 (Written) 的项目!</p>
@@ -69,28 +66,28 @@
 						<!-- Work -->
 							<article id="work">
 								<h2 class="major">Work</h2>
-								<h3 class="major">Quick Launch</h3>
+								<h3 class="major">快速启动</h3>
 								<ul class="actions">
-									<li><a href="work/tools/index.html" class="button">Tools Hub</a></li>
-									<li><a href="/cli/" class="button">Site CLI</a></li>
-									<li><a href="work/py_software/apps/math-solver/" class="button">Math Solver</a></li>
-									<li><a href="work/tools/text-toolkit/" class="button">Text Toolkit</a></li>
+									<li><a href="work/tools/index.html" class="button">工具中心</a></li>
+									<li><a href="/cli/" class="button">站点命令行</a></li>
+									<li><a href="work/py_software/apps/math-solver/" class="button">数学求解器</a></li>
+									<li><a href="work/tools/text-toolkit/" class="button">文本工具</a></li>
 								</ul>
 								<ul class="actions">
-									<li><a href="work/tools/unit-converter/" class="button">Unit Converter</a></li>
-									<li><a href="work/filesorter/preview.html" class="button">Filesorter</a></li>
-									<li><a href="work/kana_player/main.html" class="button">Kana</a></li>
+									<li><a href="work/tools/unit-converter/" class="button">单位换算</a></li>
+									<li><a href="work/filesorter/preview.html" class="button">文件整理器</a></li>
+									<li><a href="work/kana_player/main.html" class="button">假名翻翻乐</a></li>
 								</ul>
 								<ul class="actions">
-									<li><a href="work/wordmemo/preview.html" class="button">WordMemo</a></li>
-									<li><a href="work/zip2pdf/preview.html" class="button">Zip2PDF</a></li>
-									<li><a href="/star/index.html" class="button">Star</a></li>
+									<li><a href="work/wordmemo/preview.html" class="button">单词记忆</a></li>
+									<li><a href="work/zip2pdf/preview.html" class="button">压缩包转文档</a></li>
+									<li><a href="/star/index.html" class="button">星星</a></li>
 								</ul>
-								<span class="image main"><img src="https://cdn.jsdelivr.net/gh/XYXBlAcG/XYXBlAcG.github.io/images/pic02.jpg" alt="" /></span>
-								<!-- <p>随手编的一道题,可能有解,可以看看,<a href="#work_230720_chem">点击观看</a></p> -->
-								<!-- <p>一个网课用的计时器,<a href="https://lole114514.github.io/">点击打开</a></p> -->
-								<!-- <p>一个好看的计时器,来自于网络,因尺寸太小请直接<a href="work/time.html" target="_blank">点击打开,适合作为壁纸一类背景</a></p> -->
-								<p>一个网课用的计时器, 原作者为Hatcat, 由于消耗资源太多不支持在此页面预览, 请全屏使用. <a href="https://lole114514.github.io/Timer/index.html" target="_blank">点击打开</a></p>
+								<picture class="image main">
+									<source srcset="images/pic02-1200.webp" type="image/webp" />
+									<img src="images/pic02-1200.jpg" alt="项目列表配图" width="800" height="1200" loading="lazy" decoding="async" />
+								</picture>
+								<p>一个网课用的计时器, 原作者为Hatcat, 由于消耗资源太多不支持在此页面预览, 请全屏使用. <a href="https://lole114514.github.io/Timer/index.html" target="_blank" rel="noopener noreferrer">点击打开</a></p>
 								<p>我写过的所有C++代码, <a href="#cpp_work">点击来观看</a></p>
 								<p>一款解方程的软件, 由本人开发. <a href="#func_solver">点击了解</a></p>
 								<p>一个工具集合入口, 收录本站比较实用的小工具. <a href="#tools_hub">点击了解</a></p>
@@ -105,7 +102,7 @@
 								<!-- <p>一个单词记忆软件, 由本人开发. <a href="#XYXWordJiSho">点击了解</a></p> -->
 								<!-- <p>一个大模型视觉化, 为外部链接, <a href="https://bbycroft.net/llm">点击了解</a> </p> -->
 								<br />
-								
+
 							</article>
 							<!-- software_func -->
 							<article id="func_solver">
@@ -113,7 +110,7 @@
 								<p>一个解简单数学问题的软件. 还有一些其他功能.</p>
 								<p>使用 python3, html5, javascript 开发.</p>
 								<p><a href="work/py_software/apps/math-solver/">点击进入软件.</a></p>
-								
+
 							</article>
 
 							<article id="tools_hub">
@@ -146,12 +143,6 @@
 								<p><a href="work/kana_player/main.html">点击进入软件.</a></p>
 							</article>
 
-							<!-- <article id="XYXWordJiSho">
-								<h2 class="major">XYXWordJiSho</h2>
-								<p>一个基于 html + css + javascript 的单词记忆软件. </p>
-								<del><p><a href="https://github.com/XYXBlAcG/XYXWordJiSho" style="pointer-events:none;">软件所在 Github 仓库页面.(暂未开放)</a></p></del>
-							</article> -->
-
 							<article id="Filesorter">
 								<h2 class="major">Filesorter</h2>
 								<p>一个命令即可按扩展名和时间智能整理文件的软件. 支持年/月/周/天粒度，自定义时间段，移动或复制，冲突智能处理。支持网页处理和Python脚本 操作.</p>
@@ -173,35 +164,31 @@
 							<!-- chem_work -->
 							<article id="work_230720_chem">
 								<h2 class="major">化学</h2>
-								<a href="work/20230616_chem.html" target="_blank">页面仅预览,如遇尺寸问题请点击我</a>
-								<iframe src="work/20230616_chem.html" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="work/20230616_chem.html">嵌入式页面,如加载失败请点击我</a></iframe>
+								<a href="work/20230616_chem.html" target="_blank" rel="noopener noreferrer">页面仅预览,如遇尺寸问题请点击我</a>
+								<iframe class="deferred-frame" data-src="work/20230616_chem.html" width="100%" height="1000" style="top:auto" title="化学页面预览" loading="lazy" allowfullscreen><a href="work/20230616_chem.html">嵌入式页面,如加载失败请点击我</a></iframe>
 							</article>
 							<!-- cpp_work -->
 							<article id="cpp_work">
 								<h2 class="major">一些我写过的 C++ 代码</h2>
 								<p>不再更新. </p>
-								
-								<!-- <p id="cppWorkTimeUpdate">最后更新时间加载失败. fail to load the latest updating time.</p> -->
-								<a href="https://github1s.com/XYXBlAcG/cppcode_backup/" target="_blank">点击使用vscode以全屏进行更好体验</a><br />
-								<a href="https://github.com/XYXBlAcG/cppcode_backup/" target="_blank">源仓库链接</a><br />
-								<iframe src="https://github1s.com/XYXBlAcG/cppcode_backup/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://github1s.com/XYXBlAcG/cppcode_backup/">嵌入式页面,如加载失败请点击我</a></iframe>
+
+								<a href="https://github1s.com/XYXBlAcG/cppcode_backup/" target="_blank" rel="noopener noreferrer">点击使用vscode以全屏进行更好体验</a><br />
+								<a href="https://github.com/XYXBlAcG/cppcode_backup/" target="_blank" rel="noopener noreferrer">源仓库链接</a><br />
+								<iframe class="deferred-frame" data-src="https://github1s.com/XYXBlAcG/cppcode_backup/" width="100%" height="1000" style="top:auto" title="C++ 代码仓库预览" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen><a href="https://github1s.com/XYXBlAcG/cppcode_backup/">嵌入式页面,如加载失败请点击我</a></iframe>
 							</article>
 
 						<!-- About -->
 							<article id="blog">
 								<h2 class="major">Blog</h2>
-								<iframe src="https://lottie.host/embed/80777d53-06b5-4936-bbc8-34f01bde9e95/ovDOu7I97U.json" width="100%" height="100%" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"></iframe><br />
+								<iframe class="deferred-frame" data-src="https://lottie.host/embed/80777d53-06b5-4936-bbc8-34f01bde9e95/ovDOu7I97U.json" width="100%" height="240" style="top:auto" title="Blog 暂停动画" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe><br />
 								<p>
-									<!-- 下方为Blog预览,  -->
-									<!-- <a href="https://xyxblog.1919810.com/" target="_blank">请点击进入博客以取得最好体验</a> -->
 									Blog 暂时关闭.
 								</p>
-								<!-- <iframe src="https://xyxblog.1919810.com/" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true"><a href="https://xyxblog.1919810.com/">嵌入式页面,如加载失败请点击我</a></iframe> -->
 							</article>
 
 							<article id="status">
 								<h2 class="major">Status</h2>
-								<iframe src="https://stats.uptimerobot.com/8puWHuI2PY" width="100%" height="1000" style="top:auto" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" oallowfullscreen="true" msallowfullscreen="true">
+								<iframe class="deferred-frame" data-src="https://stats.uptimerobot.com/8puWHuI2PY" width="100%" height="1000" style="top:auto" title="网页状态监控" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen>
 									<a href="https://stats.uptimerobot.com/8puWHuI2PY">嵌入式页面,如加载失败请点击我</a>
 								</iframe>
 							</article>
@@ -209,15 +196,20 @@
 						<!-- Contact -->
 							<article id="link">
 								<h2 class="major">Link</h2>
-								<a href="#status">点击查看网页状态.</a> <br /><br />
-								<h3 class="major">友情链接</h3> 
-								<img src="./images/TCS.jpeg" width="150px" height="150px" alt="TCS" /> <br />
-								<a href="http://kasumi.1919810.com/">かすみ の ブログ</a> <br />
-								<p>TCS's Website | mol TCS</p> <br />
+								<h3 class="major">联系</h3>
+								<p>Mail: <a href="mailto:227903996@qq.com">227903996@qq.com</a></p>
+								<p>GitHub: <a href="https://github.com/XYXBlAcG" target="_blank" rel="noopener noreferrer">XYXBlAcG</a></p>
+								<p>Status: <a href="#status">点击查看网页状态.</a></p>
 
-								<a onclick="ClickMe()">点击我!</a>
+								<h3 class="major">友情链接</h3>
+								<img src="./images/TCS.jpeg" width="150" height="150" alt="TCS" loading="lazy" decoding="async" /> <br />
+								<p><a href="http://kasumi.1919810.com/">かすみ の ブログ</a><br />TCS's Website | mol TCS</p>
+
+								<h3 class="major">小功能</h3>
+								<a href="#" onclick="ClickMe(event)">点击我!</a>
 								<script>
-									function ClickMe(){
+									function ClickMe(event){
+										if (event) event.preventDefault();
 										alert("我将调用random.org中的算法生成随机数, 并决定显示一个人的名字.");
 										var names = ['tcs', 'zjl', 'xxy', 'fst'];
 										var names2 = ['2bn', '1234', 'czy', 'zsw'];
@@ -227,250 +219,6 @@
 										alert("我是" + names2[rnd] + "!!!");
 									}
 								</script>
-								<!-- <p><a href="support/index.html">如果你有能力并且愿意, 欢迎来支持我. <br />it's welcome to support me if you have the ability and would like to do so.</a></p> -->
-								<p>等待放置...</p>
-							</article>
-
-						<!-- Elements -->
-							<article id="elements">
-								<h2 class="major">Elements</h2>
-
-								<section>
-									<h3 class="major">Text</h3>
-									<p>This is <b>bold</b> and this is <strong>strong</strong>. This is <i>italic</i> and this is <em>emphasized</em>.
-									This is <sup>superscript</sup> text and this is <sub>subscript</sub> text.
-									This is <u>underlined</u> and this is code: <code>for (;;) { ... }</code>. Finally, <a href="#">this is a link</a>.</p>
-									<hr />
-									<h2>Heading Level 2</h2>
-									<h3>Heading Level 3</h3>
-									<h4>Heading Level 4</h4>
-									<h5>Heading Level 5</h5>
-									<h6>Heading Level 6</h6>
-									<hr />
-									<h4>Blockquote</h4>
-									<blockquote>Fringilla nisl. Donec accumsan interdum nisi, quis tincidunt felis sagittis eget tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan faucibus. Vestibulum ante ipsum primis in faucibus lorem ipsum dolor sit amet nullam adipiscing eu felis.</blockquote>
-									<h4>Preformatted</h4>
-									<pre><code>i = 0;
-
-while (!deck.isInOrder()) {
-    print 'Iteration ' + i;
-    deck.shuffle();
-    i++;
-}
-
-print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
-								</section>
-
-								<section>
-									<h3 class="major">Lists</h3>
-
-									<h4>Unordered</h4>
-									<ul>
-										<li>Dolor pulvinar etiam.</li>
-										<li>Sagittis adipiscing.</li>
-										<li>Felis enim feugiat.</li>
-									</ul>
-
-									<h4>Alternate</h4>
-									<ul class="alt">
-										<li>Dolor pulvinar etiam.</li>
-										<li>Sagittis adipiscing.</li>
-										<li>Felis enim feugiat.</li>
-									</ul>
-
-									<h4>Ordered</h4>
-									<ol>
-										<li>Dolor pulvinar etiam.</li>
-										<li>Etiam vel felis viverra.</li>
-										<li>Felis enim feugiat.</li>
-										<li>Dolor pulvinar etiam.</li>
-										<li>Etiam vel felis lorem.</li>
-										<li>Felis enim et feugiat.</li>
-									</ol>
-									<h4>Icons</h4>
-									<ul class="icons">
-										<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
-										<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
-										<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
-										<li><a href="#" class="icon brands fa-github"><span class="label">Github</span></a></li>
-									</ul>
-
-									<h4>Actions</h4>
-									<ul class="actions">
-										<li><a href="#" class="button primary">Default</a></li>
-										<li><a href="#" class="button">Default</a></li>
-									</ul>
-									<ul class="actions stacked">
-										<li><a href="#" class="button primary">Default</a></li>
-										<li><a href="#" class="button">Default</a></li>
-									</ul>
-								</section>
-
-								<section>
-									<h3 class="major">Table</h3>
-									<h4>Default</h4>
-									<div class="table-wrapper">
-										<table>
-											<thead>
-												<tr>
-													<th>Name</th>
-													<th>Description</th>
-													<th>Price</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr>
-													<td>Item One</td>
-													<td>Ante turpis integer aliquet porttitor.</td>
-													<td>29.99</td>
-												</tr>
-												<tr>
-													<td>Item Two</td>
-													<td>Vis ac commodo adipiscing arcu aliquet.</td>
-													<td>19.99</td>
-												</tr>
-												<tr>
-													<td>Item Three</td>
-													<td> Morbi faucibus arcu accumsan lorem.</td>
-													<td>29.99</td>
-												</tr>
-												<tr>
-													<td>Item Four</td>
-													<td>Vitae integer tempus condimentum.</td>
-													<td>19.99</td>
-												</tr>
-												<tr>
-													<td>Item Five</td>
-													<td>Ante turpis integer aliquet porttitor.</td>
-													<td>29.99</td>
-												</tr>
-											</tbody>
-											<tfoot>
-												<tr>
-													<td colspan="2"></td>
-													<td>100.00</td>
-												</tr>
-											</tfoot>
-										</table>
-									</div>
-
-									<h4>Alternate</h4>
-									<div class="table-wrapper">
-										<table class="alt">
-											<thead>
-												<tr>
-													<th>Name</th>
-													<th>Description</th>
-													<th>Price</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr>
-													<td>Item One</td>
-													<td>Ante turpis integer aliquet porttitor.</td>
-													<td>29.99</td>
-												</tr>
-												<tr>
-													<td>Item Two</td>
-													<td>Vis ac commodo adipiscing arcu aliquet.</td>
-													<td>19.99</td>
-												</tr>
-												<tr>
-													<td>Item Three</td>
-													<td> Morbi faucibus arcu accumsan lorem.</td>
-													<td>29.99</td>
-												</tr>
-												<tr>
-													<td>Item Four</td>
-													<td>Vitae integer tempus condimentum.</td>
-													<td>19.99</td>
-												</tr>
-												<tr>
-													<td>Item Five</td>
-													<td>Ante turpis integer aliquet porttitor.</td>
-													<td>29.99</td>
-												</tr>
-											</tbody>
-											<tfoot>
-												<tr>
-													<td colspan="2"></td>
-													<td>100.00</td>
-												</tr>
-											</tfoot>
-										</table>
-									</div>
-								</section>
-
-								<section>
-									<h3 class="major">Buttons</h3>
-									<ul class="actions">
-										<li><a href="#" class="button primary">Primary</a></li>
-										<li><a href="#" class="button">Default</a></li>
-									</ul>
-									<ul class="actions">
-										<li><a href="#" class="button">Default</a></li>
-										<li><a href="#" class="button small">Small</a></li>
-									</ul>
-									<ul class="actions">
-										<li><a href="#" class="button primary icon solid fa-download">Icon</a></li>
-										<li><a href="#" class="button icon solid fa-download">Icon</a></li>
-									</ul>
-									<ul class="actions">
-										<li><span class="button primary disabled">Disabled</span></li>
-										<li><span class="button disabled">Disabled</span></li>
-									</ul>
-								</section>
-
-								<section>
-									<h3 class="major">Form</h3>
-									<form method="post" action="#">
-										<div class="fields">
-											<div class="field half">
-												<label for="demo-name">Name</label>
-												<input type="text" name="demo-name" id="demo-name" value="" placeholder="Jane Doe" />
-											</div>
-											<div class="field half">
-												<label for="demo-email">Email</label>
-												<input type="email" name="demo-email" id="demo-email" value="" placeholder="jane@untitled.tld" />
-											</div>
-											<div class="field">
-												<label for="demo-category">Category</label>
-												<select name="demo-category" id="demo-category">
-													<option value="">-</option>
-													<option value="1">Manufacturing</option>
-													<option value="1">Shipping</option>
-													<option value="1">Administration</option>
-													<option value="1">Human Resources</option>
-												</select>
-											</div>
-											<div class="field half">
-												<input type="radio" id="demo-priority-low" name="demo-priority" checked>
-												<label for="demo-priority-low">Low</label>
-											</div>
-											<div class="field half">
-												<input type="radio" id="demo-priority-high" name="demo-priority">
-												<label for="demo-priority-high">High</label>
-											</div>
-											<div class="field half">
-												<input type="checkbox" id="demo-copy" name="demo-copy">
-												<label for="demo-copy">Email me a copy</label>
-											</div>
-											<div class="field half">
-												<input type="checkbox" id="demo-human" name="demo-human" checked>
-												<label for="demo-human">Not a robot</label>
-											</div>
-											<div class="field">
-												<label for="demo-message">Message</label>
-												<textarea name="demo-message" id="demo-message" placeholder="Enter your message" rows="6"></textarea>
-											</div>
-										</div>
-										<ul class="actions">
-											<li><input type="submit" value="Send Message" class="primary" /></li>
-											<li><input type="reset" value="Reset" /></li>
-										</ul>
-									</form>
-								</section>
-
 							</article>
 
 					</div>
@@ -479,14 +227,8 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 					<footer id="footer">
 						<p class="copyright"> Design: HTML5 UP. Made by XYX.</p>
 						<p class="copyright"> 本站已稳定运行了
-								<strong><script language= "JavaScript" type= "text/javascript" >
-								var urodz = new Date ( "5/19/2023" );
-								var now = new Date ();
-								var ile = now.getTime() - urodz.getTime();
-								var dni = Math. floor (ile / (1000 * 60 * 60 * 24));
-								document.write(+dni)
-								</script>
-								<noscript><b><p style="color:red;text-align:center;">您的浏览器不支持JavaScript, 点击下载最新的<a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</p></b></noscript>
+								<strong><span id="site-age-days">--</span>
+								<noscript><span style="color:red;text-align:center;display:block;">您的浏览器不支持JavaScript, 点击下载最新的<a href="https://www.microsoft.com/zh-cn/edge/download?form=MA13FJ">Microsoft Edge</a> 或 <a href="https://www.google.com/intl/zh-CN/chrome/">Chrome</a> 来获得最佳体验.</span></noscript>
 								</strong>天
 						</p>
 						<p class="copyright">本站累计访问人数: <span id="finicount_views"></span></p>
@@ -502,7 +244,7 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 			<script src="assets/js/browser.min.js"></script>
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
-			<script src="assets/js/main.js"></script>
-			<script src="assets/js/get_github_time.js"></script>
+			<script src="assets/js/main.js?v=20260718-3"></script>
+		<script type="module" src="/assets/js/site-cli-sidebar.js"></script>
 	</body>
 </html>

@@ -1,20 +1,30 @@
 export const ROUTES = [
   { key: 'home', label: '首页', path: '/', aliases: ['index', 'root'] },
-  { key: 'work', label: 'Work', path: '/#work', aliases: ['works', 'project', 'projects'] },
-  { key: 'blog', label: 'Blog', path: '/#blog', aliases: ['posts'] },
-  { key: 'link', label: 'Link', path: '/#link', aliases: ['links', 'contact'] },
-  { key: 'tools', label: 'Tools Hub', path: '/work/tools/', aliases: ['tool', 'hub'] },
-  { key: 'math', label: 'Math Solver', path: '/work/py_software/apps/math-solver/', aliases: ['solver', 'math-solver'] },
-  { key: 'latex', label: 'LaTeX Renderer', path: '/work/py_software/apps/latex-renderer/', aliases: ['tex', 'latex-renderer'] },
+  { key: 'cli', label: '站点命令行', path: '/cli/', aliases: ['site-cli', 'terminal', 'shell'] },
+  { key: 'work', label: '作品', path: '/#work', aliases: ['works', 'project', 'projects'] },
+  { key: 'blog', label: '博客', path: '/#blog', aliases: ['posts'] },
+  { key: 'link', label: '链接', path: '/#link', aliases: ['links', 'contact'] },
+  { key: 'tools', label: '工具中心', path: '/work/tools/', aliases: ['tool', 'hub', 'tools-hub', 'tools hub'] },
+  { key: 'math', label: '数学求解器', path: '/work/py_software/apps/math-solver/', aliases: ['solver', 'math-solver', 'math solver'] },
+  { key: 'latex', label: 'LaTeX 渲染器', path: '/work/py_software/apps/latex-renderer/', aliases: ['tex', 'latex-renderer', 'latex renderer'] },
   { key: 'text', label: '文本工具', path: '/work/tools/text-toolkit/', aliases: ['text-toolkit'] },
   { key: 'unit', label: '单位换算', path: '/work/tools/unit-converter/', aliases: ['unit-converter'] },
   { key: 'qr', label: '二维码工具', path: '/work/tools/qr-tool/', aliases: ['qrcode', 'qr-tool'] },
   { key: 'hash', label: '哈希工具', path: '/work/tools/hash-tool/', aliases: ['hash-tool'] },
   { key: 'regex', label: '正则测试', path: '/work/tools/regex-tester/', aliases: ['regexp', 'regex-tester'] },
   { key: 'markdown', label: 'Markdown 预览', path: '/work/tools/markdown-preview/', aliases: ['md', 'markdown-preview'] },
-  { key: 'filesorter', label: 'Filesorter', path: '/work/filesorter/preview.html', aliases: ['file-sorter'] },
-  { key: 'zip2pdf', label: 'Zip2PDF', path: '/work/zip2pdf/preview.html', aliases: ['zip'] },
-  { key: 'star', label: 'Star', path: '/star/', aliases: ['stars'] }
+  { key: 'data', label: '数据转换器', path: '/work/tools/data-converter/', aliases: ['data-converter', 'converter'] },
+  { key: 'diff', label: '文本对比器', path: '/work/tools/diff-tool/', aliases: ['diff-tool', 'compare'] },
+  { key: 'timestamp', label: '时间转换器', path: '/work/tools/timestamp-converter/', aliases: ['time-converter', 'timestamp-converter'] },
+  { key: 'color', label: '配色检查器', path: '/work/tools/color-tool/', aliases: ['color-tool', 'palette'] },
+  { key: 'password', label: '密码生成器', path: '/work/tools/password-generator/', aliases: ['password-generator', 'passphrase'] },
+  { key: 'url', label: '链接解析器', path: '/work/tools/url-tool/', aliases: ['url-tool', 'link-parser'] },
+  { key: 'image', label: '图片处理器', path: '/work/tools/image-utilities/', aliases: ['image-utilities', 'image-tool'] },
+  { key: 'filesorter', label: '文件整理器', path: '/work/filesorter/preview.html', aliases: ['file-sorter', 'filesorter'] },
+  { key: 'kana', label: '假名练习', path: '/work/kana_player/main.html', aliases: ['kana-player', 'hiragana', 'katakana'] },
+  { key: 'wordmemo', label: '单词记忆', path: '/work/wordmemo/preview.html', aliases: ['word-memo', 'vocabulary'] },
+  { key: 'zip2pdf', label: '压缩包转文档', path: '/work/zip2pdf/preview.html', aliases: ['zip'] },
+  { key: 'star', label: '星星', path: '/star/', aliases: ['stars'] }
 ];
 
 export const COMMANDS = [
@@ -30,7 +40,7 @@ export const COMMANDS = [
   { name: 'history', usage: 'history', detail: '查看最近命令' },
   { name: 'copy', usage: 'copy url 或 copy <route>', detail: '复制当前 URL 或站内路径' },
   { name: 'py', usage: 'py <python code>', detail: '运行一行 Python' },
-  { name: 'python', usage: 'python <python code>', detail: 'py 的别名' },
+  { name: 'python', usage: 'python 或 python <code>', detail: '进入有记忆的 Python 模式，或运行一行 Python' },
   { name: 'about', usage: 'about', detail: '查看站点说明' },
   { name: 'theme', usage: 'theme', detail: '切换 CLI 视觉强度' }
 ];
@@ -190,6 +200,10 @@ export function createExecutor(adapter) {
       } catch (error) {
         return { type: 'error', message: failureMessage('复制失败', error) };
       }
+    }
+
+    if (parsed.name === 'python' && !parsed.rest) {
+      return { type: 'python-mode', message: '已进入 Python 模式。输入 quit 或 exit 退出，%reset 清空记忆。' };
     }
 
     if (parsed.name === 'py' || parsed.name === 'python') {

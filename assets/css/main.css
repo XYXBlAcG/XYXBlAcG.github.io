@@ -1,5 +1,4 @@
 @import url(fontawesome-all.min.css);
-@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro:300italic,600italic,300,600");
 
 /*
 	Dimension by HTML5 UP
@@ -702,6 +701,7 @@ input, select, textarea {
 
 			.image.main img {
 				width: 100%;
+				height: auto;
 			}
 
 		@media screen and (max-width: 736px) {
@@ -719,6 +719,13 @@ input, select, textarea {
 			}
 
 		}
+
+	iframe.deferred-frame {
+		display: block;
+		max-width: 100%;
+		border: 0;
+		background: rgba(255, 255, 255, 0.075);
+	}
 
 /* List */
 
@@ -1158,7 +1165,8 @@ input, select, textarea {
 			-webkit-transition: -webkit-transform 0.325s ease-in-out, -webkit-filter 0.325s ease-in-out;
 			-ms-transition: -ms-transform 0.325s ease-in-out, -ms-filter 0.325s ease-in-out;
 			transition: transform 0.325s ease-in-out, filter 0.325s ease-in-out;
-			background-image: url(https://t.alcy.cc/pc/);
+			background-image: url("../../images/bg-1920.jpg");
+			background-image: image-set(url("../../images/bg-1920.webp") type("image/webp"), url("../../images/bg-1920.jpg") type("image/jpeg"));
 			background-position: center;
 			background-size: cover;
 			background-repeat: no-repeat;
@@ -1595,6 +1603,11 @@ input, select, textarea {
 					background-color: rgba(255, 255, 255, 0.075);
 				}
 
+				#main article .close:focus-visible:before {
+					background-color: rgba(255, 255, 255, 0.075);
+					box-shadow: 0 0 0 1px #ffffff;
+				}
+
 				#main article .close:active:before {
 					background-color: rgba(255, 255, 255, 0.175);
 				}
@@ -1635,6 +1648,11 @@ input, select, textarea {
 
 				#main article .back:hover:before {
 					background-color: rgba(255, 255, 255, 0.075);
+				}
+
+				#main article .back:focus-visible:before {
+					background-color: rgba(255, 255, 255, 0.075);
+					box-shadow: 0 0 0 1px #ffffff;
 				}
 
 				#main article .back:active:before {

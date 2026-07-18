@@ -14,6 +14,62 @@
 		$main = $('#main'),
 		$main_articles = $main.children('article');
 
+	var loadDeferredFrames = function($scope) {
+
+		$scope.find('iframe[data-src]').each(function() {
+
+			var $frame = $(this);
+
+			if (!$frame.attr('src'))
+				$frame.attr('src', $frame.attr('data-src'));
+
+		});
+
+	};
+
+	var updateSiteAge = function() {
+
+		var $siteAge = $('#site-age-days');
+
+		if ($siteAge.length == 0)
+			return;
+
+		var start = new Date('2023-05-19T00:00:00+08:00'),
+			now = new Date(),
+			days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+		$siteAge.text(days);
+
+	};
+
+	var loadVisitorCounter = function() {
+
+		var $counter = $('#finicount_views');
+
+		if ($counter.length == 0)
+			return;
+
+		if (location.hostname == 'localhost' || location.hostname == '127.0.0.1') {
+			$counter.text('本地预览不统计');
+			return;
+		}
+
+		$window.on('load', function() {
+
+			var script = document.createElement('script');
+
+			script.async = true;
+			script.src = 'https://finicounter.eu.org/finicounter.js';
+			script.onerror = function() {
+				$counter.text('加载失败');
+			};
+
+			document.head.appendChild(script);
+
+		});
+
+	};
+
 	// Breakpoints.
 		breakpoints({
 			xlarge:   [ '1281px',  '1680px' ],
@@ -97,6 +153,7 @@
 								$footer.hide();
 
 							// Show main, article.
+								loadDeferredFrames($article);
 								$main.show();
 								$article.show();
 
@@ -133,6 +190,7 @@
 									$currentArticle.hide();
 
 								// Show article.
+									loadDeferredFrames($article);
 									$article.show();
 
 								// Activate article.
@@ -171,6 +229,7 @@
 									$footer.hide();
 
 								// Show main, article.
+									loadDeferredFrames($article);
 									$main.show();
 									$article.show();
 
@@ -292,19 +351,27 @@
 				var $this = $(this);
 
 				// Close.
-					$('<div class="close">Close</div>')
+					$('<div class="close" role="button" tabindex="0" aria-label="关闭">关闭</div>')
 						.appendTo($this)
-						.on('click', function() {
+						.on('click keydown', function(event) {
+							if (event.type == 'keydown' && event.key != 'Enter' && event.key != ' ')
+								return;
+
+							event.preventDefault();
 							location.hash = '';
 						});
 
-					$('<div class="back">Back</div>')
+					$('<div class="back" role="button" tabindex="0" aria-label="返回">返回</div>')
 						.appendTo($this)
-						.on('click', function() {
-							window.history.back(); 
+						.on('click keydown', function(event) {
+							if (event.type == 'keydown' && event.key != 'Enter' && event.key != ' ')
+								return;
+
+							event.preventDefault();
+							window.history.back();
 						});
 
-					
+
 
 				// Prevent clicks from inside article from bubbling.
 					$this.on('click', function(event) {
@@ -405,5 +472,8 @@
 					$window.on('load', function() {
 						$main._show(location.hash.substr(1), true);
 					});
+
+			updateSiteAge();
+			loadVisitorCounter();
 
 })(jQuery);

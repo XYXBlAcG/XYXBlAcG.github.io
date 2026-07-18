@@ -25,16 +25,17 @@
     </header>
 
     <section class="cli-terminal" aria-label="网站命令行界面">
-      <div id="cli-output" class="cli-output" aria-live="polite"></div>
-      <form id="cli-form" class="cli-prompt" autocomplete="off">
-        <label class="cli-prompt-label" for="cli-input">xyx@site</label>
-        <span class="cli-path">/cli</span>
-        <span class="cli-symbol">$</span>
-        <input id="cli-input" type="text" spellcheck="false" autofocus role="combobox" aria-label="命令输入" aria-describedby="cli-help-line" aria-controls="cli-autocomplete" aria-expanded="false" aria-autocomplete="list" />
-        <button type="submit" class="cli-run-button">运行</button>
-      </form>
+      <div id="cli-output" class="cli-output" aria-live="polite">
+        <form id="cli-form" class="cli-prompt" autocomplete="off">
+          <label id="cli-prompt-label" class="cli-prompt-label" for="cli-input">xyx@site</label>
+          <span id="cli-path" class="cli-path">/cli</span>
+          <span id="cli-symbol" class="cli-symbol">$</span>
+          <input id="cli-input" type="text" spellcheck="false" autofocus role="combobox" aria-label="命令输入" aria-describedby="cli-help-line" aria-controls="cli-autocomplete" aria-expanded="false" aria-autocomplete="list" />
+          <button type="submit" class="cli-run-button">运行</button>
+        </form>
+      </div>
       <div id="cli-autocomplete" class="cli-autocomplete" role="listbox" aria-label="命令补全"></div>
-      <p id="cli-help-line" class="cli-help-line">输入 help 查看命令；Tab 补全；↑ ↓ 浏览历史；Ctrl+L 清屏。</p>
+      <p id="cli-help-line" class="cli-help-line">输入 help 查看命令；Tab 补全；↑ ↓ 浏览历史；Ctrl+L 清屏；Python 模式用 %reset 清空记忆。</p>
     </section>
   </main>
 </body>

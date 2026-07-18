@@ -34,11 +34,19 @@ spec.loader.exec_module(module)
 def run(code):
     return json.loads(module.site_cli_run_python(code))
 
+def reset_session():
+    return json.loads(module.site_cli_reset_python_session())
+
 def assert_ok(code, expected_result="", expected_stdout=""):
     result = run(code)
     assert result["ok"], result
     assert result["result"] == expected_result, result
     assert result["stdout"] == expected_stdout, result
+
+def assert_runtime_error(code, expected_text):
+    result = run(code)
+    assert not result["ok"], result
+    assert expected_text in result["stderr"], result
 
 def assert_blocked(code, expected_text="不允许"):
     result = run(code)
@@ -60,6 +68,34 @@ assert_ok("for i in range(3):\n    print(i)", "", "0\n1\n2\n")
 assert_ok("[i * 2 for i in range(3)]", "[0, 2, 4]")
 assert_ok('f"{1 + 2}"', "'3'")
 assert_ok("x = 2\ndef f():\n    return x\nf()", "2")
+
+reset_session()
+assert_ok("a = 1")
+assert_ok("print(a)", "", "1\n")
+assert_ok("a + 2", "3")
+
+reset_session()
+assert_ok("base = 10\ndef add(n):\n    return base + n")
+assert_ok("add(5)", "15")
+assert_ok("base = 20\nadd(5)", "25")
+
+reset_session()
+assert_ok("items = [1]")
+rollback_mutation = run("items.append(2)\n1 / 0")
+assert not rollback_mutation["ok"], rollback_mutation
+assert_ok("items", "[1]")
+
+reset_session()
+assert_ok("stable = 7")
+rollback_new_binding = run("new_value = 1\n1 / 0")
+assert not rollback_new_binding["ok"], rollback_new_binding
+assert_ok("stable", "7")
+assert_runtime_error("new_value", "NameError")
+
+reset_result = reset_session()
+assert reset_result["ok"], reset_result
+assert reset_result["result"] == "Python 记忆已清空。", reset_result
+assert_runtime_error("stable", "NameError")
 
 assert_blocked("__builtins__", "不允许访问 Python 运行时保留名称。")
 assert_blocked("__name__", "不允许访问 Python 运行时保留名称。")

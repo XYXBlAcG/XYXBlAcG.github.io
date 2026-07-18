@@ -104,7 +104,7 @@ button {
 .cli-terminal {
   position: relative;
   display: grid;
-  grid-template-rows: 1fr auto auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
   padding: 1rem;
   border-radius: var(--cli-radius);
@@ -113,10 +113,11 @@ button {
 .cli-output {
   min-height: 0;
   overflow: auto;
-  padding: 0.25rem;
+  padding: 0.25rem 0.25rem 1.2rem;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
+  scrollbar-gutter: stable;
 }
 
 .cli-line {
@@ -140,17 +141,14 @@ button {
   grid-template-columns: max-content max-content max-content minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.45rem;
-  min-height: 3.25rem;
-  margin-top: 0.75rem;
-  padding: 0.45rem;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid var(--cli-border-soft);
-  border-radius: 10px;
+  min-height: 2.25rem;
+  margin-top: 0.35rem;
+  padding: 0.1rem 0;
+  white-space: normal;
 }
 
 .cli-prompt:focus-within {
-  border-color: rgba(125, 211, 252, 0.64);
-  box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.18);
+  color: var(--cli-text);
 }
 
 .cli-prompt-label {
@@ -168,7 +166,7 @@ button {
 #cli-input {
   width: 100%;
   min-width: 0;
-  height: 2.35rem;
+  height: 2rem;
   color: var(--cli-text);
   background: transparent;
   border: 0;
@@ -177,13 +175,14 @@ button {
 }
 
 .cli-run-button {
-  min-height: 2.35rem;
-  padding: 0 0.9rem;
+  min-height: 1.9rem;
+  padding: 0 0.65rem;
   color: var(--cli-text);
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid var(--cli-border);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 0.76rem;
 }
 
 .cli-run-button:hover,
@@ -193,13 +192,15 @@ button {
 }
 
 .cli-autocomplete {
+  position: absolute;
+  z-index: 10;
   display: none;
-  max-height: min(12rem, 36vh);
-  margin-top: 0.5rem;
   overflow: auto;
   background: var(--cli-surface-strong);
   border: 1px solid rgba(125, 211, 252, 0.42);
   border-radius: 8px;
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(12px);
 }
 
 .cli-autocomplete.is-open {

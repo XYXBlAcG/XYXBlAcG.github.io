@@ -14,6 +14,8 @@ MAX_AST_NODES = 500
 MAX_LOOP_STEPS = 50000
 MAX_POWER_EXPONENT = 12
 MAX_TRACE_EVENTS = 120000
+MAX_SESSION_BINDINGS = 120
+MAX_SESSION_CONTAINER_ITEMS = MAX_RANGE_ITEMS
 BLOCKED_FORMAT_METHODS = {"format", "format_map"}
 BLOCKED_GROWTH_METHODS = {
     "center",
@@ -439,6 +441,78 @@ def _restore_runtime_namespace(namespace):
     namespace.update(RUNTIME_HELPERS)
 
 
+def _is_user_session_name(name):
+    return name not in RESERVED_NAMES
+
+
+def _clone_session_value(value, depth=0):
+    if depth >= 8:
+        return value
+    if value is None or type(value) in (bool, int, float, str, bytes, range):
+        return value
+    if type(value) is list:
+        return [_clone_session_value(item, depth + 1) for item in value]
+    if type(value) is tuple:
+        return tuple(_clone_session_value(item, depth + 1) for item in value)
+    if type(value) is set:
+        return {_clone_session_value(item, depth + 1) for item in value}
+    if type(value) is dict:
+        return {
+            _clone_session_value(key, depth + 1): _clone_session_value(item, depth + 1)
+            for key, item in value.items()
+        }
+    return value
+
+
+def _user_session_items(namespace):
+    return {
+        name: value
+        for name, value in namespace.items()
+        if _is_user_session_name(name)
+    }
+
+
+def _snapshot_user_session(namespace):
+    return {
+        name: _clone_session_value(value)
+        for name, value in _user_session_items(namespace).items()
+    }
+
+
+def _restore_user_session(namespace, snapshot):
+    for name in list(namespace):
+        if _is_user_session_name(name):
+            namespace.pop(name, None)
+    namespace.update(snapshot)
+    _restore_runtime_namespace(namespace)
+
+
+def _validate_session_value(name, value):
+    if type(value) in (str, bytes) and len(value) > MAX_OUTPUT_CHARS:
+        raise ValueError(f"变量 {name} 过大，未保存本次执行。")
+    if type(value) in (list, tuple, set, dict, range) and len(value) > MAX_SESSION_CONTAINER_ITEMS:
+        raise ValueError(f"变量 {name} 包含项目过多，未保存本次执行。")
+
+
+def _validate_session_namespace(namespace):
+    user_items = _user_session_items(namespace)
+    if len(user_items) > MAX_SESSION_BINDINGS:
+        raise ValueError(f"Python 记忆变量过多，最多允许 {MAX_SESSION_BINDINGS} 个。")
+    for name, value in user_items.items():
+        _validate_session_value(name, value)
+
+
+SESSION_NAMESPACE = {}
+
+
+def reset_python_session():
+    SESSION_NAMESPACE.clear()
+    _restore_runtime_namespace(SESSION_NAMESPACE)
+
+
+reset_python_session()
+
+
 def _run_with_budget(callback, budget):
     previous_trace = sys.gettrace()
     sys.settrace(budget.trace)
@@ -465,11 +539,13 @@ def _trim_output(text):
 def _run_python(code):
     stdout = LimitedStringIO()
     stderr = LimitedStringIO()
-    namespace = {"__builtins__": ALLOWED_BUILTINS, "__name__": "__main__"}
+    namespace = SESSION_NAMESPACE
+    snapshot = None
     result = ""
 
     try:
         tree = _prepare_tree(ast.parse(code, mode="exec"))
+        snapshot = _snapshot_user_session(namespace)
         last_expr = tree.body[-1] if tree.body else None
         budget = RuntimeBudget(MAX_TRACE_EVENTS)
 
@@ -499,6 +575,7 @@ def _run_python(code):
                     budget,
                 )
             _restore_runtime_namespace(namespace)
+            _validate_session_namespace(namespace)
 
         return {
             "ok": True,
@@ -507,6 +584,10 @@ def _run_python(code):
             "result": result,
         }
     except Exception:
+        if snapshot is not None:
+            _restore_user_session(namespace, snapshot)
+        else:
+            _restore_runtime_namespace(namespace)
         return {
             "ok": False,
             "stdout": stdout.getvalue(),
@@ -519,5 +600,19 @@ def site_cli_run_python(code):
     return json.dumps(_run_python(str(code)), ensure_ascii=False)
 
 
+def site_cli_reset_python_session():
+    reset_python_session()
+    return json.dumps(
+        {
+            "ok": True,
+            "stdout": "",
+            "stderr": "",
+            "result": "Python 记忆已清空。",
+        },
+        ensure_ascii=False,
+    )
+
+
 window.siteCliRunPython = site_cli_run_python
+window.siteCliResetPythonSession = site_cli_reset_python_session
 window.dispatchEvent(window.Event.new("site-cli-python-ready"))

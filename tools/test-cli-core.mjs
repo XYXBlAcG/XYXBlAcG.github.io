@@ -73,6 +73,10 @@ async function testExecutor() {
   assert.equal(openResult.type, 'navigation');
   assert.deepEqual(calls.shift(), ['navigate', '/work/py_software/apps/math-solver/']);
 
+  const pythonModeResult = await executor.run('python');
+  assert.equal(pythonModeResult.type, 'python-mode');
+  assert.equal(calls.length, 0);
+
   const pyResult = await executor.run('py 1 + 2');
   assert.equal(pyResult.type, 'python');
   assert.deepEqual(calls.shift(), ['python', '1 + 2']);
