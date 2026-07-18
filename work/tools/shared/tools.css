@@ -23,7 +23,7 @@ body {
   color: var(--text);
   background:
     linear-gradient(rgba(16, 20, 24, 0.88), rgba(16, 20, 24, 0.94)),
-    url("../../../images/bg-1920.jpg") center / cover fixed;
+    url("../../../images/bg.jpg") center / cover fixed;
 }
 
 a {
@@ -58,6 +58,15 @@ textarea {
 
 .tool-back:hover {
   color: var(--text);
+}
+
+.tool-back:focus-visible,
+.tool-button:focus-visible,
+.tool-input:focus-visible,
+.tool-select:focus-visible,
+.tool-textarea:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 3px;
 }
 
 .tool-title {
