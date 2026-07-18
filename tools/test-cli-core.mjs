@@ -27,6 +27,7 @@ function testResolveRoute() {
   assert.equal(resolveRoute('math').path, '/work/py_software/apps/math-solver/');
   assert.equal(resolveRoute('/work/tools/').path, '/work/tools/');
   assert.equal(resolveRoute('//example.com'), null);
+  assert.equal(resolveRoute('/\\example.com'), null);
   assert.equal(resolveRoute('missing-route'), null);
 }
 
@@ -76,9 +77,38 @@ async function testExecutor() {
   assert.equal(pyResult.type, 'python');
   assert.deepEqual(calls.shift(), ['python', '1 + 2']);
 
+  const copyUrlResult = await executor.run('copy url');
+  assert.equal(copyUrlResult.type, 'copy');
+  assert.deepEqual(calls.shift(), ['copy', 'http://127.0.0.1:5173/cli/']);
+
+  const copyMathResult = await executor.run('copy math');
+  assert.equal(copyMathResult.type, 'copy');
+  assert.deepEqual(calls.shift(), ['copy', '/work/py_software/apps/math-solver/']);
+
   const unknownResult = await executor.run('unknown');
   assert.equal(unknownResult.type, 'error');
   assert.match(unknownResult.message, /未知命令/);
+}
+
+function testAdapter(overrides = {}) {
+  return {
+    navigate() {},
+    reload() {},
+    copy() {
+      return Promise.resolve(true);
+    },
+    runPython() {
+      return Promise.resolve({ ok: true, stdout: '', stderr: '', result: '' });
+    },
+    getCurrentUrl() {
+      return 'http://127.0.0.1:5173/cli/';
+    },
+    setTheme() {},
+    getHistory() {
+      return [];
+    },
+    ...overrides
+  };
 }
 
 async function testExecutorReviewFixes() {
@@ -111,6 +141,10 @@ async function testExecutorReviewFixes() {
 
   const externalPathResult = await executor.run('open //example.com');
   assert.equal(externalPathResult.type, 'error');
+  assert.equal(calls.some((call) => call[0] === 'navigate'), false);
+
+  const backslashPathResult = await executor.run('open /\\example.com');
+  assert.equal(backslashPathResult.type, 'error');
   assert.equal(calls.some((call) => call[0] === 'navigate'), false);
 
   const copyUnknownResult = await executor.run('copy maths');
@@ -164,6 +198,51 @@ async function testExecutorReviewFixes() {
   const pythonRejectedResult = await pythonRejectExecutor.run('py 1 + 2');
   assert.equal(pythonRejectedResult.type, 'error');
   assert.match(pythonRejectedResult.message, /python crashed|Python 执行失败/);
+
+  const navigateThrowExecutor = createExecutor(testAdapter({
+    navigate() {
+      throw new Error('navigation denied');
+    }
+  }));
+  const navigateThrowResult = await navigateThrowExecutor.run('open math');
+  assert.equal(navigateThrowResult.type, 'error');
+  assert.match(navigateThrowResult.message, /navigation denied|打开失败/);
+
+  const reloadThrowExecutor = createExecutor(testAdapter({
+    reload() {
+      throw new Error('reload denied');
+    }
+  }));
+  const reloadThrowResult = await reloadThrowExecutor.run('reload');
+  assert.equal(reloadThrowResult.type, 'error');
+  assert.match(reloadThrowResult.message, /reload denied|刷新失败/);
+
+  const historyThrowExecutor = createExecutor(testAdapter({
+    getHistory() {
+      throw new Error('history denied');
+    }
+  }));
+  const historyThrowResult = await historyThrowExecutor.run('history');
+  assert.equal(historyThrowResult.type, 'error');
+  assert.match(historyThrowResult.message, /history denied|读取历史失败/);
+
+  const currentUrlThrowExecutor = createExecutor(testAdapter({
+    getCurrentUrl() {
+      throw new Error('url denied');
+    }
+  }));
+  const currentUrlThrowResult = await currentUrlThrowExecutor.run('copy url');
+  assert.equal(currentUrlThrowResult.type, 'error');
+  assert.match(currentUrlThrowResult.message, /url denied|复制失败/);
+
+  const themeThrowExecutor = createExecutor(testAdapter({
+    setTheme() {
+      throw new Error('theme denied');
+    }
+  }));
+  const themeThrowResult = await themeThrowExecutor.run('theme');
+  assert.equal(themeThrowResult.type, 'error');
+  assert.match(themeThrowResult.message, /theme denied|切换主题失败/);
 }
 
 assert.ok(ROUTES.length >= 12);

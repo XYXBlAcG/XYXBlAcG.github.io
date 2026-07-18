@@ -48,7 +48,7 @@ export function parseCommand(input) {
 export function resolveRoute(value) {
   const query = String(value || '').trim();
   if (!query) return null;
-  if (query.startsWith('#') || /^\/(?!\/)/.test(query)) {
+  if (query.startsWith('#') || (/^\/(?![\\/])/.test(query) && !query.includes('\\'))) {
     return { key: query, label: query, path: query, aliases: [] };
   }
   const normalized = query.toLowerCase();
@@ -127,8 +127,12 @@ export function createExecutor(adapter) {
     if (['open', 'go', 'cd'].includes(parsed.name)) {
       const route = resolveRoute(parsed.rest);
       if (!route) return { type: 'error', message: `找不到路径：${parsed.rest}` };
-      adapter.navigate(route.path);
-      return { type: 'navigation', message: `正在打开 ${route.label} -> ${route.path}`, route };
+      try {
+        await adapter.navigate(route.path);
+        return { type: 'navigation', message: `正在打开 ${route.label} -> ${route.path}`, route };
+      } catch (error) {
+        return { type: 'error', message: failureMessage('打开失败', error) };
+      }
     }
 
     if (parsed.name === 'help') {
@@ -151,28 +155,36 @@ export function createExecutor(adapter) {
     }
 
     if (parsed.name === 'reload' || parsed.name === 'refresh') {
-      adapter.reload();
-      return { type: 'reload', message: '正在刷新当前页面。' };
+      try {
+        await adapter.reload();
+        return { type: 'reload', message: '正在刷新当前页面。' };
+      } catch (error) {
+        return { type: 'error', message: failureMessage('刷新失败', error) };
+      }
     }
 
     if (parsed.name === 'clear') return { type: 'clear', message: '' };
 
     if (parsed.name === 'history') {
-      const history = adapter.getHistory();
-      return { type: 'history', message: history.length ? history.map((item, index) => `${index + 1}. ${item}`).join('\n') : '暂无历史命令。' };
+      try {
+        const history = await adapter.getHistory();
+        return { type: 'history', message: history.length ? history.map((item, index) => `${index + 1}. ${item}`).join('\n') : '暂无历史命令。' };
+      } catch (error) {
+        return { type: 'error', message: failureMessage('读取历史失败', error) };
+      }
     }
 
     if (parsed.name === 'copy') {
-      let text;
-      if (parsed.rest.toLowerCase() === 'url') {
-        text = adapter.getCurrentUrl();
-      } else {
-        const route = resolveRoute(parsed.rest);
-        if (!route) return { type: 'error', message: `找不到路径：${parsed.rest || '请使用 copy url 或 copy <route>'}` };
-        text = route.path;
-      }
-
       try {
+        let text;
+        if (parsed.rest.toLowerCase() === 'url') {
+          text = await adapter.getCurrentUrl();
+        } else {
+          const route = resolveRoute(parsed.rest);
+          if (!route) return { type: 'error', message: `找不到路径：${parsed.rest || '请使用 copy url 或 copy <route>'}` };
+          text = route.path;
+        }
+
         const ok = await adapter.copy(text);
         return { type: ok ? 'copy' : 'error', message: ok ? `已复制：${text}` : '复制失败，请检查浏览器权限。' };
       } catch (error) {
@@ -199,8 +211,12 @@ export function createExecutor(adapter) {
     }
 
     if (parsed.name === 'theme') {
-      adapter.setTheme();
-      return { type: 'theme', message: '已切换 CLI 显示强度。' };
+      try {
+        await adapter.setTheme();
+        return { type: 'theme', message: '已切换 CLI 显示强度。' };
+      } catch (error) {
+        return { type: 'error', message: failureMessage('切换主题失败', error) };
+      }
     }
 
     return { type: 'error', message: `未知命令：${parsed.name}。输入 help 查看可用命令。` };
