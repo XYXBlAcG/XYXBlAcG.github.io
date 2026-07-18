@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unit Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="Unit Converter navigation">
+      <a class="tool-back" href="../">Back to Tools Hub</a>
+      <a class="tool-back" href="../../../index.html#work">Back to Work</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">Unit Converter</h1>
+      <p class="tool-subtitle">Convert practical units, data sizes, angles, temperatures, and number bases.</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="Converter controls">
+      <div class="tool-form-grid">
+        <label class="tool-field">
+          <span>Category</span>
+          <select id="category" class="tool-select"></select>
+        </label>
+        <label class="tool-field">
+          <span>From</span>
+          <select id="from-unit" class="tool-select"></select>
+        </label>
+        <label class="tool-field">
+          <span>Value</span>
+          <input id="value" class="tool-input" type="text" value="1" inputmode="decimal" />
+        </label>
+      </div>
+      <div id="status" class="tool-status"></div>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="Conversion results">
+      <h2>Results</h2>
+      <div id="results" class="tool-results"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./unit-converter.js"></script>
+</body>
+</html>
