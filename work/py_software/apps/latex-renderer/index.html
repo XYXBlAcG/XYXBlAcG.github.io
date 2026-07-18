@@ -12,7 +12,7 @@
 </head>
 <body>
     <main class="latex-shell">
-        <nav class="latex-topbar" aria-label="页面导航">
+        <nav class="latex-topbar top-right-buttons" aria-label="页面导航">
             <a href="../../../tools/">返回工具中心</a>
             <a href="../../">返回软件目录</a>
         </nav>
@@ -23,7 +23,7 @@
             <p>在左侧输入 LaTeX，右侧会实时显示渲染结果。</p>
         </header>
 
-        <section class="latex-options" aria-label="预览显示设置">
+        <section class="latex-options solver-mode" aria-label="预览显示设置">
             <label>
                 <input type="radio" name="display" value="show" checked> 显示预览
             </label>
@@ -32,13 +32,13 @@
             </label>
         </section>
 
-        <section class="latex-grid" aria-label="LaTeX 输入和预览">
+        <section class="latex-grid solver-mode" aria-label="LaTeX 输入和预览">
             <label class="latex-panel">
-                <span>输入</span>
+                <span class="solver-field-label">输入</span>
                 <textarea id="input" placeholder="例如：\\[x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\\]"></textarea>
             </label>
-            <section class="latex-panel">
-                <span>预览</span>
+            <section class="latex-panel results-panel">
+                <span class="solver-field-label">预览</span>
                 <div id="output" aria-live="polite"></div>
             </section>
         </section>

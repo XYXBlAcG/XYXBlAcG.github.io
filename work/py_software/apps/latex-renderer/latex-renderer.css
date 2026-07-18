@@ -1,27 +1,38 @@
 :root {
     color-scheme: dark;
-    --page: #101418;
-    --panel: rgba(255, 255, 255, 0.08);
-    --panel-strong: rgba(255, 255, 255, 0.13);
-    --line: rgba(255, 255, 255, 0.18);
-    --text: #f4f7fb;
-    --muted: rgba(244, 247, 251, 0.72);
-    --accent: #72d2c8;
-    --accent-strong: #f4c95d;
-    --shadow: rgba(0, 0, 0, 0.28);
-    font-family: "Source Sans Pro", Helvetica, Arial, sans-serif;
+    --solver-surface: rgba(18, 23, 27, 0.78);
+    --solver-surface-strong: rgba(24, 31, 36, 0.92);
+    --solver-border: rgba(255, 255, 255, 0.2);
+    --solver-border-soft: rgba(255, 255, 255, 0.12);
+    --solver-text: #ffffff;
+    --solver-text-muted: rgba(255, 255, 255, 0.72);
+    --solver-accent: #7dd3fc;
+    --solver-accent-strong: #2dd4bf;
+    --solver-radius: 12px;
+    --solver-font: Consolas, "SFMono-Regular", "Cascadia Code", "Liberation Mono", Menlo, Monaco, monospace;
 }
 
 * {
     box-sizing: border-box;
 }
 
+html,
+body,
+button,
+input,
+textarea,
+#output,
+mjx-container {
+    font-family: var(--solver-font) !important;
+}
+
 body {
     min-height: 100vh;
     margin: 0;
-    color: var(--text);
+    overflow-x: hidden;
+    color: var(--solver-text);
     background:
-        linear-gradient(rgba(16, 20, 24, 0.86), rgba(16, 20, 24, 0.96)),
+        linear-gradient(rgba(8, 13, 18, 0.72), rgba(8, 13, 18, 0.9)),
         url("../../../../images/bg.jpg") center / cover fixed;
 }
 
@@ -36,137 +47,252 @@ textarea {
 }
 
 .latex-shell {
-    width: min(1120px, calc(100% - 32px));
+    width: min(58rem, calc(100vw - 2rem));
     margin: 0 auto;
-    padding: 40px 0 56px;
+    padding: 5rem 0 4rem;
 }
 
-.latex-topbar {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 28px;
+.top-right-buttons {
+    position: fixed;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    gap: 0.35rem;
+    max-width: calc(100vw - 1.5rem);
+    padding: 0.35rem;
+    z-index: 10002;
+    background: rgba(8, 13, 18, 0.74);
+    border: 1px solid var(--solver-border-soft);
+    border-radius: 10px;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(10px);
 }
 
-.latex-topbar a {
-    color: var(--muted);
+.top-right-buttons a {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 2.35rem;
+    padding: 0 0.78rem;
+    color: var(--solver-text);
+    font-size: 0.78rem;
+    line-height: 1;
+    letter-spacing: 0.03rem;
     text-decoration: none;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid var(--solver-border);
+    border-radius: 7px;
 }
 
-.latex-topbar a:hover {
-    color: var(--text);
+.top-right-buttons a:hover {
+    background: rgba(125, 211, 252, 0.14);
+    border-color: rgba(125, 211, 252, 0.48);
+}
+
+.top-right-buttons a:focus-visible,
+.latex-options label:focus-within,
+#input:focus {
+    outline: 2px solid var(--solver-accent);
+    outline-offset: 3px;
 }
 
 .latex-header {
-    margin-bottom: 24px;
+    width: 100%;
+    margin: 0 0 1rem;
+    padding: 2.25rem 2rem;
+    text-align: center;
+    background: rgba(18, 23, 27, 0.58);
+    border: 1px solid var(--solver-border);
+    border-radius: var(--solver-radius);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(8px);
 }
 
 .latex-kicker {
-    margin: 0 0 8px;
-    color: var(--accent-strong);
-    font-size: 0.82rem;
-    letter-spacing: 0.08rem;
+    margin: 0 0 0.85rem;
+    color: var(--solver-accent);
+    font-size: 0.78rem;
+    letter-spacing: 0.16rem;
     text-transform: uppercase;
 }
 
 .latex-header h1 {
     margin: 0;
-    font-size: clamp(2rem, 6vw, 4.8rem);
+    font-size: clamp(2.1rem, 6vw, 4.2rem);
     line-height: 1;
-    letter-spacing: 0;
+    letter-spacing: 0.05rem;
 }
 
 .latex-header p:last-child {
-    max-width: 680px;
-    margin: 12px 0 0;
-    color: var(--muted);
-    font-size: 1.05rem;
+    max-width: 44rem;
+    margin: 1rem auto 0;
+    color: var(--solver-text-muted);
+    font-size: 0.95rem;
+    letter-spacing: 0.05rem;
+    line-height: 1.75;
 }
 
-.latex-options,
-.latex-panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: 0 18px 42px var(--shadow);
-    backdrop-filter: blur(10px);
+.solver-mode,
+.results-panel {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    background: var(--solver-surface);
+    border: 1px solid var(--solver-border-soft);
+    border-radius: var(--solver-radius);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(8px);
 }
 
 .latex-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 16px;
-    padding: 16px 18px;
+    gap: 0.65rem;
+    margin: 0.75rem auto 1rem;
+    padding: 1.15rem 1.25rem;
 }
 
 .latex-options label {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    color: var(--muted);
+    min-height: 2.65rem;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    color: var(--solver-text-muted);
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid var(--solver-border-soft);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.latex-options label:hover,
+.latex-options label:has(input:checked) {
+    color: var(--solver-text);
+    background: rgba(125, 211, 252, 0.14);
+    border-color: rgba(125, 211, 252, 0.55);
 }
 
 .latex-options input {
-    accent-color: var(--accent);
+    accent-color: var(--solver-accent-strong);
 }
 
 .latex-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 1rem;
+    padding: 1.35rem;
 }
 
 .latex-panel {
     display: grid;
-    gap: 10px;
-    min-height: 360px;
-    padding: 18px;
+    gap: 0.85rem;
+    min-width: 0;
 }
 
-.latex-panel > span {
-    color: var(--muted);
-    font-size: 0.92rem;
+.solver-field-label {
+    display: block;
+    margin: 0;
+    color: var(--solver-text-muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.08rem;
+    text-transform: uppercase;
 }
 
 #input,
 #output {
     width: 100%;
-    min-height: 300px;
-    color: var(--text);
-    background: rgba(0, 0, 0, 0.24);
-    border: 1px solid var(--line);
+    min-height: 22rem;
+    color: var(--solver-text);
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid var(--solver-border-soft);
     border-radius: 8px;
 }
 
 #input {
-    padding: 14px;
+    padding: 1rem;
     resize: vertical;
     outline: none;
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+#input::placeholder {
+    color: rgba(255, 255, 255, 0.42);
 }
 
 #input:focus {
-    border-color: var(--accent);
+    border-color: var(--solver-accent);
+    box-shadow: 0 0 0 0.15rem rgba(125, 211, 252, 0.16);
 }
 
 #output {
     overflow: auto;
-    padding: 18px;
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: rgba(0, 0, 0, 0.18);
 }
 
-@media (max-width: 760px) {
+#output:empty::before {
+    color: var(--solver-text-muted);
+    content: "预览会显示在这里。";
+}
+
+@media screen and (max-width: 736px) {
     .latex-shell {
-        width: min(100% - 20px, 1120px);
-        padding-top: 24px;
+        width: calc(100% - 1rem);
+        max-width: 100%;
+        padding-top: 5.75rem;
     }
 
-    .latex-topbar,
+    .top-right-buttons {
+        left: 0.75rem;
+        right: 0.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .top-right-buttons a {
+        width: 100%;
+        min-height: 2.25rem;
+        padding: 0 0.35rem;
+        font-size: 0.72rem;
+    }
+
+    .latex-header {
+        padding: 1.75rem 1rem;
+    }
+
+    .latex-header h1 {
+        font-size: clamp(1.35rem, 6.8vw, 1.62rem);
+        line-height: 1.18;
+        overflow-wrap: anywhere;
+    }
+
+    .latex-header p:last-child {
+        font-size: 0.85rem;
+        letter-spacing: 0.03rem;
+    }
+
+    .latex-options,
+    .latex-grid {
+        padding: 1rem;
+    }
+
+    .latex-options {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
     .latex-grid {
         grid-template-columns: 1fr;
     }
 
-    .latex-topbar {
-        flex-direction: column;
+    .latex-options label {
+        width: 100%;
+    }
+
+    #input,
+    #output {
+        min-height: 220px;
     }
 }
