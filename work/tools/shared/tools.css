@@ -1,0 +1,262 @@
+:root {
+  color-scheme: dark;
+  --page: #101418;
+  --panel: rgba(255, 255, 255, 0.075);
+  --panel-strong: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.18);
+  --text: #f4f7fb;
+  --muted: rgba(244, 247, 251, 0.72);
+  --accent: #72d2c8;
+  --accent-strong: #f4c95d;
+  --danger: #ff8a8a;
+  --shadow: rgba(0, 0, 0, 0.26);
+  font-family: "Source Sans Pro", Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    linear-gradient(rgba(16, 20, 24, 0.88), rgba(16, 20, 24, 0.94)),
+    url("../../../images/bg-1920.jpg") center / cover fixed;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.tool-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 56px;
+}
+
+.tool-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.tool-back {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tool-back:hover {
+  color: var(--text);
+}
+
+.tool-title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.tool-subtitle {
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.tool-card,
+.tool-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 42px var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.tool-card {
+  display: grid;
+  gap: 12px;
+  min-height: 190px;
+  padding: 18px;
+  text-decoration: none;
+}
+
+.tool-card:hover {
+  border-color: var(--accent);
+  background: var(--panel-strong);
+}
+
+.tool-card h2,
+.tool-panel h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0;
+}
+
+.tool-card p,
+.tool-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tool-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: end;
+}
+
+.tool-tag {
+  padding: 3px 8px;
+  color: var(--page);
+  background: var(--accent);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.tool-panel {
+  padding: 18px;
+}
+
+.tool-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.tool-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.tool-field {
+  display: grid;
+  gap: 6px;
+}
+
+.tool-field span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.tool-input,
+.tool-select,
+.tool-textarea {
+  width: 100%;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+}
+
+.tool-input,
+.tool-select {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.tool-textarea {
+  min-height: 260px;
+  padding: 12px;
+  resize: vertical;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.tool-input:focus,
+.tool-select:focus,
+.tool-textarea:focus {
+  border-color: var(--accent);
+}
+
+.tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tool-button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tool-button:hover {
+  border-color: var(--accent);
+}
+
+.tool-button.primary {
+  color: #071312;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tool-status {
+  min-height: 1.5rem;
+  color: var(--muted);
+}
+
+.tool-status.error {
+  color: var(--danger);
+}
+
+.tool-section-title {
+  margin: 24px 0 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.08rem;
+  text-transform: uppercase;
+}
+
+.tool-results {
+  display: grid;
+  gap: 8px;
+}
+
+.tool-result-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tool-result-row strong {
+  color: var(--accent-strong);
+}
+
+@media (max-width: 640px) {
+  .tool-shell {
+    width: min(100% - 20px, 1120px);
+    padding-top: 24px;
+  }
+
+  .tool-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tool-result-row {
+    grid-template-columns: 1fr;
+  }
+}
