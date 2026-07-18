@@ -81,6 +81,8 @@ assert_blocked('print.__self__.__dict__["open"]("cli/cli-python.py").read()[:20]
 assert_blocked('def f():\n    return 1\n"{0.__globals__}".format(f)', "不允许使用 str.format")
 assert_blocked('"{value}".format_map({"value": 1})', "不允许使用 str.format")
 assert_blocked('len("".rjust(13000))', "不允许使用可能产生过大结果")
+assert_blocked('x = [0]\nx.extend(x)\nlen(x)', "不允许使用可能产生过大结果")
+assert_blocked('(0).to_bytes(13000, "big")', "不允许使用可能产生过大结果")
 assert_blocked('while True:\n    pass', "不允许使用 while 循环")
 assert_blocked('sum(range(10**10))', "range 太大")
 assert_blocked('10 ** 13', "指数过大")

@@ -20,10 +20,14 @@ BLOCKED_GROWTH_METHODS = {
     "decode",
     "encode",
     "expandtabs",
+    "extend",
+    "fromhex",
     "join",
     "ljust",
     "replace",
     "rjust",
+    "sort",
+    "to_bytes",
     "zfill",
 }
 BLOCKED_HIGHER_ORDER_CALLS = {"map", "filter"}
