@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tools Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="Tools navigation">
+      <a class="tool-back" href="../../index.html#work">Back to Work</a>
+      <a class="tool-back" href="../py_software/">Python Tools</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">Tools Hub</h1>
+      <p class="tool-subtitle">A compact catalog for math, text, file, learning, and small utility tools.</p>
+    </header>
+
+    <section class="tool-panel tool-stack" aria-label="Tool search">
+      <label class="tool-field">
+        <span>Filter tools</span>
+        <input id="tool-filter" class="tool-input" type="search" placeholder="math, text, latex, unit, pdf, word..." />
+      </label>
+    </section>
+
+    <h2 class="tool-section-title">Featured</h2>
+    <section class="tool-grid" aria-label="Featured tools">
+      <a class="tool-card" href="../py_software/apps/math-solver/" data-tool-card data-search="math solver equation matrix sympy calculus latex">
+        <h2>Math Solver</h2>
+        <p>Equation solving, calculus, matrix operations, transforms, LaTeX input, and plots.</p>
+        <span class="tool-tags"><span class="tool-tag">Math</span><span class="tool-tag">PyScript</span></span>
+      </a>
+      <a class="tool-card" href="./text-toolkit/" data-tool-card data-search="text toolkit json base64 url sort dedupe line">
+        <h2>Text Toolkit</h2>
+        <p>Clean, sort, dedupe, transform, encode, decode, and format text.</p>
+        <span class="tool-tags"><span class="tool-tag">Text</span><span class="tool-tag">JSON</span></span>
+      </a>
+      <a class="tool-card" href="./unit-converter/" data-tool-card data-search="unit converter length mass temperature speed data angle base">
+        <h2>Unit Converter</h2>
+        <p>Convert common units, data sizes, angles, temperatures, speeds, and number bases.</p>
+        <span class="tool-tags"><span class="tool-tag">Units</span><span class="tool-tag">Everyday</span></span>
+      </a>
+    </section>
+
+    <h2 class="tool-section-title">Math and Science</h2>
+    <section class="tool-grid" aria-label="Math and science tools">
+      <a class="tool-card" href="../py_software/apps/latex-converter/" data-tool-card data-search="latex sympy converter formula math">
+        <h2>LaTeX to SymPy</h2>
+        <p>Convert LaTeX math input into SymPy expression syntax.</p>
+        <span class="tool-tags"><span class="tool-tag">LaTeX</span></span>
+      </a>
+      <a class="tool-card" href="../py_software/apps/latex-renderer/" data-tool-card data-search="latex realtime renderer mathjax preview">
+        <h2>Real-time LaTeX</h2>
+        <p>Preview LaTeX snippets as rendered math while typing.</p>
+        <span class="tool-tags"><span class="tool-tag">Preview</span></span>
+      </a>
+      <a class="tool-card" href="../py_software/apps/chem-solver/" data-tool-card data-search="chem chemistry solver equation balance chempy">
+        <h2>Chem Solver</h2>
+        <p>Chemistry experiments and equation balancing utilities.</p>
+        <span class="tool-tags"><span class="tool-tag">Chem</span></span>
+      </a>
+    </section>
+
+    <h2 class="tool-section-title">Productivity and Learning</h2>
+    <section class="tool-grid" aria-label="Productivity and learning tools">
+      <a class="tool-card" href="../filesorter/preview.html" data-tool-card data-search="filesorter file organize folder extension time">
+        <h2>Filesorter</h2>
+        <p>Organize files by extension and time rules.</p>
+        <span class="tool-tags"><span class="tool-tag">Files</span></span>
+      </a>
+      <a class="tool-card" href="../zip2pdf/preview.html" data-tool-card data-search="zip pdf convert images archive">
+        <h2>Zip2PDF</h2>
+        <p>Convert image archives into PDF files.</p>
+        <span class="tool-tags"><span class="tool-tag">PDF</span></span>
+      </a>
+      <a class="tool-card" href="../kana_player/main.html" data-tool-card data-search="kana japanese hiragana katakana learning game">
+        <h2>Kana Player</h2>
+        <p>A kana flip-card learning game.</p>
+        <span class="tool-tags"><span class="tool-tag">Learning</span></span>
+      </a>
+      <a class="tool-card" href="../wordmemo/preview.html" data-tool-card data-search="wordmemo vocabulary memory word learning">
+        <h2>WordMemo</h2>
+        <p>A lightweight word memorization tool.</p>
+        <span class="tool-tags"><span class="tool-tag">Words</span></span>
+      </a>
+      <a class="tool-card" href="../../star/index.html" data-tool-card data-search="star visual small demo">
+        <h2>Star</h2>
+        <p>A small visual page.</p>
+        <span class="tool-tags"><span class="tool-tag">Demo</span></span>
+      </a>
+    </section>
+  </main>
+
+  <script type="module">
+    import { installCardFilter } from './shared/tools.js';
+    installCardFilter(document.getElementById('tool-filter'), document.querySelectorAll('[data-tool-card]'));
+  </script>
+</body>
+</html>
