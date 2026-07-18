@@ -1,6 +1,7 @@
 import { setStatus } from '../shared/tools.js';
 
 const fileInput = document.getElementById('image-file');
+const fileName = document.getElementById('image-file-name');
 const widthInput = document.getElementById('width');
 const heightInput = document.getElementById('height');
 const formatInput = document.getElementById('format');
@@ -73,6 +74,7 @@ async function processImage() {
 
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files[0];
+  fileName.textContent = file?.name || '未选择图片';
   if (!file) return;
   try {
     sourceImage = await loadImage(file);

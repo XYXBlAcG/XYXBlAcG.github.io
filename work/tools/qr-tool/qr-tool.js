@@ -10,6 +10,7 @@ const levelInput = document.getElementById('qr-level');
 const canvas = document.getElementById('qr-canvas');
 const generateStatus = document.getElementById('generate-status');
 const decodeFile = document.getElementById('decode-file');
+const decodeFileName = document.getElementById('decode-file-name');
 const decodedText = document.getElementById('decoded-text');
 const decodeStatus = document.getElementById('decode-status');
 
@@ -509,6 +510,7 @@ function loadImage(file) {
 
 async function decodeQr() {
   const file = decodeFile.files[0];
+  decodeFileName.textContent = file?.name || '未选择图片';
   decodedText.value = '';
   if (!file) return;
   setStatus(decodeStatus, '');

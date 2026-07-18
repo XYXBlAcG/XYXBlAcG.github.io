@@ -28,10 +28,14 @@
       </section>
       <section class="tool-panel tool-stack">
         <h2>文件输入</h2>
-        <label class="tool-field">
+        <div class="tool-field">
           <span>选择文件后会优先计算文件摘要</span>
-          <input id="file-input" class="tool-input tool-file" type="file" />
-        </label>
+          <label class="tool-upload">
+            <input id="file-input" class="tool-file" type="file" />
+            <span class="tool-upload-button">上传文件</span>
+            <span id="file-input-name" class="tool-upload-name">未选择文件</span>
+          </label>
+        </div>
         <div class="tool-actions">
           <button id="clear-file" class="tool-button">改用文本</button>
           <button id="copy-results" class="tool-button">复制结果</button>

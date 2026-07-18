@@ -2,6 +2,7 @@ import { copyText, setStatus } from '../shared/tools.js';
 
 const textInput = document.getElementById('text-input');
 const fileInput = document.getElementById('file-input');
+const fileName = document.getElementById('file-input-name');
 const results = document.getElementById('results');
 const status = document.getElementById('status');
 
@@ -118,6 +119,7 @@ async function compute() {
 
 document.getElementById('clear-file').addEventListener('click', () => {
   fileInput.value = '';
+  fileName.textContent = '未选择文件';
   compute();
 });
 document.getElementById('copy-results').addEventListener('click', () => {
@@ -127,5 +129,8 @@ document.getElementById('copy-results').addEventListener('click', () => {
   copyText(text, status);
 });
 textInput.addEventListener('input', compute);
-fileInput.addEventListener('change', compute);
+fileInput.addEventListener('change', () => {
+  fileName.textContent = fileInput.files[0]?.name || '未选择文件';
+  compute();
+});
 compute();

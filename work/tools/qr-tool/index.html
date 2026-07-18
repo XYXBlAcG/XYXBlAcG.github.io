@@ -88,10 +88,14 @@
     <section class="tool-panel tool-stack" aria-label="二维码解码">
       <h2>解码图片</h2>
       <div class="tool-form-grid">
-        <label class="tool-field">
+        <div class="tool-field">
           <span>上传二维码图片</span>
-          <input id="decode-file" class="tool-input tool-file" type="file" accept="image/*" />
-        </label>
+          <label class="tool-upload">
+            <input id="decode-file" class="tool-file" type="file" accept="image/*" />
+            <span class="tool-upload-button">上传图片</span>
+            <span id="decode-file-name" class="tool-upload-name">未选择图片</span>
+          </label>
+        </div>
         <label class="tool-field">
           <span>解码结果</span>
           <input id="decoded-text" class="tool-input" type="text" readonly />

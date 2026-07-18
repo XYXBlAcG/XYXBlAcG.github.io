@@ -127,3 +127,47 @@ export function downloadText(filename, content) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+export function installPageTransitions() {
+  if (
+    typeof window === 'undefined' ||
+    typeof document === 'undefined' ||
+    typeof document.addEventListener !== 'function' ||
+    (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+  ) {
+    return;
+  }
+
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    const link = event.target && typeof event.target.closest === 'function'
+      ? event.target.closest('a[href]')
+      : null;
+    if (!link || link.target || link.hasAttribute('download')) {
+      return;
+    }
+
+    const target = new URL(link.href, window.location.href);
+    if (target.origin !== window.location.origin || target.href === window.location.href) {
+      return;
+    }
+
+    if (target.pathname === window.location.pathname && target.hash) {
+      return;
+    }
+
+    event.preventDefault();
+    document.body.classList.add('is-tool-leaving');
+    window.setTimeout(() => {
+      window.location.href = target.href;
+    }, 150);
+  });
+}
+
+installPageTransitions();
