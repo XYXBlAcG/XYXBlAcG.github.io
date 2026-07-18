@@ -123,7 +123,11 @@ function formatNumber(value) {
 }
 
 function parseNumericValue(text) {
-  const value = Number(text);
+  const normalized = text.trim();
+  if (!normalized) {
+    throw new Error('Enter a value.');
+  }
+  const value = Number(normalized);
   if (!Number.isFinite(value)) {
     throw new Error('Enter a valid number.');
   }
@@ -143,18 +147,28 @@ function fromCelsius(value, unit) {
 }
 
 function parseIntegerForBase(text, base) {
-  const normalized = text.trim();
-  if (!normalized) throw new Error('Enter a value.');
-  const pattern = {
-    2: /^[01]+$/i,
-    8: /^[0-7]+$/i,
-    10: /^-?\d+$/i,
-    16: /^[0-9a-f]+$/i,
-  }[base];
-  if (!pattern.test(normalized)) {
-    throw new Error(`Value is not valid for base ${base}.`);
+  const normalized = text.trim().toUpperCase();
+  if (!normalized) {
+    throw new Error('Enter a value.');
   }
-  return parseInt(normalized, base);
+
+  const isNegative = normalized.startsWith('-');
+  const digits = isNegative ? normalized.slice(1) : normalized;
+  if (!digits) {
+    throw new Error('Enter digits after the minus sign.');
+  }
+
+  let value = 0n;
+  const bigintBase = BigInt(base);
+  for (const digit of digits) {
+    const digitValue = Number.parseInt(digit, 16);
+    if (!Number.isInteger(digitValue) || digitValue >= base) {
+      throw new Error(`Value is not valid for base ${base}.`);
+    }
+    value = value * bigintBase + BigInt(digitValue);
+  }
+
+  return isNegative ? -value : value;
 }
 
 function renderUnitOptions() {
