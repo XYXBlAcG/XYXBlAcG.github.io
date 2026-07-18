@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Text Toolkit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/tools.css" />
+</head>
+<body>
+  <main class="tool-shell">
+    <nav class="tool-topbar" aria-label="Text Toolkit navigation">
+      <a class="tool-back" href="../">Back to Tools Hub</a>
+      <a class="tool-back" href="../../../index.html#work">Back to Work</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">Text Toolkit</h1>
+      <p class="tool-subtitle">Clean, transform, encode, decode, and format text directly in the browser.</p>
+    </header>
+
+    <section class="tool-grid" aria-label="Text editor">
+      <label class="tool-field">
+        <span>Input</span>
+        <textarea id="input" class="tool-textarea" spellcheck="false">{"name":"xyx","tools":["math","text","unit"]}</textarea>
+      </label>
+      <label class="tool-field">
+        <span>Output</span>
+        <textarea id="output" class="tool-textarea" spellcheck="false" readonly></textarea>
+      </label>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="Text actions">
+      <div class="tool-actions">
+        <button class="tool-button primary" data-action="json-format">Format JSON</button>
+        <button class="tool-button" data-action="json-minify">Minify JSON</button>
+        <button class="tool-button" data-action="dedupe">Dedupe Lines</button>
+        <button class="tool-button" data-action="remove-empty">Remove Empty Lines</button>
+        <button class="tool-button" data-action="trim-lines">Trim Lines</button>
+        <button class="tool-button" data-action="sort-asc">Sort A-Z</button>
+        <button class="tool-button" data-action="sort-desc">Sort Z-A</button>
+        <button class="tool-button" data-action="line-numbers">Add Line Numbers</button>
+        <button class="tool-button" data-action="upper">Uppercase</button>
+        <button class="tool-button" data-action="lower">Lowercase</button>
+        <button class="tool-button" data-action="title">Title Case</button>
+        <button class="tool-button" data-action="base64-encode">Base64 Encode</button>
+        <button class="tool-button" data-action="base64-decode">Base64 Decode</button>
+        <button class="tool-button" data-action="url-encode">URL Encode</button>
+        <button class="tool-button" data-action="url-decode">URL Decode</button>
+      </div>
+      <div class="tool-actions">
+        <button id="copy-output" class="tool-button">Copy Output</button>
+        <button id="swap-text" class="tool-button">Swap</button>
+        <button id="download-output" class="tool-button">Download Output</button>
+        <button id="clear-text" class="tool-button">Clear</button>
+      </div>
+      <div id="stats" class="tool-status"></div>
+      <div id="status" class="tool-status"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./text-toolkit.js"></script>
+</body>
+</html>
