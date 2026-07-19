@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>局域网快传</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../tools/shared/tools.css" />
+  <link rel="stylesheet" href="./lan-transfer.css" />
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+</head>
+<body>
+  <main class="tool-shell lan-shell">
+    <nav class="tool-topbar" aria-label="局域网快传导航">
+      <a class="tool-back" href="../tools/">返回工具中心</a>
+      <a class="tool-back" href="../../index.html#work">返回作品区</a>
+    </nav>
+
+    <header>
+      <h1 class="tool-title">局域网快传</h1>
+      <p class="tool-subtitle">在同一局域网或可直连的设备之间快速传文件。文件通过浏览器点对点传输，不经过本站服务器。</p>
+    </header>
+
+    <section class="tool-panel lan-mode-panel" aria-label="选择模式">
+      <button class="tool-button primary lan-mode-button" type="button" data-mode="send">发送文件</button>
+      <button class="tool-button lan-mode-button" type="button" data-mode="receive">接收文件</button>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="设备设置">
+      <div class="tool-form-grid">
+        <label class="tool-field">
+          <span>我的设备昵称</span>
+          <input id="device-name" class="tool-input" type="text" maxlength="24" />
+        </label>
+        <label class="tool-check lan-advanced-toggle">
+          <input id="use-public-stun" class="tool-input" type="checkbox" />
+          <span>高级设置：增强连接成功率</span>
+        </label>
+      </div>
+      <p class="tool-status">默认只使用局域网直连；连接失败时可开启增强连接成功率。</p>
+    </section>
+
+    <section class="lan-steps" aria-label="连接步骤">
+      <div class="lan-step is-active" data-step="1">1. 选择模式</div>
+      <div class="lan-step" data-step="2">2. 交换连接码</div>
+      <div class="lan-step" data-step="3">3. 确认文件</div>
+      <div class="lan-step" data-step="4">4. 传输与下载</div>
+    </section>
+
+    <section class="tool-split even lan-workspace">
+      <section class="tool-panel tool-stack" data-panel="send" hidden>
+        <h2>发送文件</h2>
+        <label class="tool-upload">
+          <input id="file-input" class="tool-file" type="file" multiple />
+          <span class="tool-upload-button">选择文件</span>
+          <span id="file-input-name" class="tool-upload-name">未选择文件</span>
+        </label>
+        <div class="tool-actions">
+          <button id="create-offer" class="tool-button primary" type="button">生成发起码</button>
+          <button id="import-answer" class="tool-button" type="button">导入回应码</button>
+          <button id="send-files" class="tool-button primary" type="button" disabled>开始发送</button>
+        </div>
+      </section>
+
+      <section class="tool-panel tool-stack" data-panel="receive" hidden>
+        <h2>接收文件</h2>
+        <div class="tool-actions">
+          <button id="import-offer" class="tool-button primary" type="button">导入发起码</button>
+          <button id="create-answer" class="tool-button" type="button" disabled>生成回应码</button>
+          <button id="accept-transfer" class="tool-button primary" type="button" disabled>确认接收全部文件</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="连接码">
+      <h2>连接码</h2>
+      <div class="lan-code-grid">
+        <div class="lan-qr-box"><canvas id="signal-qr" width="240" height="240" aria-label="连接码二维码"></canvas></div>
+        <label class="tool-field">
+          <span>连接码文本</span>
+          <textarea id="signal-code" class="tool-textarea lan-code-textarea" spellcheck="false"></textarea>
+        </label>
+      </div>
+      <div class="tool-actions">
+        <button id="copy-code" class="tool-button" type="button">复制连接码</button>
+        <button id="paste-code" class="tool-button" type="button">从剪贴板读取</button>
+        <button id="reset-session" class="tool-button" type="button">重新生成连接</button>
+      </div>
+      <div id="signal-status" class="tool-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="文件与传输">
+      <h2>文件列表</h2>
+      <div id="file-list" class="lan-file-list"></div>
+      <progress id="transfer-progress" class="lan-progress" value="0" max="100"></progress>
+      <div id="transfer-status" class="tool-status" role="status" aria-live="polite"></div>
+      <div class="tool-actions">
+        <button id="download-zip" class="tool-button primary" type="button" disabled>下载 ZIP</button>
+        <button id="clear-transfer" class="tool-button" type="button">清空本次传输</button>
+      </div>
+    </section>
+
+    <section class="tool-panel tool-stack" aria-label="文件预览">
+      <h2>预览</h2>
+      <div id="preview-list" class="lan-preview-list"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./lan-transfer.js"></script>
+  <script type="module" src="/assets/js/site-cli-sidebar.js"></script>
+</body>
+</html>
