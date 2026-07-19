@@ -215,9 +215,9 @@
 
 .lan-file-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+  align-items: start;
+  gap: 12px;
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -235,9 +235,24 @@
   min-width: 0;
 }
 
-.lan-file-download {
+.lan-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lan-file-download,
+.lan-file-preview {
   min-width: 72px;
-  justify-self: end;
+  min-height: 34px;
+  padding-inline: 12px;
+  font-size: 0.9rem;
+}
+
+.lan-file-preview {
+  min-width: 128px;
 }
 
 .lan-progress {
@@ -285,6 +300,10 @@
   min-height: 34px;
 }
 
+.lan-preview-empty {
+  margin: 0;
+}
+
 .lan-scanner {
   display: grid;
   gap: 10px;
@@ -317,6 +336,18 @@
 
   .lan-drop-zone .tool-upload-button {
     justify-self: start;
+  }
+
+  .lan-file-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lan-file-actions {
+    justify-content: stretch;
+  }
+
+  .lan-file-actions .tool-button {
+    flex: 1 1 120px;
   }
 
   .lan-code-textarea {

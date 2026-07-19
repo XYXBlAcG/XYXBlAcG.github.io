@@ -18,7 +18,7 @@
   <script src="./auth-config.js?v=20260719-auth-2"></script>
   <script src="./lan-transfer-auth.js?v=20260719-auth-1"></script>
   <link rel="stylesheet" href="../tools/shared/tools.css" />
-  <link rel="stylesheet" href="./lan-transfer.css?v=20260719-auth-1" />
+  <link rel="stylesheet" href="./lan-transfer.css?v=20260719-ui-1" />
   <script src="./vendor/lz-string.min.js?v=20260719-auth-1" defer></script>
   <script src="./vendor/qrcode.js?v=20260719-auth-1" defer></script>
   <script src="./vendor/jszip.min.js?v=20260719-auth-1" defer></script>
@@ -129,6 +129,7 @@
       <progress id="transfer-progress" class="lan-progress" value="0" max="100" aria-label="传输进度" aria-describedby="transfer-status"></progress>
       <div id="transfer-status" class="tool-status" role="status" aria-live="polite"></div>
       <div class="tool-actions">
+        <button id="download-all" class="tool-button primary" type="button" disabled>下载全部文件</button>
         <button id="download-zip" class="tool-button primary" type="button" disabled>下载 ZIP</button>
         <button id="clear-transfer" class="tool-button" type="button">清空本次传输</button>
       </div>
@@ -140,7 +141,7 @@
     </section>
   </main>
 
-  <script type="module" src="./lan-transfer.js"></script>
+  <script type="module" src="./lan-transfer.js?v=20260719-ui-1"></script>
   <script type="module" src="/assets/js/site-cli-sidebar.js"></script>
 </body>
 </html>

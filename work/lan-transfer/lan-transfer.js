@@ -39,14 +39,37 @@ function normalizeSignalingApiBase(value) {
   return String(value || '').replace(/\/+$/, '');
 }
 
+function isLocalSecureHost() {
+  return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
+}
+
+function isLikelyMobileBrowser() {
+  if (navigator.userAgentData?.mobile) return true;
+  const userAgent = navigator.userAgent || '';
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)
+    || Boolean(globalThis.matchMedia?.('(pointer: coarse)')?.matches && globalThis.innerWidth <= 900);
+}
+
+function isSafariBrowser() {
+  const userAgent = navigator.userAgent || '';
+  return /Safari/i.test(userAgent) && !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR/i.test(userAgent);
+}
+
+function canUseInlineQrScanner() {
+  return isLikelyMobileBrowser()
+    && !isSafariBrowser()
+    && Boolean(globalThis.BarcodeDetector)
+    && Boolean(navigator.mediaDevices?.getUserMedia)
+    && (globalThis.isSecureContext || isLocalSecureHost());
+}
+
 function getSignalingApiBase() {
   if (globalThis.XYX_LAN_TRANSFER_CONFIG?.signalingApiBase) {
     return normalizeSignalingApiBase(globalThis.XYX_LAN_TRANSFER_CONFIG.signalingApiBase);
   }
 
   const hostname = location.hostname;
-  const localHosts = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
-  const base = localHosts.has(hostname) || isPrivateIpv4(hostname)
+  const base = isLocalSecureHost() || isPrivateIpv4(hostname)
     ? './api'
     : cloudflareSignalingApiBase;
   return normalizeSignalingApiBase(base);
@@ -71,6 +94,7 @@ const state = {
   shareBaseUrl: '',
   autoAccepted: false,
   transferStarted: false,
+  receiveComplete: false,
 };
 
 const elements = {
@@ -109,6 +133,7 @@ const elements = {
   pasteCode: document.getElementById('paste-code'),
   resetSession: document.getElementById('reset-session'),
   clearTransfer: document.getElementById('clear-transfer'),
+  downloadAll: document.getElementById('download-all'),
   downloadZip: document.getElementById('download-zip'),
   steps: document.querySelectorAll('.lan-step'),
 };
@@ -225,14 +250,17 @@ function setActiveStep(step) {
 
 function updateModeControls() {
   const receiveMode = state.mode === 'receive';
-  elements.signalPanel.hidden = receiveMode && state.signalingAvailable;
+  const inlineScannerAvailable = canUseInlineQrScanner();
+  elements.signalPanel.hidden = receiveMode;
   elements.importAnswer.hidden = state.signalingAvailable;
   elements.pasteCode.hidden = state.signalingAvailable && !receiveMode;
   elements.manualCodeDetails.open = !state.signalingAvailable;
   elements.connectShortCode.disabled = !state.signalingAvailable;
-  elements.scanQr.disabled = !state.signalingAvailable;
+  elements.scanQr.hidden = !inlineScannerAvailable;
+  elements.scanQr.disabled = !state.signalingAvailable || !inlineScannerAvailable;
   elements.importOffer.hidden = state.signalingAvailable;
   elements.shortCodeWrap.hidden = !state.shortCode;
+  if (!receiveMode || !inlineScannerAvailable) stopScanner();
 }
 
 function setSignalStatus(message, isError = false) {
@@ -580,9 +608,17 @@ function disposePreviewList() {
   elements.previewList.replaceChildren();
 }
 
+function renderPreviewEmptyState() {
+  const empty = document.createElement('p');
+  empty.className = 'tool-status lan-preview-empty';
+  empty.textContent = '暂无预览。';
+  elements.previewList.appendChild(empty);
+}
+
 function cancelPreviews() {
   state.previewToken += 1;
   disposePreviewList();
+  renderPreviewEmptyState();
 }
 
 function renderPreviewError(file, error) {
@@ -597,17 +633,23 @@ function renderPreviewError(file, error) {
   return card;
 }
 
-function appendPreviewDownload(card, file) {
+function appendPreviewActions(card, file) {
   if (!getDownloadBlob(file)) return;
   const actions = document.createElement('div');
-  const button = document.createElement('button');
+  const openButton = document.createElement('button');
+  const downloadButton = document.createElement('button');
 
   actions.className = 'tool-actions lan-preview-actions';
-  button.className = 'tool-button';
-  button.type = 'button';
-  button.textContent = '下载此文件';
-  button.addEventListener('click', () => downloadTransferFile(file));
-  actions.appendChild(button);
+  openButton.className = 'tool-button';
+  openButton.type = 'button';
+  openButton.textContent = '在新标签页预览';
+  openButton.addEventListener('click', () => openFilePreviewInNewTab(file));
+
+  downloadButton.className = 'tool-button';
+  downloadButton.type = 'button';
+  downloadButton.textContent = '下载此文件';
+  downloadButton.addEventListener('click', () => downloadTransferFile(file));
+  actions.append(openButton, downloadButton);
   card.appendChild(actions);
 }
 
@@ -616,7 +658,15 @@ async function renderPreviews(files) {
   state.previewToken = previewToken;
   disposePreviewList();
 
-  for (const file of files) {
+  const previewFiles = Array.from(files || [])
+    .map((file) => getDownloadableFile(file))
+    .filter(Boolean);
+  if (!previewFiles.length) {
+    renderPreviewEmptyState();
+    return;
+  }
+
+  for (const file of previewFiles) {
     let card = null;
     try {
       card = await renderFilePreview(file);
@@ -630,9 +680,20 @@ async function renderPreviews(files) {
       return;
     }
 
-    appendPreviewDownload(card, file);
+    appendPreviewActions(card, file);
     elements.previewList.appendChild(card);
   }
+}
+
+async function previewTransferFile(file) {
+  const previewFile = getDownloadableFile(file);
+  if (!previewFile) {
+    setStatus(elements.transferStatus, '文件尚未接收完成，暂时不能预览。', true);
+    return;
+  }
+
+  await renderPreviews([previewFile]);
+  setStatus(elements.transferStatus, `已生成预览：${previewFile.name}`, false);
 }
 
 async function readClipboardCode() {
@@ -725,18 +786,69 @@ function downloadBlob(filename, blob) {
 
 function getDownloadBlob(file) {
   if (file?.blob instanceof Blob) return file.blob;
-  if (file instanceof Blob) return file;
   return null;
 }
 
+function getDownloadableFile(file) {
+  if (getDownloadBlob(file)) return file;
+  if (!file?.id) return null;
+  return state.receivedFiles.find((receivedFile) => receivedFile.id === file.id && getDownloadBlob(receivedFile)) || null;
+}
+
+function getDownloadableFiles() {
+  return state.receivedFiles.filter((file) => Boolean(getDownloadBlob(file)));
+}
+
+function updateDownloadControls(forceDisabled = false) {
+  const hasFiles = state.receiveComplete && getDownloadableFiles().length > 0;
+  elements.downloadAll.disabled = forceDisabled || !hasFiles;
+  elements.downloadZip.disabled = forceDisabled || !hasFiles;
+}
+
 function downloadTransferFile(file) {
-  const blob = getDownloadBlob(file);
+  const targetFile = getDownloadableFile(file);
+  const blob = getDownloadBlob(targetFile);
   if (!blob) {
-    setStatus(elements.transferStatus, '这个文件暂时不能单独下载。', true);
+    setStatus(elements.transferStatus, '文件尚未接收完成，暂时不能下载。', true);
     return;
   }
-  downloadBlob(safeFilename(file.name), blob);
-  setStatus(elements.transferStatus, `已开始下载：${file.name}`, false);
+  downloadBlob(safeFilename(targetFile.name), blob);
+  setStatus(elements.transferStatus, `已开始下载：${targetFile.name}`, false);
+}
+
+function downloadAllTransferFiles() {
+  const files = getDownloadableFiles();
+  if (!files.length) {
+    setStatus(elements.transferStatus, '文件尚未接收完成，暂时不能下载。', true);
+    return;
+  }
+
+  const filenames = buildZipEntryNames(files);
+  files.forEach((file, index) => {
+    const blob = getDownloadBlob(file);
+    if (blob) downloadBlob(filenames[index], blob);
+  });
+  setStatus(elements.transferStatus, `已开始下载 ${files.length} 个文件。`, false);
+}
+
+function openFilePreviewInNewTab(file) {
+  const targetFile = getDownloadableFile(file);
+  const blob = getDownloadBlob(targetFile);
+  if (!blob) {
+    setStatus(elements.transferStatus, '文件尚未接收完成，暂时不能预览。', true);
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  const opened = window.open(url, '_blank', 'noopener');
+  if (!opened) {
+    URL.revokeObjectURL(url);
+    setStatus(elements.transferStatus, '浏览器拦截了新标签页，请允许弹出窗口后重试。', true);
+    return;
+  }
+
+  setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+  setStatus(elements.transferStatus, `已在新标签页打开：${targetFile.name}`, false);
 }
 
 function tryAutoAcceptTransfer() {
@@ -803,7 +915,8 @@ function bindSession(session, sessionToken) {
     if (!isCurrentSession(session, sessionToken)) return;
     state.manifest = event.detail.manifest;
     state.receivedFiles = [];
-    elements.downloadZip.disabled = true;
+    state.receiveComplete = false;
+    updateDownloadControls();
     cancelPreviews();
     if (event.detail.peerName) {
       setStoredValue(recentPeerKey, event.detail.peerName);
@@ -832,15 +945,15 @@ function bindSession(session, sessionToken) {
     if (!isCurrentSession(session, sessionToken)) return;
     state.receivedFiles.push(event.detail.file);
     setStatus(elements.transferStatus, `已接收：${event.detail.file.name}`, false);
-    renderFileList(state.receivedFiles);
+    renderFileList(state.manifest?.files || state.receivedFiles);
+    updateDownloadControls();
   });
   session.addEventListener('transfer-complete', async (event) => {
     if (!isCurrentSession(session, sessionToken)) return;
     state.receivedFiles = event.detail.files;
-    elements.downloadZip.disabled = state.receivedFiles.length === 0;
-    renderFileList(state.receivedFiles);
-    await renderPreviews(state.receivedFiles);
-    if (!isCurrentSession(session, sessionToken)) return;
+    state.receiveComplete = true;
+    updateDownloadControls();
+    renderFileList(state.manifest?.files || state.receivedFiles);
     setActiveStep(4);
     setStatus(elements.transferStatus, `接收完成，共 ${state.receivedFiles.length} 个文件。`, false);
   });
@@ -856,24 +969,43 @@ function renderFileList(files = []) {
   files.forEach((file) => {
     const row = document.createElement('div');
     const meta = document.createElement('div');
+    const actions = document.createElement('div');
     const name = document.createElement('strong');
     const size = document.createElement('span');
+    const downloadButton = document.createElement('button');
+    const previewButton = document.createElement('button');
+    const openButton = document.createElement('button');
+    const downloadableFile = getDownloadableFile(file);
+    const isDownloadable = Boolean(downloadableFile);
 
     row.className = 'lan-file-row';
     meta.className = 'lan-file-meta';
+    actions.className = 'lan-file-actions';
     name.textContent = file.name;
     size.textContent = formatBytes(file.size);
     meta.append(name, size);
     row.appendChild(meta);
 
-    if (getDownloadBlob(file)) {
-      const button = document.createElement('button');
-      button.className = 'tool-button lan-file-download';
-      button.type = 'button';
-      button.textContent = '下载';
-      button.addEventListener('click', () => downloadTransferFile(file));
-      row.appendChild(button);
-    }
+    downloadButton.className = 'tool-button lan-file-download';
+    downloadButton.type = 'button';
+    downloadButton.textContent = '下载';
+    downloadButton.disabled = !isDownloadable;
+    downloadButton.addEventListener('click', () => downloadTransferFile(downloadableFile || file));
+
+    previewButton.className = 'tool-button lan-file-preview';
+    previewButton.type = 'button';
+    previewButton.textContent = '预览';
+    previewButton.disabled = !isDownloadable;
+    previewButton.addEventListener('click', () => previewTransferFile(downloadableFile || file));
+
+    openButton.className = 'tool-button lan-file-preview';
+    openButton.type = 'button';
+    openButton.textContent = '在新标签页预览';
+    openButton.disabled = !isDownloadable;
+    openButton.addEventListener('click', () => openFilePreviewInNewTab(downloadableFile || file));
+
+    actions.append(downloadButton, previewButton, openButton);
+    row.appendChild(actions);
 
     elements.fileList.append(row);
   });
@@ -927,9 +1059,10 @@ function resetSession({ clearCode = true, clearSelectedFiles = false } = {}) {
   state.sending = false;
   state.autoAccepted = false;
   state.transferStarted = false;
+  state.receiveComplete = false;
   elements.sendFiles.disabled = true;
-  elements.downloadZip.disabled = true;
   elements.progress.value = 0;
+  updateDownloadControls();
   setActiveStep(1);
   renderFileList([]);
   cancelPreviews();
@@ -1050,7 +1183,10 @@ elements.connectShortCode.addEventListener('click', () => {
 elements.scanQr.addEventListener('click', scanQrCode);
 
 elements.importOffer.addEventListener('click', async () => {
-  const code = elements.signalCode.value.trim();
+  let code = elements.signalCode.value.trim();
+  if (!code && state.mode === 'receive') {
+    code = prompt('请粘贴高级发起码：')?.trim() || '';
+  }
   if (!code) {
     setSignalStatus('请先粘贴发起码。', true);
     return;
@@ -1069,7 +1205,14 @@ elements.importOffer.addEventListener('click', async () => {
     if (offer.type !== 'offer') throw new Error('请导入发起码，而不是回应码');
     const answer = await session.acceptOffer(offer);
     if (!isCurrentSession(session, sessionToken)) return;
-    await renderSignalCode(encodeSignal(answer), buildSignalStatus(answer, '已生成回应码，请复制给发送方。'));
+    const answerCode = encodeSignal(answer);
+    if (state.mode === 'receive') {
+      elements.signalCode.value = answerCode;
+      setSignalStatus(buildSignalStatus(answer, '已生成回应码，已尝试复制到剪贴板，请发给发送方。'), false);
+      await copyText(answerCode, elements.receiveStatus);
+    } else {
+      await renderSignalCode(answerCode, buildSignalStatus(answer, '已生成回应码，请复制给发送方。'));
+    }
     elements.sendFiles.disabled = true;
     setActiveStep(3);
     setStatus(elements.transferStatus, '已读取文件清单，连接建立后会自动接收。', false);
@@ -1110,10 +1253,14 @@ elements.importAnswer.addEventListener('click', async () => {
   }
 });
 
+elements.downloadAll.addEventListener('click', () => {
+  downloadAllTransferFiles();
+});
+
 elements.downloadZip.addEventListener('click', async () => {
   const sessionToken = state.sessionToken;
-  const files = state.receivedFiles.slice();
-  elements.downloadZip.disabled = true;
+  const files = getDownloadableFiles();
+  updateDownloadControls(true);
   setStatus(elements.transferStatus, '正在打包 ZIP...', false);
 
   try {
@@ -1126,7 +1273,7 @@ elements.downloadZip.addEventListener('click', async () => {
     setStatus(elements.transferStatus, `下载 ZIP 失败：${error.message}`, true);
   } finally {
     if (sessionToken === state.sessionToken) {
-      elements.downloadZip.disabled = state.receivedFiles.length === 0;
+      updateDownloadControls();
     }
   }
 });
@@ -1146,6 +1293,8 @@ elements.resetSession.addEventListener('click', () => {
 setMode('send');
 setActiveStep(1);
 renderNetworkInfo();
+cancelPreviews();
+updateDownloadControls();
 
 await initSignaling();
 
