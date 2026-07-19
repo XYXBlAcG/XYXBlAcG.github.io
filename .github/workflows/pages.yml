@@ -55,12 +55,14 @@ jobs:
             || process.env.LAN_TRANSFER_AUTH_PASSWORD_VAR
             || '';
 
+          const config = username && password
+            ? { username, passwordHash: createHash('sha256').update(password).digest('hex') }
+            : { username: '', passwordHash: '' };
+
           if (!username || !password) {
-            throw new Error('Missing LAN_TRANSFER_AUTH_USERNAME or LAN_TRANSFER_AUTH_PASSWORD.');
+            console.warn('LAN Transfer auth env is missing. Deploying a locked placeholder config.');
           }
 
-          const passwordHash = createHash('sha256').update(password).digest('hex');
-          const config = { username, passwordHash };
           writeFileSync(
             '_site/work/lan-transfer/auth-config.js',
             `window.XYX_LAN_TRANSFER_AUTH = ${JSON.stringify(config)};\n`,
