@@ -53,6 +53,10 @@
   min-width: 0;
 }
 
+.lan-workspace [hidden] {
+  display: none !important;
+}
+
 .lan-code-grid {
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   align-items: stretch;
