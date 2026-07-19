@@ -35,6 +35,22 @@ const elements = {
   downloadZip: document.getElementById('download-zip'),
 };
 
+function getStoredValue(key) {
+  try {
+    return globalThis.localStorage?.getItem(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function setStoredValue(key, value) {
+  try {
+    globalThis.localStorage?.setItem(key, value);
+  } catch {
+    // Storage can be unavailable in private browsing or locked-down contexts.
+  }
+}
+
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll('[data-panel]').forEach((panel) => {
@@ -50,7 +66,7 @@ function setMode(mode) {
 
 function getNickname() {
   const normalized = normalizeDeviceName(elements.deviceName.value) || getDefaultDeviceName();
-  localStorage.setItem(nicknameKey, normalized);
+  setStoredValue(nicknameKey, normalized);
   return normalized;
 }
 
@@ -82,7 +98,7 @@ function bindSession(session) {
   });
   session.addEventListener('manifest', (event) => {
     state.manifest = event.detail.manifest;
-    if (event.detail.peerName) localStorage.setItem(recentPeerKey, event.detail.peerName);
+    if (event.detail.peerName) setStoredValue(recentPeerKey, event.detail.peerName);
     renderFileList(state.manifest.files);
   });
   session.addEventListener('send-progress', (event) => {
@@ -154,7 +170,7 @@ document.querySelectorAll('.lan-mode-button').forEach((button) => {
   button.addEventListener('click', () => setMode(button.dataset.mode));
 });
 
-elements.deviceName.value = localStorage.getItem(nicknameKey) || getDefaultDeviceName();
+elements.deviceName.value = getStoredValue(nicknameKey) || getDefaultDeviceName();
 elements.deviceName.addEventListener('change', () => {
   elements.deviceName.value = getNickname();
 });
@@ -189,6 +205,24 @@ document.getElementById('create-offer').addEventListener('click', async () => {
     state.session?.close();
     state.session = null;
     setStatus(elements.signalStatus, `生成发起码失败：${error.message}`, true);
+  }
+});
+
+elements.sendFiles.addEventListener('click', async () => {
+  if (!state.session) {
+    setStatus(elements.transferStatus, '连接尚未建立，无法发送文件。', true);
+    return;
+  }
+
+  elements.sendFiles.disabled = true;
+  setStatus(elements.transferStatus, '正在发送文件...', false);
+
+  try {
+    await state.session.sendFiles();
+    setStatus(elements.transferStatus, '文件发送完成。', false);
+  } catch (error) {
+    setStatus(elements.transferStatus, `发送失败：${error.message}`, true);
+    elements.sendFiles.disabled = state.session?.channel?.readyState !== 'open';
   }
 });
 

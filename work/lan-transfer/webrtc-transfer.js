@@ -25,12 +25,51 @@ function waitForIceGathering(peer) {
 }
 
 function waitForBufferedAmount(channel) {
+  if (!channel || channel.readyState !== 'open') {
+    return Promise.reject(new Error('连接已断开，无法继续传输'));
+  }
   if (channel.bufferedAmount < 8 * CHUNK_SIZE) return Promise.resolve();
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      channel.removeEventListener('bufferedamountlow', handleLow);
+      channel.removeEventListener('close', handleClose);
+      channel.removeEventListener('error', handleError);
+    };
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const fail = (message) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(message));
+    };
+    const handleLow = () => finish();
+    const handleClose = () => fail('连接已断开，无法继续传输');
+    const handleError = () => fail('数据通道发生错误，无法继续传输');
+
     channel.bufferedAmountLowThreshold = 4 * CHUNK_SIZE;
-    channel.addEventListener('bufferedamountlow', resolve, { once: true });
+    channel.addEventListener('bufferedamountlow', handleLow);
+    channel.addEventListener('close', handleClose);
+    channel.addEventListener('error', handleError);
+
+    if (channel.readyState !== 'open') {
+      handleClose();
+    } else if (channel.bufferedAmount < 8 * CHUNK_SIZE) {
+      finish();
+    }
   });
+}
+
+function assertChannelOpen(channel) {
+  if (!channel || channel.readyState !== 'open') {
+    throw new Error('连接已断开，无法继续传输');
+  }
 }
 
 export class LanTransferSession extends EventTarget {
@@ -131,8 +170,11 @@ export class LanTransferSession extends EventTarget {
       this.sendControl({ type: 'file-start', fileId: info.id });
 
       for (let offset = 0; offset < file.size; offset += CHUNK_SIZE) {
+        assertChannelOpen(this.channel);
         await waitForBufferedAmount(this.channel);
+        assertChannelOpen(this.channel);
         const chunk = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
+        assertChannelOpen(this.channel);
         this.channel.send(chunk);
         this.totalSentBytes += chunk.byteLength;
         this.emit('send-progress', {
@@ -189,7 +231,24 @@ export class LanTransferSession extends EventTarget {
       this.currentReceive = { info, chunks: [], receivedBytes: 0 };
     }
 
-    if (message.type === 'file-end' && this.currentReceive) {
+    if (message.type === 'file-end') {
+      if (!this.currentReceive) {
+        this.emit('error', { message: '收到文件结束标记，但没有正在接收的文件' });
+        return;
+      }
+
+      if (message.fileId !== this.currentReceive.info.id) {
+        this.emit('error', { message: '文件结束标记与当前文件不匹配，已丢弃该文件' });
+        this.currentReceive = null;
+        return;
+      }
+
+      if (this.currentReceive.receivedBytes !== this.currentReceive.info.size) {
+        this.emit('error', { message: `文件“${this.currentReceive.info.name}”接收不完整，请重新传输` });
+        this.currentReceive = null;
+        return;
+      }
+
       const blob = new Blob(this.currentReceive.chunks, { type: this.currentReceive.info.type });
       const file = { ...this.currentReceive.info, blob };
       this.received.set(this.currentReceive.info.id, file);
@@ -198,6 +257,19 @@ export class LanTransferSession extends EventTarget {
     }
 
     if (message.type === 'transfer-complete') {
+      if (!this.manifest) {
+        this.emit('error', { message: '尚未收到文件清单，无法完成传输' });
+        return;
+      }
+
+      const allFilesReceived = this.manifest.files.every((file) => this.received.has(file.id));
+      if (!allFilesReceived || this.received.size !== this.manifest.files.length) {
+        this.emit('error', {
+          message: `传输未完成：应收到 ${this.manifest.files.length} 个文件，实际收到 ${this.received.size} 个`,
+        });
+        return;
+      }
+
       this.emit('transfer-complete', { files: Array.from(this.received.values()) });
     }
   }
