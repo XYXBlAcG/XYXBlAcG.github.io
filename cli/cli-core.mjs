@@ -5,6 +5,7 @@ export const ROUTES = [
   { key: 'blog', label: '博客', path: '/#blog', aliases: ['posts'] },
   { key: 'link', label: '链接', path: '/#link', aliases: ['links', 'contact'] },
   { key: 'tools', label: '工具中心', path: '/work/tools/', aliases: ['tool', 'hub', 'tools-hub', 'tools hub'] },
+  { key: 'transfer', label: '局域网快传', path: '/work/lan-transfer/', aliases: ['lan', 'lan-transfer', 'file-transfer', 'send'] },
   { key: 'math', label: '数学求解器', path: '/work/py_software/apps/math-solver/', aliases: ['solver', 'math-solver', 'math solver'] },
   { key: 'latex', label: 'LaTeX 渲染器', path: '/work/py_software/apps/latex-renderer/', aliases: ['tex', 'latex-renderer', 'latex renderer'] },
   { key: 'text', label: '文本工具', path: '/work/tools/text-toolkit/', aliases: ['text-toolkit'] },
