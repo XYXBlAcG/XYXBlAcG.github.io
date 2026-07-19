@@ -7,11 +7,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    html.lan-auth-pending body {
+      visibility: hidden;
+    }
+  </style>
+  <script>
+    document.documentElement.classList.add('lan-auth-pending');
+  </script>
+  <script src="./auth-config.js?v=20260719-auth-1"></script>
+  <script src="./lan-transfer-auth.js?v=20260719-auth-1"></script>
   <link rel="stylesheet" href="../tools/shared/tools.css" />
-  <link rel="stylesheet" href="./lan-transfer.css?v=20260719-state-fix-1" />
-  <script src="./vendor/lz-string.min.js?v=20260719-state-fix-1" defer></script>
-  <script src="./vendor/qrcode.js?v=20260719-state-fix-1" defer></script>
-  <script src="./vendor/jszip.min.js?v=20260719-state-fix-1" defer></script>
+  <link rel="stylesheet" href="./lan-transfer.css?v=20260719-auth-1" />
+  <script src="./vendor/lz-string.min.js?v=20260719-auth-1" defer></script>
+  <script src="./vendor/qrcode.js?v=20260719-auth-1" defer></script>
+  <script src="./vendor/jszip.min.js?v=20260719-auth-1" defer></script>
 </head>
 <body>
   <main class="tool-shell lan-shell">
@@ -44,21 +54,28 @@
       <p id="connection-hint" class="tool-status">默认只使用局域网直连；连接失败时可开启增强连接成功率。</p>
     </section>
 
+    <details class="tool-panel tool-stack lan-network-details" aria-label="网络信息">
+      <summary>网络信息</summary>
+      <div id="network-info" class="lan-info-grid"></div>
+      <div id="signaling-status" class="tool-status" role="status" aria-live="polite"></div>
+    </details>
+
     <section class="lan-steps" aria-label="连接步骤">
       <div class="lan-step is-active" data-step="1">1. 选择模式</div>
-      <div class="lan-step" data-step="2">2. 交换连接码</div>
-      <div class="lan-step" data-step="3">3. 确认文件</div>
+      <div class="lan-step" data-step="2">2. 交换短码</div>
+      <div class="lan-step" data-step="3">3. 建立连接</div>
       <div class="lan-step" data-step="4">4. 传输与下载</div>
     </section>
 
-    <section class="tool-split even lan-workspace">
+    <section class="lan-workspace">
       <section id="send-panel" class="tool-panel tool-stack" data-panel="send">
         <h2>发送文件</h2>
-        <label class="tool-upload">
+        <label id="drop-zone" class="tool-upload lan-drop-zone">
           <input id="file-input" class="tool-file" type="file" multiple />
           <span class="tool-upload-button">选择文件</span>
-          <span id="file-input-name" class="tool-upload-name">未选择文件</span>
+          <span id="file-input-name" class="tool-upload-name">未选择文件；也可以拖拽文件到这里，或按 Ctrl/Command+V 粘贴</span>
         </label>
+        <div id="file-pick-status" class="tool-status" role="status" aria-live="polite"></div>
         <div class="tool-actions">
           <button id="create-offer" class="tool-button primary" type="button">生成发起码</button>
           <button id="import-answer" class="tool-button" type="button">导入回应码</button>
@@ -68,24 +85,38 @@
 
       <section id="receive-panel" class="tool-panel tool-stack" data-panel="receive" hidden>
         <h2>接收文件</h2>
+        <label class="tool-field">
+          <span>输入短码</span>
+          <input id="short-code-input" class="tool-input lan-short-code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="4" placeholder="输入 4 位数字" />
+        </label>
         <div class="tool-actions">
-          <button id="import-offer" class="tool-button primary" type="button">导入发起码</button>
-          <button id="accept-transfer" class="tool-button primary" type="button" disabled>确认接收全部文件</button>
+          <button id="connect-short-code" class="tool-button primary" type="button">连接发送端</button>
+          <button id="scan-qr" class="tool-button" type="button">扫描二维码</button>
+          <button id="import-offer" class="tool-button" type="button">高级导入</button>
+        </div>
+        <div id="receive-status" class="tool-status" role="status" aria-live="polite"></div>
+        <div id="scanner" class="lan-scanner" hidden>
+          <video id="scanner-video" playsinline muted></video>
+          <div id="scanner-status" class="tool-status" role="status" aria-live="polite"></div>
         </div>
       </section>
     </section>
 
-    <section class="tool-panel tool-stack" aria-label="连接码">
-      <h2>连接码</h2>
+    <section id="signal-panel" class="tool-panel tool-stack" aria-label="发起码">
+      <h2>发起码</h2>
+      <div id="short-code-wrap" class="lan-short-code-wrap" hidden>
+        <span class="lan-short-code-label">给接收方输入</span>
+        <strong id="short-code" class="lan-short-code">----</strong>
+      </div>
       <div class="lan-code-grid">
         <div class="lan-qr-box"><canvas id="signal-qr" width="240" height="240" aria-label="连接码二维码"></canvas></div>
-        <label class="tool-field">
-          <span>连接码文本</span>
+        <details id="manual-code-details" class="lan-manual-code" open>
+          <summary>高级：手动连接码</summary>
           <textarea id="signal-code" class="tool-textarea lan-code-textarea" spellcheck="false"></textarea>
-        </label>
+        </details>
       </div>
       <div class="tool-actions">
-        <button id="copy-code" class="tool-button" type="button">复制连接码</button>
+        <button id="copy-code" class="tool-button" type="button">复制发起码</button>
         <button id="paste-code" class="tool-button" type="button">从剪贴板读取</button>
         <button id="reset-session" class="tool-button" type="button">重新生成连接</button>
       </div>

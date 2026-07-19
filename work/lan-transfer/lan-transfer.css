@@ -7,7 +7,8 @@
 .lan-steps,
 .lan-code-grid,
 .lan-file-list,
-.lan-preview-list {
+.lan-preview-list,
+.lan-info-grid {
   display: grid;
   gap: 14px;
   min-width: 0;
@@ -15,6 +16,12 @@
 
 .lan-mode-panel {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lan-shell > .tool-panel + .tool-panel,
+.lan-shell > .tool-panel + .lan-workspace,
+.lan-shell > .lan-workspace + .tool-panel {
+  margin-top: 22px;
 }
 
 .lan-mode-button {
@@ -29,7 +36,7 @@
 
 .lan-steps {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 24px 0;
+  margin: 24px 0 0;
 }
 
 .lan-step {
@@ -53,8 +60,131 @@
   min-width: 0;
 }
 
+.lan-workspace {
+  display: grid;
+  gap: 22px;
+  margin-top: 22px;
+}
+
 .lan-workspace [hidden] {
   display: none !important;
+}
+
+.lan-drop-zone {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 96px;
+  padding: 14px;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.lan-drop-zone .tool-upload-button {
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+.lan-drop-zone .tool-upload-name {
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.lan-drop-zone.is-dragging {
+  border-color: var(--accent);
+  background: rgba(127, 255, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.lan-network-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: 600;
+  list-style: none;
+}
+
+.lan-network-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.lan-network-details summary::after {
+  content: "";
+  width: 0.62em;
+  height: 0.62em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.18s ease;
+}
+
+.lan-network-details[open] summary::after {
+  transform: rotate(225deg) translateY(-1px);
+}
+
+.lan-info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lan-info-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.lan-info-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.lan-info-item strong {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.lan-short-code-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(127, 255, 235, 0.08);
+}
+
+.lan-short-code-label {
+  color: var(--muted);
+}
+
+.lan-short-code {
+  font-size: clamp(3rem, 10vw, 6rem);
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.lan-short-code-input {
+  font-size: 2rem;
+  text-align: center;
+  letter-spacing: 0.14em;
+}
+
+.lan-manual-code {
+  min-width: 0;
+}
+
+.lan-manual-code summary {
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: var(--muted);
 }
 
 .lan-code-grid {
@@ -99,6 +229,17 @@
   overflow-wrap: anywhere;
 }
 
+.lan-file-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lan-file-download {
+  min-width: 72px;
+  justify-self: end;
+}
+
 .lan-progress {
   width: 100%;
   height: 12px;
@@ -136,16 +277,46 @@
   white-space: pre-wrap;
 }
 
+.lan-preview-actions {
+  margin-top: 2px;
+}
+
+.lan-preview-actions .tool-button {
+  min-height: 34px;
+}
+
+.lan-scanner {
+  display: grid;
+  gap: 10px;
+}
+
+.lan-scanner video {
+  width: 100%;
+  max-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #000;
+}
+
 @media screen and (max-width: 760px) {
   .lan-mode-panel,
   .lan-steps,
   .lan-workspace,
-  .lan-code-grid {
+  .lan-code-grid,
+  .lan-info-grid {
     grid-template-columns: 1fr;
   }
 
   .lan-step {
     min-height: 38px;
+  }
+
+  .lan-drop-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .lan-drop-zone .tool-upload-button {
+    justify-self: start;
   }
 
   .lan-code-textarea {

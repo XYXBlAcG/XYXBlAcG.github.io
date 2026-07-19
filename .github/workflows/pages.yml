@@ -1,0 +1,77 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static site
+        env:
+          LAN_TRANSFER_AUTH_USERNAME_SECRET: ${{ secrets.LAN_TRANSFER_AUTH_USERNAME }}
+          LAN_TRANSFER_AUTH_PASSWORD_SECRET: ${{ secrets.LAN_TRANSFER_AUTH_PASSWORD }}
+          LAN_TRANSFER_AUTH_USERNAME_VAR: ${{ vars.LAN_TRANSFER_AUTH_USERNAME }}
+          LAN_TRANSFER_AUTH_PASSWORD_VAR: ${{ vars.LAN_TRANSFER_AUTH_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.DS_Store' \
+            --exclude='**/.DS_Store' \
+            --exclude='_site' \
+            ./ _site/
+          node <<'NODE'
+          const { createHash } = require('node:crypto');
+          const { writeFileSync } = require('node:fs');
+
+          const username = process.env.LAN_TRANSFER_AUTH_USERNAME_SECRET
+            || process.env.LAN_TRANSFER_AUTH_USERNAME_VAR
+            || '';
+          const password = process.env.LAN_TRANSFER_AUTH_PASSWORD_SECRET
+            || process.env.LAN_TRANSFER_AUTH_PASSWORD_VAR
+            || '';
+
+          if (!username || !password) {
+            throw new Error('Missing LAN_TRANSFER_AUTH_USERNAME or LAN_TRANSFER_AUTH_PASSWORD.');
+          }
+
+          const passwordHash = createHash('sha256').update(password).digest('hex');
+          const config = { username, passwordHash };
+          writeFileSync(
+            '_site/work/lan-transfer/auth-config.js',
+            `window.XYX_LAN_TRANSFER_AUTH = ${JSON.stringify(config)};\n`,
+          );
+          NODE
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

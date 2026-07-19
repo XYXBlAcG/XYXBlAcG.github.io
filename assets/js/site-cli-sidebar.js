@@ -420,7 +420,7 @@ html.xyx-site-cli-resizing * {
 }
 `;
 
-if (!window.__xyxSiteCliSidebarLoaded && !document.documentElement.dataset.siteCliSidebarOff) {
+if (!window.__xyxSiteCliSidebarLoaded && !document.documentElement.dataset.siteCliSidebarOff && !window.XYX_LAN_TRANSFER_AUTH_BLOCKED) {
   window.__xyxSiteCliSidebarLoaded = true;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeSidebar, { once: true });
@@ -430,6 +430,7 @@ if (!window.__xyxSiteCliSidebarLoaded && !document.documentElement.dataset.siteC
 }
 
 function initializeSidebar() {
+  if (window.XYX_LAN_TRANSFER_AUTH_BLOCKED) return;
   if (document.getElementById(ROOT_ID) || location.pathname.replace(/\/+$/, '') === '/cli') return;
   injectStyle();
 
