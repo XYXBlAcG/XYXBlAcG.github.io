@@ -12,6 +12,7 @@ const host = process.argv[3] || '0.0.0.0';
 const sessionTtlMs = 15 * 60 * 1000;
 const maxJsonBytes = 2 * 1024 * 1024;
 const sessions = new Map();
+const localApiBase = '/work/lan-transfer/api';
 
 const mimeTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -116,7 +117,27 @@ async function handleApi(request, response, url) {
     return true;
   }
 
-  if (url.pathname === '/work/lan-transfer/api/health' && request.method === 'GET') {
+  if (
+    (url.pathname === localApiBase || url.pathname === `${localApiBase}/`)
+    && request.method === 'GET'
+  ) {
+    sendJson(response, 200, {
+      ok: true,
+      service: 'lan-transfer-signaling',
+      codeDigits: 4,
+      expiresMs: sessionTtlMs,
+      endpoints: {
+        health: `${localApiBase}/health`,
+        network: `${localApiBase}/network`,
+        offers: `${localApiBase}/offers`,
+        offer: `${localApiBase}/offers/:code`,
+        answers: `${localApiBase}/answers/:code`,
+      },
+    });
+    return true;
+  }
+
+  if (url.pathname === `${localApiBase}/health` && request.method === 'GET') {
     sendJson(response, 200, {
       ok: true,
       codeDigits: 4,
@@ -125,7 +146,7 @@ async function handleApi(request, response, url) {
     return true;
   }
 
-  if (url.pathname === '/work/lan-transfer/api/network' && request.method === 'GET') {
+  if (url.pathname === `${localApiBase}/network` && request.method === 'GET') {
     sendJson(response, 200, {
       ok: true,
       host,
@@ -135,7 +156,7 @@ async function handleApi(request, response, url) {
     return true;
   }
 
-  if (url.pathname === '/work/lan-transfer/api/offers' && request.method === 'POST') {
+  if (url.pathname === `${localApiBase}/offers` && request.method === 'POST') {
     const body = await readJson(request);
     if (!body.offer) {
       sendJson(response, 400, { error: '缺少 offer' });
@@ -247,7 +268,7 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
 
   try {
-    if (url.pathname.startsWith('/work/lan-transfer/api/')) {
+    if (url.pathname === localApiBase || url.pathname.startsWith(`${localApiBase}/`)) {
       const handled = await handleApi(request, response, url);
       if (handled) return;
     }

@@ -35,16 +35,21 @@ function isPrivateIpv4(hostname) {
   return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
 }
 
+function normalizeSignalingApiBase(value) {
+  return String(value || '').replace(/\/+$/, '');
+}
+
 function getSignalingApiBase() {
   if (globalThis.XYX_LAN_TRANSFER_CONFIG?.signalingApiBase) {
-    return globalThis.XYX_LAN_TRANSFER_CONFIG.signalingApiBase;
+    return normalizeSignalingApiBase(globalThis.XYX_LAN_TRANSFER_CONFIG.signalingApiBase);
   }
 
   const hostname = location.hostname;
   const localHosts = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
-  return localHosts.has(hostname) || isPrivateIpv4(hostname)
+  const base = localHosts.has(hostname) || isPrivateIpv4(hostname)
     ? './api'
     : cloudflareSignalingApiBase;
+  return normalizeSignalingApiBase(base);
 }
 
 const signalingApiBase = getSignalingApiBase();
