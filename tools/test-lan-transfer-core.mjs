@@ -4,6 +4,8 @@ import {
   CHUNK_SIZE,
   buildManifest,
   classifyFile,
+  decodeSignal,
+  encodeSignal,
   formatBytes,
   formatEta,
   formatTransferSpeed,
@@ -45,5 +47,32 @@ assert.equal(manifest.files[0].id, 'file-1');
 assert.equal(manifest.files[0].name, 'a.txt');
 assert.equal(manifest.files[0].size, 3);
 assert.equal(manifest.totalBytes, 7);
+
+const lzStringStub = {
+  compressToEncodedURIComponent(value) {
+    return encodeURIComponent(Buffer.from(value, 'utf8').toString('base64url'));
+  },
+  decompressFromEncodedURIComponent(value) {
+    return Buffer.from(decodeURIComponent(value), 'base64url').toString('utf8');
+  },
+};
+const signalPayload = {
+  type: 'offer',
+  deviceName: '我的电脑',
+  sdp: 'v=0\r\no=- 1 2 IN IP4 127.0.0.1',
+};
+const encodedSignal = encodeSignal(signalPayload, lzStringStub);
+assert.ok(encodedSignal.startsWith(CODE_PREFIX));
+assert.deepEqual(decodeSignal(encodedSignal, lzStringStub), signalPayload);
+assert.throws(
+  () => decodeSignal('BAD:' + encodedSignal.slice(CODE_PREFIX.length), lzStringStub),
+  /连接码格式不正确/,
+);
+assert.throws(() => encodeSignal(signalPayload, {}), /连接码压缩库尚未加载/);
+assert.throws(() => decodeSignal(encodedSignal, {}), /连接码解压库尚未加载/);
+assert.throws(
+  () => decodeSignal(CODE_PREFIX + 'broken', { decompressFromEncodedURIComponent: () => '' }),
+  /连接码内容无法解码/,
+);
 
 console.log('LAN transfer core tests passed');
