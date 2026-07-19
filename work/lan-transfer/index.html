@@ -26,8 +26,8 @@
     </header>
 
     <section class="tool-panel lan-mode-panel" aria-label="选择模式">
-      <button class="tool-button primary lan-mode-button" type="button" data-mode="send">发送文件</button>
-      <button class="tool-button lan-mode-button" type="button" data-mode="receive">接收文件</button>
+      <button class="tool-button primary lan-mode-button" type="button" data-mode="send" aria-controls="send-panel" aria-pressed="true">发送文件</button>
+      <button class="tool-button lan-mode-button" type="button" data-mode="receive" aria-controls="receive-panel" aria-pressed="false">接收文件</button>
     </section>
 
     <section class="tool-panel tool-stack" aria-label="设备设置">
@@ -52,7 +52,7 @@
     </section>
 
     <section class="tool-split even lan-workspace">
-      <section class="tool-panel tool-stack" data-panel="send" hidden>
+      <section id="send-panel" class="tool-panel tool-stack" data-panel="send">
         <h2>发送文件</h2>
         <label class="tool-upload">
           <input id="file-input" class="tool-file" type="file" multiple />
@@ -66,7 +66,7 @@
         </div>
       </section>
 
-      <section class="tool-panel tool-stack" data-panel="receive" hidden>
+      <section id="receive-panel" class="tool-panel tool-stack" data-panel="receive" hidden>
         <h2>接收文件</h2>
         <div class="tool-actions">
           <button id="import-offer" class="tool-button primary" type="button">导入发起码</button>
@@ -96,7 +96,7 @@
     <section class="tool-panel tool-stack" aria-label="文件与传输">
       <h2>文件列表</h2>
       <div id="file-list" class="lan-file-list"></div>
-      <progress id="transfer-progress" class="lan-progress" value="0" max="100"></progress>
+      <progress id="transfer-progress" class="lan-progress" value="0" max="100" aria-label="传输进度" aria-describedby="transfer-status"></progress>
       <div id="transfer-status" class="tool-status" role="status" aria-live="polite"></div>
       <div class="tool-actions">
         <button id="download-zip" class="tool-button primary" type="button" disabled>下载 ZIP</button>
