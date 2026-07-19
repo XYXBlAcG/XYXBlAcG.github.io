@@ -25,6 +25,11 @@ function testParseCommand() {
 
 function testResolveRoute() {
   assert.equal(resolveRoute('math').path, '/work/py_software/apps/math-solver/');
+  assert.equal(resolveRoute('transfer').path, '/work/lan-transfer/');
+  assert.equal(resolveRoute('lan').path, '/work/lan-transfer/');
+  assert.equal(resolveRoute('lan-transfer').path, '/work/lan-transfer/');
+  assert.equal(resolveRoute('file-transfer').path, '/work/lan-transfer/');
+  assert.equal(resolveRoute('send').path, '/work/lan-transfer/');
   assert.equal(resolveRoute('/work/tools/').path, '/work/tools/');
   assert.equal(resolveRoute('//example.com'), null);
   assert.equal(resolveRoute('/\\example.com'), null);
@@ -37,6 +42,7 @@ function testCompletion() {
     ['open']
   );
   assert.ok(getCompletions('open ma').some((item) => item.value === 'math'));
+  assert.ok(getCompletions('open la').some((item) => item.value === 'transfer'));
   assert.ok(getCompletions('help re').some((item) => item.value === 'reload'));
   assert.ok(getCompletions('copy u').some((item) => item.value === 'url'));
 }
@@ -72,6 +78,10 @@ async function testExecutor() {
   const openResult = await executor.run('open math');
   assert.equal(openResult.type, 'navigation');
   assert.deepEqual(calls.shift(), ['navigate', '/work/py_software/apps/math-solver/']);
+
+  const openLanResult = await executor.run('open lan');
+  assert.equal(openLanResult.type, 'navigation');
+  assert.deepEqual(calls.shift(), ['navigate', '/work/lan-transfer/']);
 
   const pythonModeResult = await executor.run('python');
   assert.equal(pythonModeResult.type, 'python-mode');
