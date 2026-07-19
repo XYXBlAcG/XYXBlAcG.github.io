@@ -336,10 +336,12 @@ async function initSignaling() {
     }
     state.shareBaseUrl = chooseShareBaseUrl(serverInfo);
     setStatus(elements.signalingStatus, '短码服务已连接：可以使用 4 位数字发起码。', false);
-  } catch {
+  } catch (error) {
+    const message = '短码服务不可用：当前为静态兜底模式，需要手动交换高级连接码。';
     state.signalingAvailable = false;
     state.shareBaseUrl = location.href;
-    setStatus(elements.signalingStatus, '短码服务不可用：当前为静态兜底模式，需要手动交换高级连接码。', true);
+    alert(error?.message ? `${message}\n\n错误详情：${error.message}` : message);
+    setStatus(elements.signalingStatus, message, true);
   }
 
   renderNetworkInfo(serverInfo);

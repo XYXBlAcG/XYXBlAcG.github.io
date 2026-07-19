@@ -7,7 +7,9 @@ const css = await readFile('work/lan-transfer/lan-transfer.css', 'utf8');
 
 assert.match(html, /id="download-all"[\s\S]*?>下载全部文件<\/button>/);
 assert.match(html, /lan-transfer\.css\?v=20260720-ui-2/);
+assert.match(html, /lan-transfer\.js\?v=20260720-ui-3/);
 assert.match(css, /\.lan-shell \[hidden\]\s*\{\s*display: none !important;\s*\}/);
+assert.match(js, /alert\(error\?\.message \? `\$\{message\}\\n\\n错误详情：\$\{error\.message\}` : message\);/);
 assert.match(js, /elements\.signalPanel\.hidden = receiveMode;/);
 assert.match(js, /function canUseInlineQrScanner\(\)/);
 assert.match(js, /elements\.scanQr\.hidden = !inlineScannerAvailable;/);
