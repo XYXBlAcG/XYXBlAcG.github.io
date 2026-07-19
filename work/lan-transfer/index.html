@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../tools/shared/tools.css" />
-  <link rel="stylesheet" href="./lan-transfer.css?v=20260719-local-vendor-1" />
-  <script src="./vendor/lz-string.min.js?v=20260719-local-vendor-1" defer></script>
-  <script src="./vendor/qrcode.js?v=20260719-local-vendor-1" defer></script>
-  <script src="./vendor/jszip.min.js?v=20260719-local-vendor-1" defer></script>
+  <link rel="stylesheet" href="./lan-transfer.css?v=20260719-state-fix-1" />
+  <script src="./vendor/lz-string.min.js?v=20260719-state-fix-1" defer></script>
+  <script src="./vendor/qrcode.js?v=20260719-state-fix-1" defer></script>
+  <script src="./vendor/jszip.min.js?v=20260719-state-fix-1" defer></script>
 </head>
 <body>
   <main class="tool-shell lan-shell">
@@ -41,7 +41,7 @@
           <span>高级设置：增强连接成功率</span>
         </label>
       </div>
-      <p class="tool-status">默认只使用局域网直连；连接失败时可开启增强连接成功率。</p>
+      <p id="connection-hint" class="tool-status">默认只使用局域网直连；连接失败时可开启增强连接成功率。</p>
     </section>
 
     <section class="lan-steps" aria-label="连接步骤">
@@ -70,7 +70,6 @@
         <h2>接收文件</h2>
         <div class="tool-actions">
           <button id="import-offer" class="tool-button primary" type="button">导入发起码</button>
-          <button id="create-answer" class="tool-button" type="button" disabled>生成回应码</button>
           <button id="accept-transfer" class="tool-button primary" type="button" disabled>确认接收全部文件</button>
         </div>
       </section>

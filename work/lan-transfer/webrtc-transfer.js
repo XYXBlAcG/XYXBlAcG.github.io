@@ -1,26 +1,29 @@
 import { CHUNK_SIZE, PUBLIC_STUN_SERVERS, buildManifest } from './lan-transfer-core.mjs';
 
-function waitForIceGathering(peer) {
-  if (peer.iceGatheringState === 'complete') return Promise.resolve();
+const DEFAULT_ICE_GATHERING_TIMEOUT_MS = 3000;
+const PUBLIC_STUN_ICE_GATHERING_TIMEOUT_MS = 10000;
+
+function waitForIceGathering(peer, timeoutMs = DEFAULT_ICE_GATHERING_TIMEOUT_MS) {
+  if (peer.iceGatheringState === 'complete') return Promise.resolve(true);
 
   return new Promise((resolve) => {
     let settled = false;
     let timer = null;
 
-    const finish = () => {
+    const finish = (complete) => {
       if (settled) return;
       settled = true;
       peer.removeEventListener('icegatheringstatechange', done);
       clearTimeout(timer);
-      resolve();
+      resolve(complete);
     };
 
     const done = () => {
-      if (peer.iceGatheringState === 'complete') finish();
+      if (peer.iceGatheringState === 'complete') finish(true);
     };
 
     peer.addEventListener('icegatheringstatechange', done);
-    timer = setTimeout(finish, 3000);
+    timer = setTimeout(() => finish(peer.iceGatheringState === 'complete'), timeoutMs);
   });
 }
 
@@ -79,6 +82,9 @@ export class LanTransferSession extends EventTarget {
     this.peer = new RTCPeerConnection({
       iceServers: usePublicStun ? PUBLIC_STUN_SERVERS : [],
     });
+    this.iceGatheringTimeoutMs = usePublicStun
+      ? PUBLIC_STUN_ICE_GATHERING_TIMEOUT_MS
+      : DEFAULT_ICE_GATHERING_TIMEOUT_MS;
     this.channel = null;
     this.files = [];
     this.manifest = null;
@@ -114,12 +120,13 @@ export class LanTransferSession extends EventTarget {
     this.attachChannel(this.peer.createDataChannel('xyx-lan-transfer', { ordered: true }));
     const offer = await this.peer.createOffer();
     await this.peer.setLocalDescription(offer);
-    await waitForIceGathering(this.peer);
+    const iceGatheringComplete = await waitForIceGathering(this.peer, this.iceGatheringTimeoutMs);
     return {
       version: 1,
       type: 'offer',
       nickname: this.nickname,
       manifest: this.manifest,
+      iceGatheringComplete,
       sdp: this.peer.localDescription,
     };
   }
@@ -130,11 +137,12 @@ export class LanTransferSession extends EventTarget {
     this.emit('manifest', { manifest: this.manifest, peerName: signal.nickname || '对方设备' });
     const answer = await this.peer.createAnswer();
     await this.peer.setLocalDescription(answer);
-    await waitForIceGathering(this.peer);
+    const iceGatheringComplete = await waitForIceGathering(this.peer, this.iceGatheringTimeoutMs);
     return {
       version: 1,
       type: 'answer',
       nickname: this.nickname,
+      iceGatheringComplete,
       sdp: this.peer.localDescription,
     };
   }
