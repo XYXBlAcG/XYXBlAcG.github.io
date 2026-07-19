@@ -5,6 +5,7 @@ import {
   formatBytes,
   getDefaultDeviceName,
   normalizeDeviceName,
+  safeFilename,
 } from './lan-transfer-core.mjs';
 import { renderFilePreview } from './file-preview.js';
 import { LanTransferSession } from './webrtc-transfer.js';
@@ -23,6 +24,8 @@ const connectionStateLabels = {
 const state = {
   mode: '',
   session: null,
+  sessionToken: 0,
+  previewToken: 0,
   selectedFiles: [],
   manifest: null,
   receivedFiles: [],
@@ -73,6 +76,27 @@ function describeConnectionState(value) {
   return connectionStateLabels[value] || '未知状态';
 }
 
+function isCurrentSession(session, sessionToken) {
+  return state.session === session && state.sessionToken === sessionToken;
+}
+
+function closeActiveSession() {
+  const session = state.session;
+  state.sessionToken += 1;
+  state.session = null;
+  session?.close();
+}
+
+function createTransferSession() {
+  state.sessionToken += 1;
+  state.session = new LanTransferSession({
+    nickname: getNickname(),
+    usePublicStun: elements.usePublicStun.checked,
+  });
+  bindSession(state.session, state.sessionToken);
+  return state.session;
+}
+
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll('[data-panel]').forEach((panel) => {
@@ -113,11 +137,20 @@ function renderSignalCode(code, successMessage = '已生成二维码和连接码
   }
 }
 
+function disposePreviewCard(card) {
+  card.dispatchEvent(new Event('lan-preview-dispose'));
+}
+
 function disposePreviewList() {
   Array.from(elements.previewList.children).forEach((child) => {
-    child.dispatchEvent(new Event('lan-preview-dispose'));
+    disposePreviewCard(child);
   });
   elements.previewList.replaceChildren();
+}
+
+function cancelPreviews() {
+  state.previewToken += 1;
+  disposePreviewList();
 }
 
 function renderPreviewError(file, error) {
@@ -133,14 +166,25 @@ function renderPreviewError(file, error) {
 }
 
 async function renderPreviews(files) {
+  const previewToken = state.previewToken + 1;
+  state.previewToken = previewToken;
   disposePreviewList();
 
   for (const file of files) {
+    let card = null;
     try {
-      elements.previewList.appendChild(await renderFilePreview(file));
+      card = await renderFilePreview(file);
     } catch (error) {
-      elements.previewList.appendChild(renderPreviewError(file, error));
+      if (previewToken !== state.previewToken) return;
+      card = renderPreviewError(file, error);
     }
+
+    if (previewToken !== state.previewToken) {
+      if (card) disposePreviewCard(card);
+      return;
+    }
+
+    elements.previewList.appendChild(card);
   }
 }
 
@@ -156,19 +200,61 @@ async function readClipboardCode() {
   }
 }
 
-async function zipReceivedFiles(files) {
+async function zipReceivedFiles(files, sessionToken) {
   if (!files.length) throw new Error('暂无可打包的文件');
   if (!globalThis.JSZip) throw new Error('ZIP 库尚未加载');
 
   const zip = new globalThis.JSZip();
-  files.forEach((file) => {
-    zip.file(file.name, file.blob);
+  const entryNames = buildZipEntryNames(files);
+  files.forEach((file, index) => {
+    zip.file(entryNames[index], file.blob);
   });
 
   return zip.generateAsync({ type: 'blob' }, (metadata) => {
+    if (sessionToken !== state.sessionToken) return;
     const percent = Math.round(metadata.percent || 0);
     elements.progress.value = percent;
     setStatus(elements.transferStatus, `正在打包 ZIP：${percent}%`, false);
+  });
+}
+
+function getLastPathComponent(name) {
+  const parts = String(name || '').split(/[\\/]+/).filter(Boolean);
+  return parts[parts.length - 1] || '';
+}
+
+function splitExtension(name) {
+  const dotIndex = name.lastIndexOf('.');
+  if (dotIndex <= 0) return { stem: name, extension: '' };
+  return {
+    stem: name.slice(0, dotIndex),
+    extension: name.slice(dotIndex),
+  };
+}
+
+function sanitizeZipEntryName(name) {
+  const basename = getLastPathComponent(name);
+  const cleaned = safeFilename(basename).replace(/[\x00-\x1f\x7f]/g, '_').trim();
+  if (cleaned === '.' || cleaned === '..') return 'received-file';
+  return cleaned || 'received-file';
+}
+
+function buildZipEntryNames(files) {
+  const used = new Set();
+
+  return files.map((file) => {
+    const original = sanitizeZipEntryName(file.name);
+    const { stem, extension } = splitExtension(original);
+    let candidate = original;
+    let suffix = 2;
+
+    while (used.has(candidate.toLowerCase())) {
+      candidate = `${stem} (${suffix})${extension}`;
+      suffix += 1;
+    }
+
+    used.add(candidate.toLowerCase());
+    return candidate;
   });
 }
 
@@ -183,48 +269,59 @@ function downloadBlob(filename, blob) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function bindSession(session) {
+function bindSession(session, sessionToken) {
   session.addEventListener('connection', (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, `连接状态：${describeConnectionState(event.detail.state)}`, false);
   });
   session.addEventListener('channel-open', () => {
+    if (!isCurrentSession(session, sessionToken)) return;
     const message = state.mode === 'receive'
       ? '连接已建立，可以确认接收文件。'
       : '连接已建立，等待接收方确认。';
     setStatus(elements.transferStatus, message, false);
   });
   session.addEventListener('channel-close', () => {
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, '连接已关闭。', false);
   });
   session.addEventListener('manifest', (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     state.manifest = event.detail.manifest;
     state.receivedFiles = [];
     elements.downloadZip.disabled = true;
-    disposePreviewList();
+    cancelPreviews();
     if (event.detail.peerName) setStoredValue(recentPeerKey, event.detail.peerName);
     renderFileList(state.manifest.files);
   });
   session.addEventListener('send-progress', (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     updateProgress(event.detail.sentBytes, event.detail.totalBytes);
   });
   session.addEventListener('receive-progress', (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     updateProgress(event.detail.receivedBytes, event.detail.totalBytes);
   });
   session.addEventListener('accepted', () => {
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, '对方已确认接收，可以开始发送。', false);
     elements.sendFiles.disabled = false;
   });
   session.addEventListener('file-received', (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     state.receivedFiles.push(event.detail.file);
     setStatus(elements.transferStatus, `已接收：${event.detail.file.name}`, false);
   });
   session.addEventListener('transfer-complete', async (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     state.receivedFiles = event.detail.files;
     elements.downloadZip.disabled = state.receivedFiles.length === 0;
     await renderPreviews(state.receivedFiles);
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, `接收完成，共 ${state.receivedFiles.length} 个文件。`, false);
   });
   session.addEventListener('error', (event) => {
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, `发生错误：${event.detail.message || '未知错误'}`, true);
   });
 }
@@ -256,8 +353,7 @@ function updateProgress(done, total) {
 }
 
 function resetSession({ clearCode = true, clearSelectedFiles = false } = {}) {
-  state.session?.close();
-  state.session = null;
+  closeActiveSession();
   state.manifest = null;
   state.receivedFiles = [];
   elements.sendFiles.disabled = true;
@@ -266,7 +362,7 @@ function resetSession({ clearCode = true, clearSelectedFiles = false } = {}) {
   elements.downloadZip.disabled = true;
   elements.progress.value = 0;
   renderFileList([]);
-  disposePreviewList();
+  cancelPreviews();
 
   if (clearSelectedFiles) {
     state.selectedFiles = [];
@@ -299,7 +395,7 @@ elements.fileInput.addEventListener('change', () => {
   elements.sendFiles.disabled = true;
   elements.downloadZip.disabled = true;
   elements.progress.value = 0;
-  disposePreviewList();
+  cancelPreviews();
   renderFileList(state.selectedFiles);
 });
 
@@ -309,21 +405,23 @@ elements.createOffer.addEventListener('click', async () => {
     return;
   }
 
+  let session = null;
+  let sessionToken = 0;
+
   try {
     resetSession({ clearCode: true });
-    state.session = new LanTransferSession({
-      nickname: getNickname(),
-      usePublicStun: elements.usePublicStun.checked,
-    });
-    bindSession(state.session);
-    const offer = await state.session.createOffer(state.selectedFiles);
+    session = createTransferSession();
+    sessionToken = state.sessionToken;
+    const offer = await session.createOffer(state.selectedFiles);
+    if (!isCurrentSession(session, sessionToken)) return;
     state.manifest = offer.manifest;
     renderFileList(state.manifest.files);
     renderSignalCode(encodeSignal(offer), '已生成发起码，请将连接码发给接收方。');
   } catch (error) {
-    state.session?.close();
-    state.session = null;
-    setStatus(elements.signalStatus, `生成发起码失败：${error.message}`, true);
+    if (!session || isCurrentSession(session, sessionToken)) {
+      closeActiveSession();
+      setStatus(elements.signalStatus, `生成发起码失败：${error.message}`, true);
+    }
   }
 });
 
@@ -333,15 +431,19 @@ elements.sendFiles.addEventListener('click', async () => {
     return;
   }
 
+  const session = state.session;
+  const sessionToken = state.sessionToken;
   elements.sendFiles.disabled = true;
   setStatus(elements.transferStatus, '正在发送文件...', false);
 
   try {
-    await state.session.sendFiles();
+    await session.sendFiles();
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, '文件发送完成。', false);
   } catch (error) {
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.transferStatus, `发送失败：${error.message}`, true);
-    elements.sendFiles.disabled = state.session?.channel?.readyState !== 'open';
+    elements.sendFiles.disabled = session.channel?.readyState !== 'open';
   }
 });
 
@@ -362,28 +464,30 @@ elements.importOffer.addEventListener('click', async () => {
     return;
   }
 
+  let session = null;
+  let sessionToken = 0;
+
   try {
     resetSession({ clearCode: false });
     setMode('receive');
-    state.session = new LanTransferSession({
-      nickname: getNickname(),
-      usePublicStun: elements.usePublicStun.checked,
-    });
-    bindSession(state.session);
+    session = createTransferSession();
+    sessionToken = state.sessionToken;
 
     const offer = decodeSignal(code);
     if (offer.type !== 'offer') throw new Error('请导入发起码，而不是回应码');
-    const answer = await state.session.acceptOffer(offer);
+    const answer = await session.acceptOffer(offer);
+    if (!isCurrentSession(session, sessionToken)) return;
     renderSignalCode(encodeSignal(answer), '已生成回应码，请复制给发送方。');
     elements.createAnswer.disabled = true;
     elements.acceptTransfer.disabled = false;
     elements.sendFiles.disabled = true;
     setStatus(elements.transferStatus, '已读取文件清单，请确认是否接收。', false);
   } catch (error) {
-    state.session?.close();
-    state.session = null;
-    elements.acceptTransfer.disabled = true;
-    setStatus(elements.signalStatus, `导入发起码失败：${error.message}`, true);
+    if (!session || isCurrentSession(session, sessionToken)) {
+      closeActiveSession();
+      elements.acceptTransfer.disabled = true;
+      setStatus(elements.signalStatus, `导入发起码失败：${error.message}`, true);
+    }
   }
 });
 
@@ -393,14 +497,19 @@ elements.importAnswer.addEventListener('click', async () => {
     return;
   }
 
+  const session = state.session;
+  const sessionToken = state.sessionToken;
+
   try {
     const answer = decodeSignal(elements.signalCode.value);
     if (answer.type !== 'answer') throw new Error('请导入回应码，而不是发起码');
-    await state.session.acceptAnswer(answer);
+    await session.acceptAnswer(answer);
+    if (!isCurrentSession(session, sessionToken)) return;
     setMode('send');
     setStatus(elements.signalStatus, '回应码已导入，正在建立连接。', false);
     setStatus(elements.transferStatus, '等待接收方确认文件。', false);
   } catch (error) {
+    if (!isCurrentSession(session, sessionToken)) return;
     setStatus(elements.signalStatus, `导入回应码失败：${error.message}`, true);
   }
 });
@@ -421,27 +530,28 @@ elements.acceptTransfer.addEventListener('click', () => {
 });
 
 elements.downloadZip.addEventListener('click', async () => {
+  const sessionToken = state.sessionToken;
+  const files = state.receivedFiles.slice();
   elements.downloadZip.disabled = true;
   setStatus(elements.transferStatus, '正在打包 ZIP...', false);
 
   try {
-    const blob = await zipReceivedFiles(state.receivedFiles);
+    const blob = await zipReceivedFiles(files, sessionToken);
+    if (sessionToken !== state.sessionToken) return;
     downloadBlob('lan-transfer-files.zip', blob);
     setStatus(elements.transferStatus, 'ZIP 已开始下载。', false);
   } catch (error) {
+    if (sessionToken !== state.sessionToken) return;
     setStatus(elements.transferStatus, `下载 ZIP 失败：${error.message}`, true);
   } finally {
-    elements.downloadZip.disabled = state.receivedFiles.length === 0;
+    if (sessionToken === state.sessionToken) {
+      elements.downloadZip.disabled = state.receivedFiles.length === 0;
+    }
   }
 });
 
 elements.clearTransfer.addEventListener('click', () => {
-  state.manifest = null;
-  state.receivedFiles = [];
-  renderFileList([]);
-  disposePreviewList();
-  elements.progress.value = 0;
-  elements.downloadZip.disabled = true;
+  resetSession({ clearCode: false, clearSelectedFiles: true });
   setStatus(elements.transferStatus, '已清空本次传输。', false);
 });
 
