@@ -46,7 +46,7 @@ jobs:
             ./ _site/
           node <<'NODE'
           const { createHash } = require('node:crypto');
-          const { writeFileSync } = require('node:fs');
+          const { readFileSync, writeFileSync } = require('node:fs');
 
           const username = process.env.LAN_TRANSFER_AUTH_USERNAME_SECRET
             || process.env.LAN_TRANSFER_AUTH_USERNAME_VAR
@@ -67,6 +67,21 @@ jobs:
             '_site/work/lan-transfer/auth-config.js',
             `window.XYX_LAN_TRANSFER_AUTH = ${JSON.stringify(config)};\n`,
           );
+
+          const indexPath = '_site/work/lan-transfer/index.html';
+          const authConfigVersion = [
+            process.env.GITHUB_RUN_ID || Date.now(),
+            process.env.GITHUB_RUN_ATTEMPT || '0',
+          ].join('-');
+          const indexHtml = readFileSync(indexPath, 'utf8');
+          const nextIndexHtml = indexHtml.replace(
+            /(\.\/auth-config\.js\?v=)[^"]+/,
+            `$1${authConfigVersion}`,
+          );
+          if (nextIndexHtml === indexHtml) {
+            throw new Error('Could not stamp LAN Transfer auth-config cache version.');
+          }
+          writeFileSync(indexPath, nextIndexHtml);
           NODE
 
       - name: Upload artifact
