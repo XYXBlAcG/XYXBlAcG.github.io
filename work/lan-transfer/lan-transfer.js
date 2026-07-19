@@ -553,6 +553,10 @@ elements.importAnswer.addEventListener('click', async () => {
     if (answer.type !== 'answer') throw new Error('请导入回应码，而不是发起码');
     await session.acceptAnswer(answer);
     if (!isCurrentSession(session, sessionToken)) return;
+    if (answer.nickname) {
+      setStoredValue(recentPeerKey, answer.nickname);
+      updateConnectionHint();
+    }
     setMode('send');
     setActiveStep(3);
     setStatus(elements.signalStatus, '回应码已导入，正在建立连接。', false);
