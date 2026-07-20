@@ -207,6 +207,10 @@ button {
   display: block;
 }
 
+.cli-autocomplete[data-placement="top"] {
+  box-shadow: 0 -1rem 2rem rgba(0, 0, 0, 0.34);
+}
+
 .cli-completion {
   display: grid;
   grid-template-columns: minmax(7rem, max-content) 1fr;

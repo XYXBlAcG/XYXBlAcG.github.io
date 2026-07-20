@@ -605,14 +605,39 @@ const BASE_COMMAND_DEFINITIONS = [
   {
     name: 'python',
     usage: 'python 或 python <code>',
-    detail: '进入有记忆的 Python 模式，或运行一行 Python',
+    detail: '进入有记忆的 Python 模式，或运行 Python 代码',
     aliases: ['py'],
     category: 'runtime',
     async action({ parsed, adapter }) {
       if (parsed.name === 'python' && !parsed.rest) {
-        return { type: 'python-mode', message: '已进入 Python 模式。输入 quit 或 exit 退出，%reset 清空记忆。' };
+        return { type: 'python-mode', message: '已进入 Python 模式。输入 quit 或 exit 退出，%reset 清空记忆，%block 输入多行代码。' };
       }
       if (!parsed.rest) return { type: 'error', message: '请输入 Python 代码，例如：py 1 + 2' };
+      try {
+        const result = await adapter.runPython(parsed.rest);
+        const message = outputMessage(result);
+        if (result?.ok === false) {
+          return { type: 'error', message: message || 'Python 执行失败。', result };
+        }
+        return { type: 'python', message: message || 'Python 执行完成。', result };
+      } catch (err) {
+        return { type: 'error', message: failureMessage('Python 执行失败', err) };
+      }
+    }
+  },
+  {
+    name: '%%python',
+    usage: '%%python 或 %%python <code>',
+    detail: '进入多行 Python 块输入，或直接运行多行代码',
+    aliases: ['pyblock', 'python-block'],
+    category: 'runtime',
+    async action({ parsed, adapter }) {
+      if (!parsed.rest) {
+        return {
+          type: 'python-block-mode',
+          message: '已进入 Python 多行输入。Ctrl/Command+Enter 或点击“运行”执行，Esc 取消。'
+        };
+      }
       try {
         const result = await adapter.runPython(parsed.rest);
         const message = outputMessage(result);

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   COMMAND_REGISTRY,
   ROUTES,
@@ -26,6 +27,18 @@ function testParseCommand() {
     raw: 'py print("你好")',
     rest: 'print("你好")'
   });
+  assert.deepEqual(parseCommand('%%python\nfor i in range(2):\n    print(i)'), {
+    name: '%%python',
+    args: ['for i in range(2):\n    print(i)'],
+    raw: '%%python\nfor i in range(2):\n    print(i)',
+    rest: 'for i in range(2):\n    print(i)'
+  });
+}
+
+function testCliInputMarkup() {
+  const html = readFileSync(new URL('../cli/index.html', import.meta.url), 'utf8');
+  assert.match(html, /<input id="cli-input" type="text"/);
+  assert.doesNotMatch(html, /<textarea id="cli-input"/);
 }
 
 function testResolveRoute() {
@@ -93,6 +106,7 @@ function testCompletion() {
   assert.ok(getCompletions('bi').some((item) => item.value === 'bing'));
   assert.ok(getCompletions('bili').some((item) => item.value === 'bilibili'));
   assert.ok(getCompletions('dd').some((item) => item.value === 'duckduckgo'));
+  assert.ok(getCompletions('%%').some((item) => item.value === '%%python'));
   assert.ok(getCompletions('bing ').some((item) => item.value === '<搜索词>'));
   assert.ok(getCompletions('search math -f g').some((item) => item.value === 'google'));
   assert.ok(getCompletions('site ma').some((item) => item.value === 'math'));
@@ -149,6 +163,14 @@ async function testExecutor() {
   const pyResult = await executor.run('py 1 + 2');
   assert.equal(pyResult.type, 'python');
   assert.deepEqual(calls.shift(), ['python', '1 + 2']);
+
+  const pythonBlockModeResult = await executor.run('%%python');
+  assert.equal(pythonBlockModeResult.type, 'python-block-mode');
+  assert.equal(calls.length, 0);
+
+  const pythonBlockResult = await executor.run('%%python\nfor i in range(2):\n    print(i)');
+  assert.equal(pythonBlockResult.type, 'python');
+  assert.deepEqual(calls.shift(), ['python', 'for i in range(2):\n    print(i)']);
 
   const copyUrlResult = await executor.run('copy url');
   assert.equal(copyUrlResult.type, 'copy');
@@ -381,8 +403,10 @@ async function testExecutorReviewFixes() {
 assert.ok(ROUTES.length >= 12);
 assert.ok(SEARCH_PROVIDERS.length >= 8);
 assert.equal(COMMAND_REGISTRY.get('py').name, 'python');
+assert.equal(COMMAND_REGISTRY.get('pyblock').name, '%%python');
 assert.equal(COMMAND_REGISTRY.get('go').name, 'open');
 testParseCommand();
+testCliInputMarkup();
 testResolveRoute();
 testResolveSearchProvider();
 testParseCommandOptions();

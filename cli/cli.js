@@ -80,6 +80,8 @@ function initializeCli({
   let completionMatches = [];
   let completionIndex = 0;
   let pythonMode = false;
+  let cliMode = 'shell';
+  let pythonContinuation = null;
   let isSubmitting = false;
 
   function writeHistory(nextHistory) {
@@ -121,13 +123,37 @@ function initializeCli({
   }
 
   function setPromptMode(isPythonMode) {
+    cliMode = isPythonMode ? 'python' : 'shell';
     pythonMode = isPythonMode;
+    pythonContinuation = null;
     screen.dataset.cliMode = pythonMode ? 'python' : 'shell';
     promptLabel.textContent = pythonMode ? 'python@site' : 'xyx@site';
     promptPath.textContent = pythonMode ? '/python' : '/cli';
     promptSymbol.textContent = pythonMode ? '>>>' : '$';
-    input.placeholder = pythonMode ? '输入 Python 代码，quit/exit 退出，%reset 清空记忆' : '';
+    input.placeholder = pythonMode
+      ? '输入 Python 代码，quit/exit 退出，%reset 清空记忆'
+      : '输入 help 查看命令';
     closeAutocomplete();
+    positionAutocomplete();
+    window.requestAnimationFrame(scrollToPrompt);
+  }
+
+  function setPythonContinuationMode(returnMode = pythonMode ? 'python' : 'shell', options = {}) {
+    cliMode = 'python-block';
+    pythonMode = true;
+    pythonContinuation = {
+      lines: [],
+      returnMode: returnMode === 'python' ? 'python' : 'shell',
+      explicit: Boolean(options.explicit),
+      requiresBlankLine: Boolean(options.requiresBlankLine)
+    };
+    screen.dataset.cliMode = 'python-block';
+    promptLabel.textContent = 'python@site';
+    promptPath.textContent = '/python';
+    promptSymbol.textContent = '...';
+    input.placeholder = '继续输入 Python；空行或 Ctrl/Command+Enter 执行，Esc 取消';
+    closeAutocomplete();
+    positionAutocomplete();
     window.requestAnimationFrame(scrollToPrompt);
   }
 
@@ -139,6 +165,7 @@ function initializeCli({
       return;
     }
     if (result.type === 'python-mode') setPromptMode(true);
+    if (result.type === 'python-block-mode') setPythonContinuationMode('shell', { explicit: true });
     appendLine(result.message, result.type === 'error' ? 'is-error' : 'is-system');
   }
 
@@ -147,6 +174,7 @@ function initializeCli({
     completionIndex = 0;
     autocomplete.innerHTML = '';
     autocomplete.classList.remove('is-open');
+    autocomplete.removeAttribute('data-placement');
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
   }
@@ -158,7 +186,9 @@ function initializeCli({
       { value: 'exit', detail: '退出 Python 模式' },
       { value: 'quit', detail: '退出 Python 模式' },
       { value: '%reset', detail: '清空 Python 记忆' },
-      { value: 'reset', detail: '清空 Python 记忆' }
+      { value: 'reset', detail: '清空 Python 记忆' },
+      { value: '%block', detail: '进入多行 Python 输入' },
+      { value: '%%python', detail: '进入多行 Python 输入' }
     ]
       .filter((command) => command.value.startsWith(token) && command.value !== token)
       .map((command) => ({
@@ -177,21 +207,32 @@ function initializeCli({
     const gap = 6;
     const inset = 16;
     const left = Math.max(inset, inputRect.left - terminalRect.left);
-    const top = inputRect.bottom - terminalRect.top + gap;
     const maxWidth = Math.max(220, terminalRect.width - left - inset);
     const width = Math.min(Math.max(inputRect.width, 220), maxWidth);
-    const availableHeight = Math.max(96, window.innerHeight - inputRect.bottom - 24);
+    const availableBelow = terminalRect.bottom - inputRect.bottom - inset;
+    const availableAbove = inputRect.top - terminalRect.top - inset;
+    const placeAbove = availableBelow < 108 && availableAbove > availableBelow;
+    const availableHeight = Math.max(96, Math.min(240, (placeAbove ? availableAbove : availableBelow) - gap));
+    const rawTop = placeAbove
+      ? inputRect.top - terminalRect.top - gap - availableHeight
+      : inputRect.bottom - terminalRect.top + gap;
+    const top = Math.min(
+      Math.max(inset, rawTop),
+      Math.max(inset, terminalRect.height - inset - availableHeight)
+    );
 
     autocomplete.style.left = `${left}px`;
     autocomplete.style.top = `${top}px`;
     autocomplete.style.width = `${width}px`;
-    autocomplete.style.maxHeight = `${Math.min(240, availableHeight)}px`;
+    autocomplete.style.maxHeight = `${availableHeight}px`;
+    autocomplete.dataset.placement = placeAbove ? 'top' : 'bottom';
   }
 
   function acceptCompletion() {
     const completion = completionMatches[completionIndex];
     if (!completion) return false;
     input.value = completion.insert;
+    positionAutocomplete();
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
     closeAutocomplete();
@@ -229,6 +270,10 @@ function initializeCli({
   }
 
   function updateAutocomplete() {
+    if (cliMode === 'python-block') {
+      closeAutocomplete();
+      return;
+    }
     completionMatches = pythonMode ? getPythonCompletions(input.value) : getCompletions(input.value);
     completionIndex = Math.min(completionIndex, Math.max(completionMatches.length - 1, 0));
     renderAutocomplete(completionMatches);
@@ -306,6 +351,17 @@ function initializeCli({
       return;
     }
 
+    if (normalized === '%block' || normalized === '%multi' || normalized === '%%python') {
+      setPythonContinuationMode('python', { explicit: true });
+      appendLine('已进入 Python 续行输入。空行或 Ctrl/Command+Enter 执行，Esc 取消。', 'is-system');
+      return;
+    }
+
+    if (shouldStartPythonContinuation(code)) {
+      beginPythonContinuation(code, 'python', { alreadyEchoed: true });
+      return;
+    }
+
     try {
       const result = await runPython(code);
       const message = pythonOutputMessage(result);
@@ -317,6 +373,204 @@ function initializeCli({
       const detail = error?.message || String(error);
       appendLine(detail ? `Python 执行失败：${detail}` : 'Python 执行失败。', 'is-error');
     }
+  }
+
+  function appendPythonContinuationLine(line) {
+    if (!pythonContinuation) return;
+    pythonContinuation.lines.push(line);
+    if (isPythonBlockHeader(line)) {
+      pythonContinuation.requiresBlankLine = true;
+    }
+  }
+
+  function beginPythonContinuation(firstLine, returnMode = 'python', options = {}) {
+    if (!options.alreadyEchoed) {
+      appendLine(`>>> ${firstLine}`, 'is-command');
+    }
+    setPythonContinuationMode(returnMode, {
+      explicit: Boolean(options.explicit),
+      requiresBlankLine: isPythonBlockHeader(firstLine)
+    });
+    if (firstLine) appendPythonContinuationLine(firstLine);
+    prepareNextPythonInput(firstLine);
+  }
+
+  async function executePythonContinuation(extraLine = '', options = {}) {
+    if (!pythonContinuation) return;
+    const line = String(extraLine || '').trimEnd();
+    if (line || options.echoBlank) {
+      appendLine(`... ${line}`, 'is-command');
+    }
+    if (line) appendPythonContinuationLine(line);
+
+    const code = pythonContinuation.lines.join('\n');
+    const returnToPython = pythonContinuation.returnMode === 'python';
+    pythonContinuation = null;
+    input.value = '';
+
+    if (!code.trim()) {
+      setPromptMode(returnToPython);
+      appendLine('已取消 Python 续行输入。', 'is-system');
+      return;
+    }
+
+    try {
+      const result = await runPython(code);
+      const message = pythonOutputMessage(result);
+      setPromptMode(returnToPython);
+      addHistory(code);
+      appendLine(
+        message || 'Python 执行完成。',
+        result?.ok === false ? 'is-error' : 'is-system'
+      );
+    } catch (error) {
+      setPromptMode(returnToPython);
+      const detail = error?.message || String(error);
+      appendLine(detail ? `Python 执行失败：${detail}` : 'Python 执行失败。', 'is-error');
+    }
+  }
+
+  function formatCommandEcho(command) {
+    const lines = String(command || '').split('\n');
+    const firstPrompt = promptSymbol.textContent;
+    const continuationPrompt = cliMode === 'shell' ? '>' : '...';
+    return lines.map((line, index) => `${index === 0 ? firstPrompt : continuationPrompt} ${line}`).join('\n');
+  }
+
+  function hasOpenPythonDelimiter(code) {
+    const stack = [];
+    let quote = '';
+    let tripleQuote = '';
+    let escaping = false;
+    const pairs = { '(': ')', '[': ']', '{': '}' };
+
+    for (let index = 0; index < code.length; index += 1) {
+      const char = code[index];
+      const nextThree = code.slice(index, index + 3);
+
+      if (tripleQuote) {
+        if (nextThree === tripleQuote) {
+          tripleQuote = '';
+          index += 2;
+        }
+        continue;
+      }
+
+      if (quote) {
+        if (escaping) {
+          escaping = false;
+        } else if (char === '\\') {
+          escaping = true;
+        } else if (char === quote) {
+          quote = '';
+        }
+        continue;
+      }
+
+      if (nextThree === '"""' || nextThree === "'''") {
+        tripleQuote = nextThree;
+        index += 2;
+        continue;
+      }
+
+      if (char === '"' || char === "'") {
+        quote = char;
+        continue;
+      }
+
+      if (pairs[char]) {
+        stack.push(pairs[char]);
+        continue;
+      }
+
+      if ((char === ')' || char === ']' || char === '}') && stack[stack.length - 1] === char) {
+        stack.pop();
+      }
+    }
+
+    return stack.length > 0 || Boolean(quote || tripleQuote);
+  }
+
+  function isPythonBlockHeader(line) {
+    const trimmed = String(line || '').trim();
+    if (!trimmed.endsWith(':')) return false;
+    return /^(async\s+)?(def|for|with)\b/.test(trimmed)
+      || /^(if|elif|else|try|except|finally|while|class|match|case)\b/.test(trimmed);
+  }
+
+  function shouldStartPythonContinuation(line) {
+    const code = String(line || '').trimEnd();
+    if (!code.trim()) return false;
+    return isPythonBlockHeader(code) || hasOpenPythonDelimiter(code) || code.endsWith('\\');
+  }
+
+  function getNextPythonIndent(line) {
+    const currentLine = String(line || '');
+    const currentIndent = currentLine.match(/^\s*/)?.[0] || '';
+    const trimmedLine = currentLine.trim();
+    let nextIndent = currentIndent;
+    if (isPythonBlockHeader(trimmedLine)) nextIndent += '    ';
+    if (/^(return|pass|break|continue|raise)\b/.test(trimmedLine) && nextIndent.length >= 4) {
+      nextIndent = nextIndent.slice(0, -4);
+    }
+    return nextIndent;
+  }
+
+  function prepareNextPythonInput(previousLine) {
+    input.value = getNextPythonIndent(previousLine);
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    closeAutocomplete();
+  }
+
+  async function handlePythonContinuationLine(forceExecute = false) {
+    if (!pythonContinuation) return;
+    const line = input.value.trimEnd();
+    const isBlank = !line.trim();
+    input.value = '';
+    closeAutocomplete();
+
+    if (isBlank) {
+      await executePythonContinuation('', { echoBlank: true });
+      return;
+    }
+
+    appendLine(`... ${line}`, 'is-command');
+    appendPythonContinuationLine(line);
+
+    const code = pythonContinuation.lines.join('\n');
+    const shouldAutoRun = !pythonContinuation.requiresBlankLine
+      && !pythonContinuation.explicit
+      && !shouldStartPythonContinuation(code);
+    if (forceExecute || shouldAutoRun) {
+      await executePythonContinuation();
+      return;
+    }
+
+    prepareNextPythonInput(line);
+  }
+
+  async function submitPythonContinuationLine(forceExecute = false) {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    try {
+      await handlePythonContinuationLine(forceExecute);
+    } finally {
+      isSubmitting = false;
+    }
+  }
+
+  function cancelPythonContinuation() {
+    if (!pythonContinuation) return;
+    const returnToPython = pythonContinuation.returnMode === 'python';
+    pythonContinuation = null;
+    input.value = '';
+    setPromptMode(returnToPython);
+    appendLine('已取消 Python 续行输入。', 'is-system');
+  }
+
+  function shouldUseHistoryNavigation() {
+    return cliMode !== 'python-block';
   }
 
   const executor = createExecutor({
@@ -347,15 +601,22 @@ function initializeCli({
 
   async function submitCommand() {
     if (isSubmitting) return;
-    const command = input.value.trim();
     closeAutocomplete();
-    if (!command) return;
     isSubmitting = true;
-    appendLine(`${promptSymbol.textContent} ${command}`, 'is-command');
-    addHistory(command);
-    input.value = '';
 
     try {
+      if (cliMode === 'python-block') {
+        await handlePythonContinuationLine(true);
+        return;
+      }
+
+      const command = pythonMode ? input.value.trimEnd() : input.value.trim();
+      if (!command.trim()) return;
+      appendLine(formatCommandEcho(command), 'is-command');
+      addHistory(command);
+      input.value = '';
+      positionAutocomplete();
+
       if (pythonMode) {
         await runPythonReplCommand(command);
         return;
@@ -378,6 +639,14 @@ function initializeCli({
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
+      if (event.ctrlKey || event.metaKey) {
+        void submitCommand();
+        return;
+      }
+      if (cliMode === 'python-block') {
+        void submitPythonContinuationLine(false);
+        return;
+      }
       void submitCommand();
       return;
     }
@@ -405,17 +674,19 @@ function initializeCli({
       return;
     }
 
-    if (!completionMatches.length && event.key === 'ArrowUp') {
+    if (!completionMatches.length && event.key === 'ArrowUp' && shouldUseHistoryNavigation()) {
       event.preventDefault();
       historyIndex = Math.max(0, historyIndex - 1);
       input.value = history[historyIndex] || '';
+      positionAutocomplete();
       return;
     }
 
-    if (!completionMatches.length && event.key === 'ArrowDown') {
+    if (!completionMatches.length && event.key === 'ArrowDown' && shouldUseHistoryNavigation()) {
       event.preventDefault();
       historyIndex = Math.min(history.length, historyIndex + 1);
       input.value = history[historyIndex] || '';
+      positionAutocomplete();
       return;
     }
 
@@ -425,7 +696,14 @@ function initializeCli({
       closeAutocomplete();
     }
 
-    if (event.key === 'Escape') closeAutocomplete();
+    if (event.key === 'Escape') {
+      if (cliMode === 'python-block') {
+        event.preventDefault();
+        cancelPythonContinuation();
+        return;
+      }
+      closeAutocomplete();
+    }
   });
 
   window.addEventListener('resize', positionAutocomplete);

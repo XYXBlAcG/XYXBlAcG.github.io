@@ -474,7 +474,7 @@ function initializeSidebar() {
         <button class="xyx-site-cli-run" type="submit">运行</button>
       </form>
       <div id="xyx-site-cli-autocomplete" class="xyx-site-cli-autocomplete" role="listbox" aria-label="侧边 CLI 补全"></div>
-      <footer class="xyx-site-cli-footer">输入 help 查看命令；Tab 补全；open tools 跳转站内；search 关键词 -f bing 搜索网页；Ctrl+K 打开。</footer>
+      <footer class="xyx-site-cli-footer">输入 help 查看命令；Tab 补全；open tools 跳转站内；search 关键词 -f bing 搜索网页；Python 请用 open cli 打开全屏 CLI。</footer>
     </section>
     <div class="xyx-site-cli-resize-grip" role="separator" aria-label="调整侧边栏宽度" aria-orientation="vertical" aria-valuemin="340" aria-valuemax="720" aria-valuenow="456" tabindex="0" title="拖动调整宽度"></div>
     <button class="xyx-site-cli-handle" type="button" aria-label="打开站点 CLI" aria-expanded="false"><span>CLI</span></button>
@@ -806,12 +806,12 @@ function initializeSidebar() {
         appendLine(state.pinned ? '侧边栏已固定。' : '侧边栏已取消固定。', 'is-system');
         return;
       }
-      if (parsed.name === 'python' && !parsed.rest) {
+      if (['python', '%%python', 'pyblock', 'python-block'].includes(parsed.name) && !parsed.rest) {
         appendLine('正在打开全屏 CLI 以运行 Python。', 'is-system');
         await navigateSmooth('/cli/');
         return;
       }
-      if (parsed.name === 'py' || parsed.name === 'python') {
+      if (['py', 'python', '%%python', 'pyblock', 'python-block'].includes(parsed.name)) {
         appendLine('侧边栏不加载 Python。请输入 open cli 打开全屏 CLI。', 'is-error');
         return;
       }
