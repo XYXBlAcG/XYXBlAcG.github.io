@@ -474,7 +474,7 @@ function initializeSidebar() {
         <button class="xyx-site-cli-run" type="submit">运行</button>
       </form>
       <div id="xyx-site-cli-autocomplete" class="xyx-site-cli-autocomplete" role="listbox" aria-label="侧边 CLI 补全"></div>
-      <footer class="xyx-site-cli-footer">输入 help 查看命令；Tab 补全；open work / open tools 快速跳转；Ctrl+K 打开。</footer>
+      <footer class="xyx-site-cli-footer">输入 help 查看命令；Tab 补全；open tools 跳转站内；search 关键词 -f bing 搜索网页；Ctrl+K 打开。</footer>
     </section>
     <div class="xyx-site-cli-resize-grip" role="separator" aria-label="调整侧边栏宽度" aria-orientation="vertical" aria-valuemin="340" aria-valuemax="720" aria-valuenow="456" tabindex="0" title="拖动调整宽度"></div>
     <button class="xyx-site-cli-handle" type="button" aria-label="打开站点 CLI" aria-expanded="false"><span>CLI</span></button>
@@ -495,6 +495,11 @@ function initializeSidebar() {
 
   const executor = createExecutor({
     navigate: navigateSmooth,
+    open(url) {
+      const opened = window.open(url, '_blank');
+      if (opened) opened.opener = null;
+      return Promise.resolve(Boolean(opened));
+    },
     reload: reloadSmooth,
     copy: copyText,
     runPython() {
@@ -979,7 +984,9 @@ async function navigateSmooth(path) {
 
   document.documentElement.classList.add('xyx-site-cli-navigating');
   window.setTimeout(() => {
-    window.location.href = `${target.pathname}${target.search}${target.hash}`;
+    window.location.href = target.origin === location.origin
+      ? `${target.pathname}${target.search}${target.hash}`
+      : target.href;
   }, NAVIGATION_DELAY_MS);
 }
 

@@ -323,6 +323,11 @@ function initializeCli({
     async navigate(path) {
       window.location.href = path;
     },
+    async open(url) {
+      const opened = window.open(url, '_blank');
+      if (opened) opened.opener = null;
+      return Boolean(opened);
+    },
     async reload() {
       window.location.reload();
     },

@@ -2,6 +2,12 @@
   const authKey = "xyx-lan-transfer-auth-v1";
   const config = window.XYX_LAN_TRANSFER_AUTH || {};
 
+  if (config.localBypass === true) {
+    window.XYX_LAN_TRANSFER_AUTH_READY = Promise.resolve();
+    document.documentElement.classList.remove("lan-auth-pending");
+    return;
+  }
+
   function clearAuthGate() {
     document.documentElement.classList.remove("lan-auth-pending");
   }

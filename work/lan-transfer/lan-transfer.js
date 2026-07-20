@@ -164,12 +164,23 @@ async function fetchJson(path, options = {}) {
     ...options,
   });
 
+  const text = response.status === 204 ? '' : await response.text();
+  let payload = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = text;
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(`请求失败：${response.status}`);
+    const message = payload?.error || payload?.message || payload || `请求失败：${response.status}`;
+    throw new Error(`${message}（${response.status}）`);
   }
 
   if (response.status === 204) return null;
-  return response.json();
+  return payload;
 }
 
 function postJson(path, data) {

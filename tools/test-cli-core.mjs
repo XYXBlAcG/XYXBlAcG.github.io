@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import {
+  COMMAND_REGISTRY,
   ROUTES,
+  SEARCH_PROVIDERS,
+  buildSearchUrl,
   parseCommand,
+  parseCommandOptions,
+  resolveSearchProvider,
   resolveRoute,
   getCompletions,
   createExecutor
@@ -36,6 +41,46 @@ function testResolveRoute() {
   assert.equal(resolveRoute('missing-route'), null);
 }
 
+function testResolveSearchProvider() {
+  assert.equal(resolveSearchProvider('bing').label, 'Bing');
+  assert.equal(resolveSearchProvider('bili').key, 'bilibili');
+  assert.equal(resolveSearchProvider('B站').key, 'bilibili');
+  assert.equal(resolveSearchProvider('ddg').key, 'duckduckgo');
+  assert.equal(resolveSearchProvider('missing-engine'), null);
+  assert.equal(
+    buildSearchUrl(resolveSearchProvider('bing'), 'math solver'),
+    'https://www.bing.com/search?q=math+solver'
+  );
+  assert.equal(
+    buildSearchUrl(resolveSearchProvider('bilibili'), '数学 求解'),
+    'https://search.bilibili.com/all?keyword=%E6%95%B0%E5%AD%A6+%E6%B1%82%E8%A7%A3'
+  );
+}
+
+function testParseCommandOptions() {
+  assert.deepEqual(
+    parseCommandOptions('math solver -f bilibili -s', [
+      { key: 'from', alias: ['f'], type: 'string', defaultValue: 'bing' },
+      { key: 'self', alias: ['s'], type: 'boolean', defaultValue: false }
+    ]),
+    {
+      values: ['math', 'solver'],
+      options: { from: 'bilibili', self: true },
+      errors: []
+    }
+  );
+  assert.deepEqual(
+    parseCommandOptions('"math solver" --from=google', [
+      { key: 'from', alias: ['f'], type: 'string', defaultValue: 'bing' }
+    ]),
+    {
+      values: ['math solver'],
+      options: { from: 'google' },
+      errors: []
+    }
+  );
+}
+
 function testCompletion() {
   assert.deepEqual(
     getCompletions('op').map((item) => item.value),
@@ -45,6 +90,12 @@ function testCompletion() {
   assert.ok(getCompletions('open la').some((item) => item.value === 'transfer'));
   assert.ok(getCompletions('help re').some((item) => item.value === 'reload'));
   assert.ok(getCompletions('copy u').some((item) => item.value === 'url'));
+  assert.ok(getCompletions('bi').some((item) => item.value === 'bing'));
+  assert.ok(getCompletions('bili').some((item) => item.value === 'bilibili'));
+  assert.ok(getCompletions('dd').some((item) => item.value === 'duckduckgo'));
+  assert.ok(getCompletions('bing ').some((item) => item.value === '<搜索词>'));
+  assert.ok(getCompletions('search math -f g').some((item) => item.value === 'google'));
+  assert.ok(getCompletions('site ma').some((item) => item.value === 'math'));
 }
 
 async function testExecutor() {
@@ -52,6 +103,10 @@ async function testExecutor() {
   const executor = createExecutor({
     navigate(path) {
       calls.push(['navigate', path]);
+    },
+    open(url) {
+      calls.push(['open', url]);
+      return Promise.resolve(true);
     },
     reload() {
       calls.push(['reload']);
@@ -83,6 +138,10 @@ async function testExecutor() {
   assert.equal(openLanResult.type, 'navigation');
   assert.deepEqual(calls.shift(), ['navigate', '/work/lan-transfer/']);
 
+  const goAliasResult = await executor.run('go tools');
+  assert.equal(goAliasResult.type, 'navigation');
+  assert.deepEqual(calls.shift(), ['navigate', '/work/tools/']);
+
   const pythonModeResult = await executor.run('python');
   assert.equal(pythonModeResult.type, 'python-mode');
   assert.equal(calls.length, 0);
@@ -98,6 +157,50 @@ async function testExecutor() {
   const copyMathResult = await executor.run('copy math');
   assert.equal(copyMathResult.type, 'copy');
   assert.deepEqual(calls.shift(), ['copy', '/work/py_software/apps/math-solver/']);
+
+  const bingResult = await executor.run('bing math solver');
+  assert.equal(bingResult.type, 'search');
+  assert.equal(bingResult.url, 'https://www.bing.com/search?q=math+solver');
+  assert.deepEqual(calls.shift(), ['open', 'https://www.bing.com/search?q=math+solver']);
+
+  const bilibiliAliasResult = await executor.run('bili 数学 求解');
+  assert.equal(bilibiliAliasResult.type, 'search');
+  assert.equal(
+    bilibiliAliasResult.url,
+    'https://search.bilibili.com/all?keyword=%E6%95%B0%E5%AD%A6+%E6%B1%82%E8%A7%A3'
+  );
+  assert.deepEqual(calls.shift(), [
+    'open',
+    'https://search.bilibili.com/all?keyword=%E6%95%B0%E5%AD%A6+%E6%B1%82%E8%A7%A3'
+  ]);
+
+  const searchFromResult = await executor.run('search 数学 求解 -f bilibili');
+  assert.equal(searchFromResult.type, 'search');
+  assert.equal(
+    searchFromResult.url,
+    'https://search.bilibili.com/all?keyword=%E6%95%B0%E5%AD%A6+%E6%B1%82%E8%A7%A3'
+  );
+  assert.deepEqual(calls.shift(), [
+    'open',
+    'https://search.bilibili.com/all?keyword=%E6%95%B0%E5%AD%A6+%E6%B1%82%E8%A7%A3'
+  ]);
+
+  const currentPageSearchResult = await executor.run('google math solver -s');
+  assert.equal(currentPageSearchResult.type, 'search');
+  assert.deepEqual(calls.shift(), ['navigate', 'https://www.google.com/search?q=math+solver']);
+
+  const siteResult = await executor.run('site math');
+  assert.equal(siteResult.type, 'list');
+  assert.match(siteResult.message, /数学求解器/);
+
+  const missingQueryResult = await executor.run('google');
+  assert.equal(missingQueryResult.type, 'error');
+  assert.match(missingQueryResult.message, /请输入搜索词/);
+
+  const enginesResult = await executor.run('engines');
+  assert.equal(enginesResult.type, 'list');
+  assert.match(enginesResult.message, /bing/);
+  assert.match(enginesResult.message, /bilibili/);
 
   const unknownResult = await executor.run('unknown');
   assert.equal(unknownResult.type, 'error');
@@ -130,6 +233,10 @@ async function testExecutorReviewFixes() {
   const executor = createExecutor({
     navigate(path) {
       calls.push(['navigate', path]);
+    },
+    open(url) {
+      calls.push(['open', url]);
+      return Promise.resolve(true);
     },
     reload() {
       calls.push(['reload']);
@@ -257,11 +364,28 @@ async function testExecutorReviewFixes() {
   const themeThrowResult = await themeThrowExecutor.run('theme');
   assert.equal(themeThrowResult.type, 'error');
   assert.match(themeThrowResult.message, /theme denied|切换主题失败/);
+
+  const searchOpenFallbackExecutor = createExecutor(testAdapter({
+    open() {
+      return false;
+    },
+    navigate(path) {
+      calls.push(['navigate-fallback', path]);
+    }
+  }));
+  const searchOpenFallbackResult = await searchOpenFallbackExecutor.run('bing fallback');
+  assert.equal(searchOpenFallbackResult.type, 'search');
+  assert.deepEqual(calls.pop(), ['navigate-fallback', 'https://www.bing.com/search?q=fallback']);
 }
 
 assert.ok(ROUTES.length >= 12);
+assert.ok(SEARCH_PROVIDERS.length >= 8);
+assert.equal(COMMAND_REGISTRY.get('py').name, 'python');
+assert.equal(COMMAND_REGISTRY.get('go').name, 'open');
 testParseCommand();
 testResolveRoute();
+testResolveSearchProvider();
+testParseCommandOptions();
 testCompletion();
 await testExecutor();
 await testExecutorReviewFixes();
